@@ -1,6 +1,6 @@
 from MNeuEventGUI.main_app.view import MainApp
 from MNeuEventGUI.load_bar.view import CURRENT
-from MNeuEventGUI.test_helpers.GUI import (check_no_alert,
+from MNeuEventGUI.test_helpers.gui import (check_no_alert,
                                            wait_and_press_btn)
 
 import os
