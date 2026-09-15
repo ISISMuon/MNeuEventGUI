@@ -1,0 +1,24 @@
+name: MuonDataLib-dev
+
+channels:
+  - conda-forge
+
+dependencies:
+  - python =3.11.*
+  - numpy
+  - plotly
+  - PySide6
+  - pytest
+  - pre-commit >=2.15
+  - sphinx
+  - jupyter-book
+  - nbsphinx
+  - selenium
+  - pip:
+    - readthedocs-sphinx-ext
+    - dash[testing]
+    - dash-ag-grid
+    - dash_bootstrap_components
+    - sphinx-rtd-theme
+    - dash_daq
+
