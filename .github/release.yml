@@ -1,0 +1,22 @@
+# .github/release.yml
+
+changelog:
+  exclude:
+    labels:
+      - ignore-for-release-notes
+  categories:
+    - title: New Features
+      labels:
+        - New Feature
+    - title: Data Loaders
+      labels:
+        - Data Loader
+    - title: Bug Fixes
+      labels:
+        - bug
+    - title: Maintenance and dev-ops
+      labels:
+        - Maintenance
+    - title: Other Changes
+      labels:
+        - "*"

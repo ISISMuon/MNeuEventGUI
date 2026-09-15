@@ -1,0 +1,25 @@
+name: lint 
+
+on:
+  push:
+    branches:
+    - 'main'
+  pull_request:
+    branches:
+      - 'main'
+  release:
+
+jobs:
+  ruff:
+    runs-on: ubuntu-slim
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          # Needed to get tags so that git describe works during package build
+          fetch-depth: "0"
+
+      - name: set up python
+        uses: actions/setup-python@v2
+      - name: lint with ruff
+        uses: astral-sh/ruff-action@v3
