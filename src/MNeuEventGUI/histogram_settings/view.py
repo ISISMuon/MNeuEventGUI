@@ -1,7 +1,7 @@
 from dash import html, callback, Output, Input
 import dash_bootstrap_components as dbc
 
-from MuonDataLib.GUI.view_template import ViewTemplate
+from MNeuEventGUI.view_template import ViewTemplate
 
 
 class HistSettingsView(ViewTemplate):

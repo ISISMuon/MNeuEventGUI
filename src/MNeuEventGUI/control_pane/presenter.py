@@ -1,7 +1,7 @@
-from MuonDataLib.GUI.presenter_template import PresenterTemplate
-from MuonDataLib.GUI.filters.presenter import FilterPresenter
-from MuonDataLib.GUI.plot_area.presenter import PlotAreaPresenter
-from MuonDataLib.GUI.control_pane.view import ControlPaneView
+from MNeuEventGUI.presenter_template import PresenterTemplate
+from MNeuEventGUI.filters.presenter import FilterPresenter
+from MNeuEventGUI.plot_area.presenter import PlotAreaPresenter
+from MNeuEventGUI.control_pane.view import ControlPaneView
 from MuonDataLib.filters import Filters
 
 from dash import no_update

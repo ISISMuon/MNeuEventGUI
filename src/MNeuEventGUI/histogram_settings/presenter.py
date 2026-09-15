@@ -1,5 +1,5 @@
-from MuonDataLib.GUI.presenter_template import PresenterTemplate
-from MuonDataLib.GUI.histogram_settings.view import HistSettingsView
+from MNeuEventGUI.presenter_template import PresenterTemplate
+from MNeuEventGUI.histogram_settings.view import HistSettingsView
 
 
 class HistSettingsPresenter(PresenterTemplate):

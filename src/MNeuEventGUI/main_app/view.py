@@ -1,4 +1,4 @@
-from MuonDataLib.GUI.main_app.presenter import MainAppPresenter
+from MNeuEventGUI.main_app.presenter import MainAppPresenter
 
 import dash
 from dash import Dash, Input, Output, State, callback, dcc, html

@@ -1,4 +1,4 @@
-from MuonDataLib.GUI.view_template import ViewTemplate
+from MNeuEventGUI.view_template import ViewTemplate
 
 from dash import Input, Output, callback
 from dash import html, dcc

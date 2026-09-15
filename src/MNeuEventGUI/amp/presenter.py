@@ -1,6 +1,6 @@
-from MuonDataLib.GUI.table.presenter import PresenterTemplate
-from MuonDataLib.GUI.amp.view import AmplitudeView
-from MuonDataLib.GUI.plot_area.presenter import PlotAreaPresenter
+from MNeuEventGUI.table.presenter import PresenterTemplate
+from MNeuEventGUI.amp.view import AmplitudeView
+from MNeuEventGUI.plot_area.presenter import PlotAreaPresenter
 from MuonDataLib.filters import PeakProperty
 
 

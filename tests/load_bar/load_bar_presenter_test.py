@@ -1,7 +1,7 @@
 import unittest
 from unittest import mock
-from MuonDataLib.GUI.load_bar.presenter import LoadBarPresenter
-from MuonDataLib.test_helpers.unit_test import TestHelper
+from MNeuEventGUI.load_bar.presenter import LoadBarPresenter
+from MNeuEventGUI.test_helpers.unit_test import TestHelper
 import sys
 import os
 
@@ -13,7 +13,7 @@ from data_paths import FILE  # noqa: E402
 
 class LoadBarPresenterTest(TestHelper):
 
-    @mock.patch("MuonDataLib.GUI.load_bar.presenter.LoadBarView")
+    @mock.patch("MNeuEventGUI.load_bar.presenter.LoadBarView")
     def setUp(self, view):
         self.view = view
         self.view.return_value = mock.Mock()
@@ -32,7 +32,7 @@ class LoadBarPresenterTest(TestHelper):
         self.assertEqual(self.load._data._dict['raw_data']._dict['run_number'],
                          195790)
 
-    @mock.patch("MuonDataLib.GUI.load_bar.presenter.load_events")
+    @mock.patch("MNeuEventGUI.load_bar.presenter.load_events")
     def test_get_data(self, data_mock):
         data_mock.return_value = mock.Mock()
         self.load.load_nxs(FILE)

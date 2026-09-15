@@ -1,7 +1,7 @@
-from MuonDataLib.GUI.main_app.view import MainApp
-from MuonDataLib.GUI.load_bar.view import CURRENT
-from MuonDataLib.test_helpers.GUI import (check_no_alert,
-                                          wait_and_press_btn)
+from MNeuEventGUI.main_app.view import MainApp
+from MNeuEventGUI.load_bar.view import CURRENT
+from MNeuEventGUI.test_helpers.GUI import (check_no_alert,
+                                           wait_and_press_btn)
 
 import os
 import h5py

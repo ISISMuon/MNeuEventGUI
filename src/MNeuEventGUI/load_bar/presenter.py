@@ -1,5 +1,5 @@
-from MuonDataLib.GUI.presenter_template import PresenterTemplate
-from MuonDataLib.GUI.load_bar.view import LoadBarView
+from MNeuEventGUI.presenter_template import PresenterTemplate
+from MNeuEventGUI.load_bar.view import LoadBarView
 from MuonDataLib.data.loader.load_events import load_events
 
 

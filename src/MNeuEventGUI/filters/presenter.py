@@ -1,9 +1,9 @@
-from MuonDataLib.GUI.presenter_template import PresenterTemplate
-from MuonDataLib.GUI.time.presenter import TimePresenter, TIME_TABLE
-from MuonDataLib.GUI.log.presenter import LogPresenter, LOG_TABLE
-from MuonDataLib.GUI.amp.presenter import AmpPresenter
-from MuonDataLib.GUI.histogram_settings.presenter import HistSettingsPresenter
-from MuonDataLib.GUI.filters.view import FilterView
+from MNeuEventGUI.presenter_template import PresenterTemplate
+from MNeuEventGUI.time.presenter import TimePresenter, TIME_TABLE
+from MNeuEventGUI.log.presenter import LogPresenter, LOG_TABLE
+from MNeuEventGUI.amp.presenter import AmpPresenter
+from MNeuEventGUI.histogram_settings.presenter import HistSettingsPresenter
+from MNeuEventGUI.filters.view import FilterView
 from MuonDataLib.filters import Filters, HistogramSettings
 
 

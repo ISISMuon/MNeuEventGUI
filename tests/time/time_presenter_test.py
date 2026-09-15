@@ -1,7 +1,7 @@
 import unittest
 from unittest import mock
-from MuonDataLib.GUI.time.presenter import TimePresenter
-from MuonDataLib.test_helpers.unit_test import TestHelper
+from MNeuEventGUI.time.presenter import TimePresenter
+from MNeuEventGUI.test_helpers.unit_test import TestHelper
 from MuonDataLib.filters import TimeFilters, Filter
 
 
@@ -55,7 +55,7 @@ def get_validation_data_start(new_value):
 
 class TimePresenterTest(TestHelper):
 
-    @mock.patch("MuonDataLib.GUI.time.presenter.TimeView")
+    @mock.patch("MNeuEventGUI.time.presenter.TimeView")
     def setUp(self, view):
         self.view = view
         self.presenter = TimePresenter()

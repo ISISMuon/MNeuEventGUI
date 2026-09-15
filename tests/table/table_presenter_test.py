@@ -1,11 +1,11 @@
 import unittest
 from unittest import mock
-from MuonDataLib.GUI.table.column import (TableGroup,
-                                          TextColumn,
-                                          NumericColumn,
-                                          TableColumns)
-from MuonDataLib.GUI.table.presenter import TablePresenter
-from MuonDataLib.test_helpers.unit_test import TestHelper
+from MNeuEventGUI.table.column import (TableGroup,
+                                       TextColumn,
+                                       NumericColumn,
+                                       TableColumns)
+from MNeuEventGUI.table.presenter import TablePresenter
+from MNeuEventGUI.test_helpers.unit_test import TestHelper
 
 
 NAME = 'Name_table_test'
@@ -19,7 +19,7 @@ class TablePresenterMock(TablePresenter):
 
 class TablePresenterTest(TestHelper):
 
-    @mock.patch("MuonDataLib.GUI.table.presenter.TableView")
+    @mock.patch("MNeuEventGUI.table.presenter.TableView")
     def setUp(self, view):
         self.view = view
         self.view.return_value = 'widget'

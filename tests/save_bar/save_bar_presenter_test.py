@@ -1,12 +1,12 @@
 import unittest
 from unittest import mock
-from MuonDataLib.GUI.save_bar.presenter import SaveBarPresenter
-from MuonDataLib.test_helpers.unit_test import TestHelper
+from MNeuEventGUI.save_bar.presenter import SaveBarPresenter
+from MNeuEventGUI.test_helpers.unit_test import TestHelper
 
 
 class SaveBarPresenterTest(TestHelper):
 
-    @mock.patch("MuonDataLib.GUI.save_bar.presenter.SaveBarView")
+    @mock.patch("MNeuEventGUI.save_bar.presenter.SaveBarView")
     def setUp(self, view):
         self.view = view
         self.view.return_value = mock.Mock()

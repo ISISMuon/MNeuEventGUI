@@ -4,9 +4,9 @@ import os
 import numpy as np
 import h5py
 
-from MuonDataLib.GUI.main_app.presenter import MainAppPresenter
-from MuonDataLib.test_helpers.unit_test import TestHelper
-from MuonDataLib.GUI.load_bar.view import CURRENT
+from MNeuEventGUI.main_app.presenter import MainAppPresenter
+from MNeuEventGUI.test_helpers.unit_test import TestHelper
+from MNeuEventGUI.load_bar.view import CURRENT
 from MuonDataLib.filters import Filter, Filters, TimeFilters
 import sys
 
@@ -30,9 +30,9 @@ def dummy_open(N_clicks):
 
 class MainAppPresenterTest(TestHelper):
 
-    @mock.patch("MuonDataLib.GUI.main_app.presenter.LoadBarPresenter")
-    @mock.patch("MuonDataLib.GUI.main_app.presenter.ControlPanePresenter")
-    @mock.patch("MuonDataLib.GUI.main_app.presenter.SaveBarPresenter")
+    @mock.patch("MNeuEventGUI.main_app.presenter.LoadBarPresenter")
+    @mock.patch("MNeuEventGUI.main_app.presenter.ControlPanePresenter")
+    @mock.patch("MNeuEventGUI.main_app.presenter.SaveBarPresenter")
     def test_init(self, save, control, load):
 
         load.return_value = mock.Mock()

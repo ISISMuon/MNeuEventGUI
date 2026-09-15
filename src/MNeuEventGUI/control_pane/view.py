@@ -1,4 +1,4 @@
-from MuonDataLib.GUI.view_template import ViewTemplate
+from MNeuEventGUI.view_template import ViewTemplate
 
 from dash import Input, Output, State, callback, html
 import dash_bootstrap_components as dbc

@@ -1,4 +1,4 @@
-from MuonDataLib.GUI.table.view import TableView
+from MNeuEventGUI.table.view import TableView
 from dash import html, dcc
 from dash import Input, Output, callback, State
 

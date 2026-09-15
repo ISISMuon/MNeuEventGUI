@@ -1,7 +1,7 @@
-from MuonDataLib.GUI.load_bar.view import CURRENT
-from MuonDataLib.GUI.load_bar.presenter import LoadBarPresenter
-from MuonDataLib.GUI.control_pane.presenter import ControlPanePresenter
-from MuonDataLib.GUI.save_bar.presenter import SaveBarPresenter
+from MNeuEventGUI.load_bar.view import CURRENT
+from MNeuEventGUI.load_bar.presenter import LoadBarPresenter
+from MNeuEventGUI.control_pane.presenter import ControlPanePresenter
+from MNeuEventGUI.save_bar.presenter import SaveBarPresenter
 
 from MuonDataLib.data.utils import create_data_from_function
 import numpy as np

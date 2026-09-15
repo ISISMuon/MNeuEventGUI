@@ -1,7 +1,7 @@
 import unittest
 from unittest import mock
-from MuonDataLib.GUI.plot_area.presenter import PlotAreaPresenter
-from MuonDataLib.test_helpers.unit_test import TestHelper
+from MNeuEventGUI.plot_area.presenter import PlotAreaPresenter
+from MNeuEventGUI.test_helpers.unit_test import TestHelper
 from MuonDataLib.test_helpers.utils import get_sample_logs
 import numpy as np
 

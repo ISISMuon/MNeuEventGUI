@@ -1,5 +1,5 @@
-from MuonDataLib.GUI.presenter_template import PresenterTemplate
-from MuonDataLib.GUI.plot_area.view import PlotAreaView
+from MNeuEventGUI.presenter_template import PresenterTemplate
+from MNeuEventGUI.plot_area.view import PlotAreaView
 import plotly
 from plotly.subplots import make_subplots
 import numpy as np

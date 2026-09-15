@@ -1,5 +1,5 @@
-from MuonDataLib.GUI.presenter_template import PresenterTemplate
-from MuonDataLib.GUI.table.view import TableView
+from MNeuEventGUI.presenter_template import PresenterTemplate
+from MNeuEventGUI.table.view import TableView
 
 from collections import Counter
 

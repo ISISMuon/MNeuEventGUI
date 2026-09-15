@@ -1,9 +1,9 @@
-from MuonDataLib.GUI.table.presenter import TablePresenter
-from MuonDataLib.GUI.time.view import TimeView
-from MuonDataLib.GUI.table.column import (TextColumn,
-                                          NumericColumn,
-                                          TableGroup,
-                                          TableColumns)
+from MNeuEventGUI.table.presenter import TablePresenter
+from MNeuEventGUI.time.view import TimeView
+from MNeuEventGUI.table.column import (TextColumn,
+                                       NumericColumn,
+                                       TableGroup,
+                                       TableColumns)
 from MuonDataLib.filters import TimeFilters
 
 

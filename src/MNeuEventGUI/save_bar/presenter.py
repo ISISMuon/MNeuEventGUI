@@ -1,5 +1,5 @@
-from MuonDataLib.GUI.presenter_template import PresenterTemplate
-from MuonDataLib.GUI.save_bar.view import SaveBarView
+from MNeuEventGUI.presenter_template import PresenterTemplate
+from MNeuEventGUI.save_bar.view import SaveBarView
 
 
 class SaveBarPresenter(PresenterTemplate):

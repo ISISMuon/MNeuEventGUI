@@ -1,8 +1,8 @@
 import unittest
 from unittest import mock
 
-from MuonDataLib.GUI.log.presenter import LogPresenter
-from MuonDataLib.test_helpers.unit_test import TestHelper
+from MNeuEventGUI.log.presenter import LogPresenter
+from MNeuEventGUI.test_helpers.unit_test import TestHelper
 from MuonDataLib.test_helpers.utils import get_sample_logs
 
 
@@ -40,7 +40,7 @@ def make_change(row, old, new, name):
 
 class LogPresenterTest(TestHelper):
 
-    @mock.patch("MuonDataLib.GUI.log.presenter.LogView")
+    @mock.patch("MNeuEventGUI.log.presenter.LogView")
     def setUp(self, view):
         self.view = view
         self.view.return_value = mock.Mock()

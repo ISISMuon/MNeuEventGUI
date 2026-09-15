@@ -1,6 +1,6 @@
 """Tests for the histogram settings presenter."""
-from MuonDataLib.GUI.histogram_settings.presenter import HistSettingsPresenter
-from MuonDataLib.test_helpers.unit_test import TestHelper
+from MNeuEventGUI.histogram_settings.presenter import HistSettingsPresenter
+from MNeuEventGUI.test_helpers.unit_test import TestHelper
 
 class HistogramSettingsPresenterTest(TestHelper):
 

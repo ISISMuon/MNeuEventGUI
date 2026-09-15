@@ -1,5 +1,5 @@
-from MuonDataLib.GUI.utils.worker import Worker
-from MuonDataLib.GUI.load_bar.view import CURRENT
+from MNeuEventGUI.utils.worker import Worker
+from MNeuEventGUI.load_bar.view import CURRENT
 
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtCore import QUrl

@@ -1,8 +1,8 @@
-from MuonDataLib.GUI.table.column import (TableGroup,
-                                          TextColumn,
-                                          NumericColumn,
-                                          ButtonColumn,
-                                          DropDownColumn)
+from MNeuEventGUI.table.column import (TableGroup,
+                                       TextColumn,
+                                       NumericColumn,
+                                       ButtonColumn,
+                                       DropDownColumn)
 
 VALID_DTYPES = [TextColumn, NumericColumn, ButtonColumn, DropDownColumn]
 

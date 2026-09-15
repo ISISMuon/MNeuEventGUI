@@ -1,7 +1,7 @@
 import unittest
 from unittest import mock
-from MuonDataLib.GUI.filters.presenter import FilterPresenter
-from MuonDataLib.test_helpers.unit_test import TestHelper
+from MNeuEventGUI.filters.presenter import FilterPresenter
+from MNeuEventGUI.test_helpers.unit_test import TestHelper
 from MuonDataLib.data.loader.load_events import load_events
 from MuonDataLib.filters import (Filter, Filters, PeakProperty,
                                       TimeFilters, HistogramSettings)

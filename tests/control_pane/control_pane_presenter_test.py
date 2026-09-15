@@ -1,7 +1,7 @@
 import unittest
 from unittest import mock
-from MuonDataLib.GUI.control_pane.presenter import ControlPanePresenter
-from MuonDataLib.test_helpers.unit_test import TestHelper
+from MNeuEventGUI.control_pane.presenter import ControlPanePresenter
+from MNeuEventGUI.test_helpers.unit_test import TestHelper
 from MuonDataLib.data.loader.load_events import load_events
 import sys
 import os
