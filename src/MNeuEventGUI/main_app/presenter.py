@@ -1,17 +1,17 @@
-from MNeuEventGUI.load_bar.view import CURRENT
-from MNeuEventGUI.load_bar.presenter import LoadBarPresenter
-from MNeuEventGUI.control_pane.presenter import ControlPanePresenter
-from MNeuEventGUI.save_bar.presenter import SaveBarPresenter
-
-from MuonDataLib.data.utils import create_data_from_function
 import numpy as np
+from MuonDataLib.data.utils import create_data_from_function
+
+from MNeuEventGUI.control_pane.presenter import ControlPanePresenter
+from MNeuEventGUI.load_bar.presenter import LoadBarPresenter
+from MNeuEventGUI.load_bar.view import CURRENT
+from MNeuEventGUI.save_bar.presenter import SaveBarPresenter
 
 
 def osc(x, A, omega, phi):
     return A*np.sin(omega*x + phi)
 
 
-class MainAppPresenter(object):
+class MainAppPresenter:
 
     def __init__(self, open_nxs_func):
         """
@@ -108,9 +108,7 @@ class MainAppPresenter(object):
         the alert.
         :returns: if to open the alert
         """
-        if text == '':
-            return False
-        return True
+        return text == ''
 
     def save_data(self, name, time_filters, time_mode,
                   log_filters, amp_filters,

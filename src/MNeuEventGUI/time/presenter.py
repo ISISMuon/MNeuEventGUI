@@ -1,11 +1,13 @@
-from MNeuEventGUI.table.presenter import TablePresenter
-from MNeuEventGUI.time.view import TimeView
-from MNeuEventGUI.table.column import (TextColumn,
-                                       NumericColumn,
-                                       TableGroup,
-                                       TableColumns)
 from MuonDataLib.filters import TimeFilters
 
+from MNeuEventGUI.table.column import (
+    NumericColumn,
+    TableColumns,
+    TableGroup,
+    TextColumn,
+)
+from MNeuEventGUI.table.presenter import TablePresenter
+from MNeuEventGUI.time.view import TimeView
 
 TIME_TABLE = 'time-table'
 

@@ -1,5 +1,5 @@
-from dash import html, callback, Output, Input
 import dash_bootstrap_components as dbc
+from dash import Input, Output, callback, html
 
 from MNeuEventGUI.view_template import ViewTemplate
 

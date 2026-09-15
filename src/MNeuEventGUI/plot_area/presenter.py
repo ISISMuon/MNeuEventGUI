@@ -1,8 +1,9 @@
-from MNeuEventGUI.presenter_template import PresenterTemplate
-from MNeuEventGUI.plot_area.view import PlotAreaView
+import numpy as np
 import plotly
 from plotly.subplots import make_subplots
-import numpy as np
+
+from MNeuEventGUI.plot_area.view import PlotAreaView
+from MNeuEventGUI.presenter_template import PresenterTemplate
 
 
 class PlotAreaPresenter(PresenterTemplate):
@@ -174,11 +175,9 @@ class PlotAreaPresenter(PresenterTemplate):
                            name,
                            i + 1,
                            1)
-            if self._min > np.min(x):
-                self._min = np.min(x)
+            self._min = min(self._min, np.min(x))
 
-            if self._max < np.max(x):
-                self._max = np.max(x)
+            self._max = max(self._max, np.max(x))
             self.fig.update_traces(hoverinfo='none')
             self.fig.update_yaxes(title_text=name, row=i+1, col=1)
             # manually set y limits for subplots

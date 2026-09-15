@@ -1,10 +1,11 @@
-from MNeuEventGUI.presenter_template import PresenterTemplate
-from MNeuEventGUI.time.presenter import TimePresenter, TIME_TABLE
-from MNeuEventGUI.log.presenter import LogPresenter, LOG_TABLE
-from MNeuEventGUI.amp.presenter import AmpPresenter
-from MNeuEventGUI.histogram_settings.presenter import HistSettingsPresenter
-from MNeuEventGUI.filters.view import FilterView
 from MuonDataLib.filters import Filters, HistogramSettings
+
+from MNeuEventGUI.amp.presenter import AmpPresenter
+from MNeuEventGUI.filters.view import FilterView
+from MNeuEventGUI.histogram_settings.presenter import HistSettingsPresenter
+from MNeuEventGUI.log.presenter import LOG_TABLE, LogPresenter
+from MNeuEventGUI.presenter_template import PresenterTemplate
+from MNeuEventGUI.time.presenter import TIME_TABLE, TimePresenter
 
 
 class FilterPresenter(PresenterTemplate):
@@ -52,14 +53,12 @@ class FilterPresenter(PresenterTemplate):
         :param amp_data: The amplitude filter data
         :returns: if to hide the name in the GUI
         """
-        if (self._time_file_data == time_data
+        return not (self._time_file_data == time_data
             and self._log_file_data == log_data
             and self._amp_file_data == float(amp_data)
             and self._hist_data.min_time == min_time
             and self._hist_data.max_time == max_time
-            and self._hist_data.num_bins == num_bins):
-            return False
-        return True
+            and self._hist_data.num_bins == num_bins)
 
     @property
     def headers(self):
@@ -220,7 +219,7 @@ class FilterPresenter(PresenterTemplate):
         the filter
         """
         log = self._log._logs.get_sample_log(row_log['sample_log-table'])
-        x, y = log.get_original_values()
+        _, _ = log.get_original_values()
 
         f_type = row_log['magic']
         if f_type == 'between':

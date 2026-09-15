@@ -16,7 +16,6 @@ def check_no_alert(dash_duo):
     except Exception:
         return
 
-
 def wait_and_press_btn(dash_duo, name):
     """
     Method to wait for the loading to

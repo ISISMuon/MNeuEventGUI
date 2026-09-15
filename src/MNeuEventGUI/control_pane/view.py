@@ -1,7 +1,7 @@
-from MNeuEventGUI.view_template import ViewTemplate
-
-from dash import Input, Output, State, callback, html
 import dash_bootstrap_components as dbc
+from dash import Input, Output, State, callback, html
+
+from MNeuEventGUI.view_template import ViewTemplate
 
 
 class ControlPaneView(ViewTemplate):

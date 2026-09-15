@@ -1,5 +1,6 @@
+from dash import dcc, html
+
 from MNeuEventGUI.view_template import ViewTemplate
-from dash import html, dcc
 
 
 class AmplitudeView(ViewTemplate):

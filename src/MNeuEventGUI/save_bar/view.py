@@ -1,6 +1,7 @@
-from MNeuEventGUI.view_template import ViewTemplate
 import dash_bootstrap_components as dbc
 from dash import html
+
+from MNeuEventGUI.view_template import ViewTemplate
 
 
 class SaveBarView(ViewTemplate):

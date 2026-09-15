@@ -1,5 +1,6 @@
-from MNeuEventGUI.view_template import ViewTemplate
 from dash import dcc, html
+
+from MNeuEventGUI.view_template import ViewTemplate
 
 
 class PlotAreaView(ViewTemplate):

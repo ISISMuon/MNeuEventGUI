@@ -1,6 +1,6 @@
+from dash import Input, Output, State, callback, dcc, html
+
 from MNeuEventGUI.table.view import TableView
-from dash import html, dcc
-from dash import Input, Output, callback, State
 
 
 class TimeView(TableView):

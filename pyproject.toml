@@ -16,7 +16,7 @@ version = "0.1.0"
 
 requires-python = ">=3.8"
 dependencies = ['numpy', 'h5py', 'plotly', 'pyside6', 'dash[testing]', 'dash_daq', 'dash-ag-grid', 'dash_bootstrap_components', 'MuonDataLib']
-authors = [{name='Anthony Lim', email='anthony.lim@stfc.ac.uk'}]
+authors = [{name='Anthony Lim', email='anthony.lim@stfc.ac.uk'}, {name='Alex H. Room', email='alex.room@stfc.ac.uk'}]
 description = 'GUI for reading, filtering, and writing ISIS event mode data.'
 readme = 'README.md'
 
@@ -25,3 +25,4 @@ line-length = 79
 
 [tool.ruff.lint]
 extend-select = ["E", "W"]
+ignore = ["BLE001", "FA102"]

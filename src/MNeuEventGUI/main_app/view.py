@@ -1,8 +1,8 @@
-from MNeuEventGUI.main_app.presenter import MainAppPresenter
-
 import dash
-from dash import Dash, Input, Output, State, callback, dcc, html
 import dash_bootstrap_components as dbc
+from dash import Dash, Input, Output, State, callback, dcc, html
+
+from MNeuEventGUI.main_app.presenter import MainAppPresenter
 
 
 class MainApp(Dash):

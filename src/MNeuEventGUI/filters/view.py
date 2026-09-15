@@ -1,8 +1,7 @@
-from MNeuEventGUI.view_template import ViewTemplate
-from dash import html
 import dash_bootstrap_components as dbc
-from dash import Input, Output, callback, State
+from dash import Input, Output, State, callback, html
 
+from MNeuEventGUI.view_template import ViewTemplate
 
 NUM = 'Number of events: '
 NC = 'Not Calculated'

@@ -1,16 +1,18 @@
-from MuonDataLib.data.utils import NONE
-from MNeuEventGUI.table.presenter import TablePresenter
-from MNeuEventGUI.log.view import LogView
-from MNeuEventGUI.table.column import (DropDownColumn,
-                                       TextColumn,
-                                       ButtonColumn,
-                                       NumericColumn,
-                                       TableGroup,
-                                       TableColumns)
-from MNeuEventGUI.plot_area.presenter import PlotAreaPresenter
-from MuonDataLib.filters import Filter
 import numpy as np
+from MuonDataLib.data.utils import NONE
+from MuonDataLib.filters import Filter
 
+from MNeuEventGUI.log.view import LogView
+from MNeuEventGUI.plot_area.presenter import PlotAreaPresenter
+from MNeuEventGUI.table.column import (
+    ButtonColumn,
+    DropDownColumn,
+    NumericColumn,
+    TableColumns,
+    TableGroup,
+    TextColumn,
+)
+from MNeuEventGUI.table.presenter import TablePresenter
 
 LOG_TABLE = 'log-table'
 

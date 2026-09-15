@@ -1,6 +1,6 @@
 
 
-class ViewTemplate(object):
+class ViewTemplate:
     """
     A template for creating a view.
     This code uses the MVP pattern.

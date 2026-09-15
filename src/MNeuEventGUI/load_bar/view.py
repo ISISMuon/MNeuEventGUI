@@ -1,10 +1,8 @@
-from MNeuEventGUI.view_template import ViewTemplate
-
-from dash import Input, Output, callback
-from dash import html, dcc
 import dash_bootstrap_components as dbc
 import dash_daq as daq
+from dash import Input, Output, callback, dcc, html
 
+from MNeuEventGUI.view_template import ViewTemplate
 
 CURRENT = "Current File: "
 
@@ -69,7 +67,6 @@ class LoadBarView(ViewTemplate):
              Input('settings', 'n_clicks'),
              prevent_initial_call=True)(self.open_settings)
 
-        return
 
     def open_settings(self, state):
         """

@@ -1,9 +1,8 @@
-from MNeuEventGUI.view_template import ViewTemplate
-from dash import html
-import dash_bootstrap_components as dbc
-from dash import dcc
 import dash_ag_grid as dag
-from dash import Input, Output, callback, State
+import dash_bootstrap_components as dbc
+from dash import Input, Output, State, callback, dcc, html
+
+from MNeuEventGUI.view_template import ViewTemplate
 
 
 class TableView(ViewTemplate):

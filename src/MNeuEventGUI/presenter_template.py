@@ -1,7 +1,7 @@
 from MNeuEventGUI.view_template import ViewTemplate
 
 
-class PresenterTemplate(object):
+class PresenterTemplate:
     """
     This is a template class for a
     presenter. This code uses the

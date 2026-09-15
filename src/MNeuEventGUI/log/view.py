@@ -1,7 +1,7 @@
-from MNeuEventGUI.table.view import TableView
-from dash import html, dcc
-from dash import Input, Output, State, callback
 import dash_bootstrap_components as dbc
+from dash import Input, Output, State, callback, dcc, html
+
+from MNeuEventGUI.table.view import TableView
 
 
 class LogView(TableView):

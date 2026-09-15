@@ -1,7 +1,7 @@
-from PySide6.QtCore import QRunnable
-from PySide6.QtCore import Slot
-import signal
 import os
+import signal
+
+from PySide6.QtCore import QRunnable, Slot
 
 
 class Worker(QRunnable):
@@ -21,7 +21,7 @@ class Worker(QRunnable):
         :param host: the host to run the
         dash app on (no need to change)
         """
-        super(Worker, self).__init__()
+        super().__init__()
         self.app = dash_app
         self.port = port
         self.host = host

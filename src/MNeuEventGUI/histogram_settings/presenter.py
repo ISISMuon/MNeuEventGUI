@@ -1,5 +1,5 @@
-from MNeuEventGUI.presenter_template import PresenterTemplate
 from MNeuEventGUI.histogram_settings.view import HistSettingsView
+from MNeuEventGUI.presenter_template import PresenterTemplate
 
 
 class HistSettingsPresenter(PresenterTemplate):
@@ -55,7 +55,6 @@ class HistSettingsPresenter(PresenterTemplate):
                   the second is True if max_time is invalid.
         """
         invalid = (min_time is None, max_time is None)
-        if not any(invalid):
-            if min_time > max_time:
-                return (True, True)
+        if not any(invalid) and min_time > max_time:
+            return (True, True)
         return invalid

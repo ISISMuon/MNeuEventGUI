@@ -1,6 +1,7 @@
+from MuonDataLib.help.help import help_app
+
 from MNeuEventGUI.launch import launch_dash
 from MNeuEventGUI.utils.main_window import BasicMainDashWindow
-from MuonDataLib.help.help import help_app
 
 
 def launch_help():

@@ -165,7 +165,7 @@ class DropDownColumn(Column):
             }
 
 
-class TableGroup(object):
+class TableGroup:
     def __init__(self, cols, name=None):
         """
         A class to store multiple related table
@@ -191,9 +191,9 @@ class TableGroup(object):
                 if isinstance(c, Column):
                     self.cols.append(c)
                 else:
-                    raise ValueError("Must use Columns")
+                    raise TypeError("Must use Columns")
         else:
-            raise ValueError("Must use Columns")
+            raise TypeError("Must use Columns")
 
     def set_range(self, min_value, max_value):
         """
@@ -228,7 +228,7 @@ class TableGroup(object):
         self.name = title
 
 
-class TableColumns(object):
+class TableColumns:
     def __init__(self, col_groups, inc_delete_row, btn_ID=''):
         """
         A class for holding column groups (above).
@@ -252,7 +252,7 @@ class TableColumns(object):
                 if isinstance(tmp, TableGroup):
                     self.cols.append(tmp)
                 else:
-                    raise ValueError("Must use TableGroup's as input")
+                    raise TypeError("Must use TableGroup's as input")
 
     def set_title(self, index, title):
         """

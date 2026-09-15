@@ -1,17 +1,13 @@
-from MNeuEventGUI.utils.worker import Worker
-from MNeuEventGUI.load_bar.view import CURRENT
-
-from PySide6.QtWebEngineWidgets import QWebEngineView
-from PySide6.QtCore import QUrl
-from PySide6.QtWidgets import QWidget
-from PySide6.QtCore import QThreadPool
-import PySide6.QtCore as QtCore
-from PySide6.QtWidgets import QVBoxLayout
 from time import sleep
 
-from PySide6.QtWidgets import QMainWindow, QFileDialog
-
 from dash import ctx
+from PySide6 import QtCore
+from PySide6.QtCore import QThreadPool, QUrl
+from PySide6.QtWebEngineWidgets import QWebEngineView
+from PySide6.QtWidgets import QFileDialog, QMainWindow, QVBoxLayout, QWidget
+
+from MNeuEventGUI.load_bar.view import CURRENT
+from MNeuEventGUI.utils.worker import Worker
 
 
 class BasicMainDashWindow(QMainWindow):
@@ -47,7 +43,7 @@ class BasicMainDashWindow(QMainWindow):
         sure that the Dash app and thread
         is terminated gracefully
         """
-        super(BasicMainDashWindow, self).closeEvent(event)
+        super().closeEvent(event)
         self.mainWidget.worker.terminate()
 
 

@@ -1,11 +1,11 @@
-from MNeuEventGUI.presenter_template import PresenterTemplate
-from MNeuEventGUI.filters.presenter import FilterPresenter
-from MNeuEventGUI.plot_area.presenter import PlotAreaPresenter
-from MNeuEventGUI.control_pane.view import ControlPaneView
+import numpy as np
+from dash import no_update
 from MuonDataLib.filters import Filters
 
-from dash import no_update
-import numpy as np
+from MNeuEventGUI.control_pane.view import ControlPaneView
+from MNeuEventGUI.filters.presenter import FilterPresenter
+from MNeuEventGUI.plot_area.presenter import PlotAreaPresenter
+from MNeuEventGUI.presenter_template import PresenterTemplate
 
 
 class ControlPanePresenter(PresenterTemplate):
@@ -74,7 +74,7 @@ class ControlPanePresenter(PresenterTemplate):
         if len(names) == 0:
             names = [self._filter._log.get_new_log_name([])]
         self._plot.new_plot(names, self._filter._log._logs)
-        start, stop, msg = self._filter.update_filters(time_data,
+        start, stop, _ = self._filter.update_filters(time_data,
                                                        state,
                                                        log_data,
                                                        amp_data)

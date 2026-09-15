@@ -1,7 +1,7 @@
+from collections import Counter
+
 from MNeuEventGUI.presenter_template import PresenterTemplate
 from MNeuEventGUI.table.view import TableView
-
-from collections import Counter
 
 
 class TablePresenter(PresenterTemplate):
