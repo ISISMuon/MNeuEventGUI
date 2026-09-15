@@ -5,7 +5,7 @@ current = os.path.dirname(os.path.realpath(__file__))
 
 
 shared = os.path.join(os.path.dirname(current),
-                      'data_files')
+                      'tests', 'data_files')
 
 
 FILE = os.path.join(shared,

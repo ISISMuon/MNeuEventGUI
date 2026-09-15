@@ -28,7 +28,6 @@ class ControlPanePresenterTest(TestHelper):
     def setUp(self):
         file = os.path.join(os.path.dirname(__file__),
                             '..',
-                            '..',
                             'data_files',
                             'HIFI00195790.nxs')
         self.data = load_events(file, 64)
