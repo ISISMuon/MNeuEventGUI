@@ -1,4 +1,5 @@
 from MuonDataLib.filters import Filters, HistogramSettings
+from MNeuEventLib import _get_filter_times
 
 from MNeuEventGUI.amp.presenter import AmpPresenter
 from MNeuEventGUI.filters.view import FilterView
@@ -75,7 +76,7 @@ class FilterPresenter(PresenterTemplate):
         """
         self._data = data
         self._log.set_data(data)
-        times = self._data.dataset.get_frame_times()
+        times = self._data.dataset.get_frame_times() * 1e-9
 
         self._time.set_time_range(times[0], times[-1] + 32e-6)
 
@@ -107,11 +108,12 @@ class FilterPresenter(PresenterTemplate):
             # if no filters, do nothing
             return
 
-        self._data.set_time_type(state)
+        self._data.clear_filters(0)
+        self._data.set_time_type(0, state)
 
         # include time filters
         for filter_details in time_filters:
-            self._data.add_time_filter(
+            self._data.add_time_filter(0,
                     filter_details['Name_time-table'],
                     filter_details['Start_time-table'],
                     filter_details['End_time-table'])
@@ -124,24 +126,24 @@ class FilterPresenter(PresenterTemplate):
             stop = filter_details['yN_log-table']
 
             if filter_type == 'between':
-                self._data.add_log_filter("NAME_{i}",
+                self._data.add_log_filter(0, "NAME_{i}",
                                           sample_log,
                                           start,
                                           stop)
             elif filter_type == 'above':
-                self._data.add_log_filter_above("NAME_{i}",
+                self._data.add_log_filter_above(0, "NAME_{i}",
                                                 sample_log,
                                                 start)
             elif filter_type == 'below':
-                self.add_log_filter_below("NAME_{i}",
+                self.add_log_filter_below(0, "NAME_{i}",
                                           sample_log,
                                           stop)
 
-        self._data.set_amps_baseline(float(amp_filters))
+        self._data.set_amps_baseline(0, float(amp_filters))
         if hist_settings is not None:
             if any(value is None for value in hist_settings):
                 raise RuntimeError("Cannot leave histogram settings blank.")
-            self._data.set_histogram_settings(*hist_settings)
+            self._data.set_histogram_settings(0, *hist_settings)
 
     def update_filters(self,
                        time_filters,
@@ -166,7 +168,6 @@ class FilterPresenter(PresenterTemplate):
         a list of the exclude filter end times,
         an error message.
         """
-        self._data.clear_filters()
         if len(time_filters) == 0 and len(log_filters) == 0:
             return [], [], ''
         try:
@@ -176,29 +177,8 @@ class FilterPresenter(PresenterTemplate):
                                amp_filters)
         except RuntimeError as msg:
             return [], [], str(msg)
-        start, stop = self._data.get_filters_as_times()
+        start, stop = _get_filter_times(0, self._data)
         return start, stop, ''
-
-    def filters_rm_overlaps(self, ex_start, ex_end):
-        """"
-        This converts the exclude filter times
-        into times for an inclusive filter. i.e.
-        these are the inverse of each other.
-        :param ex_start: the exclude start times
-        :param ex_end: the exclude end times
-        :returns: the start and end values
-        to keep data between (include filter).
-        """
-        f_start = [ex_start[0]]
-        f_end = []
-
-        for j in range(len(ex_start)-1):
-            if ex_start[j+1] > ex_end[j]:
-                f_end.append(ex_end[j])
-                f_start.append(ex_start[j+1])
-        f_end.append(ex_end[-1])
-
-        return f_start, f_end
 
     def get_log_y_range(self, row_log):
         """
@@ -248,7 +228,7 @@ class FilterPresenter(PresenterTemplate):
         :param max_time: the maximum time for the histogram
         :param num_bins: the number of bins for the histogram
         """
-        #self._data.clear_filters()
+        self._data.clear_filters(0)
         hist_settings = (min_time, max_time, num_bins)
         try:
             self.apply_filters(time_filters,
@@ -259,7 +239,7 @@ class FilterPresenter(PresenterTemplate):
         except RuntimeError as msg:
             return self._view.get_N(0), str(msg)
         _ = self._data.calculate()
-        N = f"{self._data.get_n_events():,}"
+        N = f"{self._data.get_n_events(0)[0]:,}"
         return self._view.get_N(N), ''
 
     def load(self, filters: Filters):

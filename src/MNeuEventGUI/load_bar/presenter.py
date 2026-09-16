@@ -1,4 +1,4 @@
-from MNeuEventLib import Data
+from MNeuEventLib import BatchData
 
 from MNeuEventGUI.load_bar.view import LoadBarView
 from MNeuEventGUI.presenter_template import PresenterTemplate
@@ -40,7 +40,7 @@ class LoadBarPresenter(PresenterTemplate):
         Reads a muon event nexus file
         and creates a MuonDataLib object
         """
-        self._data = Data(name, 64)
+        self._data = BatchData(name, 64, 1)
 
     @property
     def get_data(self):

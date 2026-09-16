@@ -230,7 +230,7 @@ class LogPresenter(TablePresenter):
         """
         if self._data is None:
             return ''
-        names = self._data.dataset.get_log_names()
+        names = self._data.dataset.sample_log_names
         for default in self._defaults:
             if default in names:
                 return default
@@ -251,7 +251,7 @@ class LogPresenter(TablePresenter):
         log = self._data.dataset.get_sample_log(name)
         value = log['value']
 
-        return (self._plot.new_plot([name], log),
+        return (self._plot.new_plot([name], [log]),
                 f'Max: {np.max(value):.3f}',
                 f'Mean: {np.mean(value):.3f}',
                 f'Min: {np.min(value):.3f}',
@@ -266,7 +266,7 @@ class LogPresenter(TablePresenter):
         :returns: a list of names for the combo box and the
         selected value
         """
-        options = self._data.dataset.get_log_names()
+        options = self._data.dataset.sample_log_names
         # if replacing/updating a row want to keep the name
         if self._replace is not None:
             return options, self._selected_name
@@ -305,7 +305,7 @@ class LogPresenter(TablePresenter):
                                                   name))
                 row = len(data) - 1
             self._ok_clicks += 1
-            log = self._data.get_sample_log(name)
+            log = self._data.dataset.get_sample_log(name)
 
             min_value = np.min(log['value'])
             data[row]['y_min_' + LOG_TABLE] = min_value
@@ -360,7 +360,7 @@ class LogPresenter(TablePresenter):
             start = f.start
             end = f.end
 
-            log = self._data.get_sample_log(key)
+            log = self._data.dataset.get_sample_log(key)
             y = log['value']
 
             y_min = np.min(y)

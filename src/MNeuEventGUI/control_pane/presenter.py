@@ -1,6 +1,7 @@
 import numpy as np
 from dash import no_update
 from MuonDataLib.filters import Filters
+from MNeuEventLib import _get_filter_times
 
 from MNeuEventGUI.control_pane.view import ControlPaneView
 from MNeuEventGUI.filters.presenter import FilterPresenter
@@ -77,7 +78,7 @@ class ControlPanePresenter(PresenterTemplate):
         names = [row['sample_log-table'] for row in log_data]
         if len(names) == 0:
             names = [self._filter._log.get_new_log_name([])]
-            logs = [self._data.dataset.get_sample_log(n) for n in names]
+        logs = [self._data.dataset.get_sample_log(n) for n in names]
         self._plot.new_plot(names, logs)
         start, stop, _ = self._filter.update_filters(time_data,
                                                        state,
@@ -156,7 +157,9 @@ class ControlPanePresenter(PresenterTemplate):
             new_start = [self._plot._min]
             new_stop = [self._plot._max]
         else:
-            new_start, new_stop = self._filter.filters_rm_overlaps(start, stop)
+            new_start, new_stop = _get_filter_times(0, self._data)
+            new_start = [x * 1e-9 for x in new_start]
+            new_stop = [x * 1e-9 for x in new_stop]
         if len(log_data) == 0:
             # If only have time filters
             self._loop_over_filters(self.wrap_add_shaded_region,
