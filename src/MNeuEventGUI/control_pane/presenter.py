@@ -99,11 +99,8 @@ class ControlPanePresenter(PresenterTemplate):
         :param f_end: the end times for the exclude filter
         :param kwargs: additional arguments for func
         """
-        func(self._plot._min, f_start[0], *kwargs)
-        for k in range(1, len(f_start)):
-            func(f_stop[k-1], f_start[k], *kwargs)
-
-        func(f_stop[-1], self._plot._max, *kwargs)
+        for k in range(len(f_start)):
+            func(f_start[k], f_stop[k], *kwargs)
 
     def wrap_add_shaded_region(self, x0, xN, *kargs):
         """
@@ -179,45 +176,11 @@ class ControlPanePresenter(PresenterTemplate):
                                     y_max,
                                     ax)
 
-    def add_time_filters(self, time_data, state):
+    def apply_data(self, start, end):
         """
-        This methods adds filters to the plot.
-        A filter is represented by removing the shaded
-        region from the plot. i.e. only the shaded
-        data is used in calculations.
-        :param data: the data from the filter table
-        :param state: if the filter is an exclude or include
-        :returns: an updated figure
-        """
-        self._plot.fig.layout.shapes = []
-        if len(time_data) == 0 and state == 'Exclude':
-            self._plot.add_shaded_region(self._plot._min, self._plot._max)
-            return self._plot.fig
-
-        start = []
-        end = []
-        # add the filters back
-        if state == 'Include':
-            for filter_details in time_data:
-                span = self._filter._time.get_range(filter_details)
-                self._plot.add_shaded_region(*span)
-        else:
-            for filter_details in time_data:
-                tmp = self._filter._time.get_range(filter_details)
-                start.append(tmp[0])
-                end.append(tmp[1])
-            self.apply_exc_data(start, end)
-        return self._plot.fig
-
-    def apply_exc_data(self, start, end):
-        """
-        Applys the exclusion of data from
-        the analysis. i.e. the area is not
-        shaded.
-        :param start: A list of start values
-        for the exluded regions
-        :param end: A list of end values
-        for the excluded regions
+        Applies shading to the plot for included regions.
+        :param start: A list of start values.
+        :param end: A list of end values.
         """
         if len(start) == 0:
             return
@@ -236,9 +199,7 @@ class ControlPanePresenter(PresenterTemplate):
 
         self._plot.add_shaded_region(self._plot._min, f_start[0])
         for j in range(1, len(f_start)):
-            self._plot.add_shaded_region(f_end[j-1], f_start[j])
-
-        self._plot.add_shaded_region(f_end[-1], self._plot._max)
+            self._plot.add_shaded_region(f_start[j], f_end[j])
 
     def set_data(self, data):
         """
