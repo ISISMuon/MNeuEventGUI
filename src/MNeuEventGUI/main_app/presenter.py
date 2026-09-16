@@ -108,7 +108,7 @@ class MainAppPresenter:
         the alert.
         :returns: if to open the alert
         """
-        return text == ''
+        return text != ''
 
     def save_data(self, name, time_filters, time_mode,
                   log_filters, amp_filters,

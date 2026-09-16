@@ -25,8 +25,7 @@ class TableGroupTest(TestHelper):
             with self.subTest(bad_input=bad_input):
                 try:
                     _ = TableGroup(bad_input, 'group')
-                except ValueError:
-                    pass
+                except TypeError:
                     return
                 self.fail(f'should not accept bad input {bad_input}')
 
@@ -37,7 +36,6 @@ class TableGroupTest(TestHelper):
                     _ = TableGroup(col_list)
                 except ValueError:
                     if len(col_list) > 1:
-                        pass
                         return
                 if len(col_list) > 1:
 
