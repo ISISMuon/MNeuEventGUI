@@ -104,23 +104,21 @@ class PlotAreaPresenter(PresenterTemplate):
         """
         self.add_shaded_region(self._min, self._max)
 
-    def new_plot(self, names, logs):
+    def new_plot(self, names: list[str], logs: list[dict]):
         """
         A method to create a plot from the
         sample logs. This will always create a
         fresh plot.
         :param names: a list of sample log names
         to plot
-        :param logs: the sample logs object
-        :returns the figure object
+        :param logs: the sample log objects
+        :returns: the figure object
         """
         x_list = []
         y_list = []
-        for name in names:
-            log_data = logs.get_sample_log(name)
-            x, y = log_data.get_original_values()
-            x_list.append(x)
-            y_list.append(y)
+        for log in logs:
+            x_list.append(log['time'])
+            y_list.append(log['value'])
         return self.plot(names, x_list, y_list)
 
     def add_trace(self, x, y, name, row, col):

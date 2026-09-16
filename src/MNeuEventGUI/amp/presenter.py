@@ -1,3 +1,4 @@
+import numpy as np
 from MuonDataLib.filters import PeakProperty
 
 from MNeuEventGUI.amp.view import AmplitudeView
@@ -33,10 +34,11 @@ class AmpPresenter(PresenterTemplate):
     def plot(self, data):
         """
         Creates a plot of the amplitude height and counts.
-        :param data: the MuonData object, with an amlitude filter
+        :param data: the Data object, with an amlitude filter
         :returns: the graph object for histogram
         """
-        hist, bins = data.get_peak_property_histogram('Amplitudes')
+        hist, max_h = data.dataset.get_amp_histogram()
+        bins = np.linspace(0, max_h, len(hist)+1)
         return self._plot.plot(['Counts'],
                                [(bins[:-1] + bins[1:])/2.],
                                [hist],

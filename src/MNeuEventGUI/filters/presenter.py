@@ -74,8 +74,8 @@ class FilterPresenter(PresenterTemplate):
         :param data: MuonEventData
         """
         self._data = data
-        self._log.set_logs(data._dict['logs'])
-        times = self._data.get_frame_start_times()
+        self._log.set_data(data)
+        times = self._data.dataset.get_frame_times()
 
         self._time.set_time_range(times[0], times[-1] + 32e-6)
 
@@ -100,33 +100,23 @@ class FilterPresenter(PresenterTemplate):
         if self._data is None:
             raise RuntimeError("Cannot save filters when no data is loaded")
 
-        hist_changed = (hist_settings is not None
-                        and self._data.hist_settings_changed(hist_settings)
-                        )
+        # todo: use the data cache properly
         if (len(time_filters) == 0
             and len(log_filters) == 0
-            and amp_filters == 0
-            and not hist_changed):
+            and amp_filters == 0):
             # if no filters, do nothing
             return
 
+        self._data.set_time_type(state)
 
-        elif state == 'Exclude':
-            # exclude time filters
-            for filter_details in time_filters:
-                self._data.remove_data_time_between(
-                        filter_details['Name_time-table'],
-                        filter_details['Start_time-table'],
-                        filter_details['End_time-table'])
-        else:
-            # include time filters
-            for filter_details in time_filters:
-                self._data.only_keep_data_time_between(
-                        filter_details['Name_time-table'],
-                        filter_details['Start_time-table'],
-                        filter_details['End_time-table'])
+        # include time filters
+        for filter_details in time_filters:
+            self._data.add_time_filter(
+                    filter_details['Name_time-table'],
+                    filter_details['Start_time-table'],
+                    filter_details['End_time-table'])
 
-        for filter_details in log_filters:
+        for i, filter_details in enumerate(log_filters):
             # loop over log filters
             filter_type = filter_details['filter_log-table']
             sample_log = filter_details['sample_log-table']
@@ -134,17 +124,20 @@ class FilterPresenter(PresenterTemplate):
             stop = filter_details['yN_log-table']
 
             if filter_type == 'between':
-                self._data.keep_data_sample_log_between(sample_log,
-                                                        start,
-                                                        stop)
+                self._data.add_log_filter("NAME_{i}",
+                                          sample_log,
+                                          start,
+                                          stop)
             elif filter_type == 'above':
-                self._data.keep_data_sample_log_above(sample_log,
-                                                      start)
+                self._data.add_log_filter_above("NAME_{i}",
+                                                sample_log,
+                                                start)
             elif filter_type == 'below':
-                self._data.keep_data_sample_log_below(sample_log,
-                                                      stop)
-        self._data.keep_data_peak_property_above("Amplitudes",
-                                                 float(amp_filters))
+                self.add_log_filter_below("NAME_{i}",
+                                          sample_log,
+                                          stop)
+
+        self._data.set_amps_baseline(float(amp_filters))
         if hist_settings is not None:
             if any(value is None for value in hist_settings):
                 raise RuntimeError("Cannot leave histogram settings blank.")
@@ -218,8 +211,8 @@ class FilterPresenter(PresenterTemplate):
         :returns: the smallest and largest y values for
         the filter
         """
-        log = self._log._logs.get_sample_log(row_log['sample_log-table'])
-        _, _ = log.get_original_values()
+        # not quite sure why we're getting the log. but this was there before
+        _ = self._data.dataset.get_sample_log(row_log['sample_log-table'])
 
         f_type = row_log['magic']
         if f_type == 'between':
@@ -255,7 +248,7 @@ class FilterPresenter(PresenterTemplate):
         :param max_time: the maximum time for the histogram
         :param num_bins: the number of bins for the histogram
         """
-        self._data.clear_filters()
+        #self._data.clear_filters()
         hist_settings = (min_time, max_time, num_bins)
         try:
             self.apply_filters(time_filters,
@@ -265,8 +258,8 @@ class FilterPresenter(PresenterTemplate):
                                hist_settings)
         except RuntimeError as msg:
             return self._view.get_N(0), str(msg)
-        _ = self._data.histogram()
-        N = f"{self._data._cache.get_N_events:,}"
+        _ = self._data.calculate()
+        N = f"{self._data.get_n_events():,}"
         return self._view.get_N(N), ''
 
     def load(self, filters: Filters):

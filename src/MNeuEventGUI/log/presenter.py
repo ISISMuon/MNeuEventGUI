@@ -29,8 +29,8 @@ class LogPresenter(TablePresenter):
         widget.
         """
 
-        # a copy of sample logs object
-        self._logs = None
+        # a handle to the data object
+        self._data = None
         # a list of default sample logs
         self._defaults = ['Temp_Sample']
         # number of time ok has been clicked in pop-up
@@ -104,12 +104,12 @@ class LogPresenter(TablePresenter):
         """
         return LogView(self)
 
-    def set_logs(self, logs):
+    def set_data(self, data):
         """
-        Sets the sample logs object
-        :param logs: the sample logs object
+        Set the data object.
+        :param logs: the data object
         """
-        self._logs = logs
+        self._data = data
 
     def validate_row(self, change, data):
         """
@@ -220,31 +220,6 @@ class LogPresenter(TablePresenter):
         else:
             return self.delete_row(info, data), False
 
-    def get_available_logs(self, data):
-        """
-        We want to prevent the same sample log being selected
-        multiple times. This method gets a list of unused sample
-        logs. This also includes logic to keep a sample log
-        if its being replaced by the user pressing the graph
-        button in the table.
-        :param data: the sample log table data (so we
-        know which are in use)
-        :returns: a list of the unused sample logs
-        """
-        # need to make a copy of the list so not to delete sample logs
-        names = self._logs.get_names().copy()
-        in_use = [row['sample_' + LOG_TABLE] for row in data]
-        for taken in in_use:
-            """
-            If the user has pressed the graph button, the sample log
-            is being replaced (not None value). Otherwise its a new row.
-            If the sample log is being replaced/updated then we only want
-            to keep the name of the one being replaced.
-            """
-            if self._replace is None or self._selected_name != taken:
-                names.remove(taken)
-        return names
-
     def get_new_log_name(self, data):
         """
         This gets the name of the next sample log,
@@ -253,9 +228,9 @@ class LogPresenter(TablePresenter):
         :param data: the sample log table data
         :returns: the next name to be used
         """
-        if self._logs is None:
+        if self._data is None:
             return ''
-        names = self.get_available_logs(data)
+        names = self._data.dataset.get_log_names()
         for default in self._defaults:
             if default in names:
                 return default
@@ -273,13 +248,14 @@ class LogPresenter(TablePresenter):
         - the min y value
         - the sigma (std)
         """
-        _, y = self._logs.get_sample_log(name).get_original_values()
+        log = self._data.dataset.get_sample_log(name)
+        value = log['value']
 
-        return (self._plot.new_plot([name], self._logs),
-                f'Max: {np.max(y):.3f}',
-                f'Mean: {np.mean(y):.3f}',
-                f'Min: {np.min(y):.3f}',
-                f'Sigma (std): {np.std(y):.3f}')
+        return (self._plot.new_plot([name], log),
+                f'Max: {np.max(value):.3f}',
+                f'Mean: {np.mean(value):.3f}',
+                f'Min: {np.min(value):.3f}',
+                f'Sigma (std): {np.std(value):.3f}')
 
     def select_log(self, is_open, data):
         """
@@ -290,7 +266,7 @@ class LogPresenter(TablePresenter):
         :returns: a list of names for the combo box and the
         selected value
         """
-        options = self.get_available_logs(data)
+        options = self._data.dataset.get_log_names()
         # if replacing/updating a row want to keep the name
         if self._replace is not None:
             return options, self._selected_name
@@ -329,15 +305,15 @@ class LogPresenter(TablePresenter):
                                                   name))
                 row = len(data) - 1
             self._ok_clicks += 1
-            _, y = self._logs.get_sample_log(name).get_original_values()
+            log = self._data.get_sample_log(name)
 
-            value = np.min(y)
-            data[row]['y_min_' + LOG_TABLE] = value
-            data[row]['y0_' + LOG_TABLE] = value
+            min_value = np.min(log['value'])
+            data[row]['y_min_' + LOG_TABLE] = min_value
+            data[row]['y0_' + LOG_TABLE] = min_value
 
-            value = np.max(y)
-            data[row]['y_max_' + LOG_TABLE] = np.max(y)
-            data[row]['yN_' + LOG_TABLE] = np.max(y)
+            max_value = np.max(log['value'])
+            data[row]['y_max_' + LOG_TABLE] = max_value
+            data[row]['yN_' + LOG_TABLE] = max_value
         return False, data
 
     def add(self, n, data):
@@ -384,7 +360,8 @@ class LogPresenter(TablePresenter):
             start = f.start
             end = f.end
 
-            _, y = self._logs.get_sample_log(key).get_original_values()
+            log = self._data.get_sample_log(key)
+            y = log['value']
 
             y_min = np.min(y)
             y_max = np.max(y)

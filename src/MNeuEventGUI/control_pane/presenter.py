@@ -21,8 +21,10 @@ class ControlPanePresenter(PresenterTemplate):
         This creates the presenter object for the
         widget.
         """
-        self._plot = PlotAreaPresenter('main')
+        self._data = None
+
         self._filter = FilterPresenter()
+        self._plot = PlotAreaPresenter('main')
         self._view = ControlPaneView(self)
 
     def clear(self):
@@ -30,8 +32,9 @@ class ControlPanePresenter(PresenterTemplate):
         Clears the stored data when a bad file is
         loaded.
         """
+        self._data = None
         self._filter._data = None
-        self._filter._log._logs = None
+        self._filter._log._data = None
 
     def empty(self):
         """
@@ -52,7 +55,8 @@ class ControlPanePresenter(PresenterTemplate):
             return self.empty()
 
         name = self._filter._log.get_new_log_name([])
-        return self._plot.new_plot([name], self._filter._log._logs)
+        log = self._data.dataset.get_sample_log(name)
+        return self._plot.new_plot([name], [log])
 
     def make_plot(self, time_data, log_data, amp_data, state):
         """
@@ -73,7 +77,8 @@ class ControlPanePresenter(PresenterTemplate):
         names = [row['sample_log-table'] for row in log_data]
         if len(names) == 0:
             names = [self._filter._log.get_new_log_name([])]
-        self._plot.new_plot(names, self._filter._log._logs)
+            logs = [self._data.dataset.get_sample_log(n) for n in names]
+        self._plot.new_plot(names, logs)
         start, stop, _ = self._filter.update_filters(time_data,
                                                        state,
                                                        log_data,
@@ -234,11 +239,12 @@ class ControlPanePresenter(PresenterTemplate):
 
     def set_data(self, data):
         """
-        A simple setter for the MuonEventData
+        A simple setter for the Data
         Will also reset the range for the plot
         :param data: MuonEventData
         """
         self._plot.reset_plot_range()
+        self._data = data
         self._filter.set_data(data)
 
     @property

@@ -150,7 +150,7 @@ class MainAppPresenter:
                                                amp_filters,
                                                hist_settings)
             if dtype == "n":
-                data.save_histograms(file)
+                data.save(file)
             elif dtype == 'j':
                 data.save_filters(file)
             return file, ''
