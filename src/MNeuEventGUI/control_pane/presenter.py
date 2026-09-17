@@ -59,7 +59,7 @@ class ControlPanePresenter(PresenterTemplate):
         log = self._data.dataset.get_sample_log(name)
         return self._plot.new_plot([name], [log])
 
-    def make_plot(self, time_data, log_data, amp_data, state):
+    def make_plot(self, time_data, log_data, state, amp_data):
         """
         This method creates a plot.
         If no sample logs are selected, it will just plot a
@@ -67,9 +67,9 @@ class ControlPanePresenter(PresenterTemplate):
         for the data that is kept.
         :param time_data: the data from the time filter table
         :param log_data: the data from the sample log filter table.
+        :param state: the state of the time filters (inc/exc)
         :param amp_data: the amplitudes from the sample log filter table.
         Its also used to get which plots to make.
-        :param state: the state of the time filters (inc/exc)
         :returns: an updated figure
         """
         if self._filter._data is None:

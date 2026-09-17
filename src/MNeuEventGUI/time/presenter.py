@@ -125,42 +125,6 @@ class TimePresenter(TablePresenter):
         """
         self.cols.set_title(2, f'{value} Filter details')
 
-    def display_confirm(self, value, data):
-        """
-        Check if to display a confirmation dialog
-        :param value: the new mode (Exclude/Include)
-        :param data: the table data (list of rows)
-        :returns: if to show the display and the
-        coloumn headers as a dict
-        """
-        state = False
-        if len(data) == 0:
-            self._previous = value
-            self.cols.set_title(2, f'{value} Filter details')
-
-        elif self._previous != value:
-            state = True
-        return state, self.cols.get_column_dict
-
-    def confirm(self, submit, cancel, value, data):
-        """
-        Takes the user selection for the confirm dialog
-        and does the appropriate response
-        :param submit: the timestamp for the last time submit was pressed
-        :param cancel: the timestamp for the last time cancel was pressed
-        :param value: if to include or exclude the time table data
-        :param data: the data in the time table
-        :returns: the state for the time table (include/exclude),
-        the data for the table, the list of column names and
-        if the data has been changed
-        """
-        if submit > cancel:
-            self._previous = value
-            self.cols.set_title(2, f'{value} Filter details')
-            return value, [], self.cols.get_column_dict, True
-        else:
-            return self._previous, data, self.cols.get_column_dict, False
-
     def load(self, filters: TimeFilters):
         """
         A method to load filters from a TimeFilters object.
