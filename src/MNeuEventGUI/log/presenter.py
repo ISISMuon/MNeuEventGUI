@@ -1,6 +1,4 @@
 import numpy as np
-from MuonDataLib.data.utils import NONE
-from MuonDataLib.filters import Filter
 
 from MNeuEventGUI.log.view import LogView
 from MNeuEventGUI.plot_area.presenter import PlotAreaPresenter
@@ -344,7 +342,7 @@ class LogPresenter(TablePresenter):
                 'y_min_' + LOG_TABLE: 0,
                 'y_max_' + LOG_TABLE: 1}
 
-    def load(self, filters: list[Filter]):
+    def load(self, filters: list[dict]):
         """
         A method to load filters from a json file
         If the filter values are outside of the data
@@ -356,23 +354,23 @@ class LogPresenter(TablePresenter):
         """
         data = []
         for f in filters:
-            key = f.name
-            start = f.start
-            end = f.end
+            key = f["log"]
+            start = f["lower"]
+            end = f["upper"]
 
             log = self._data.dataset.get_sample_log(key)
-            y = log['value']
+            y = log["value"]
 
             y_min = np.min(y)
             y_max = np.max(y)
             y_0 = y_min
             y_N = y_max
-            if start == NONE:
+            if start is None:
                 load_filter = 'below'
                 if y_min < end < y_max:
                     y_N = end
 
-            elif end == NONE:
+            elif end is None:
                 load_filter = 'above'
                 if start > y_min:
                     y_0 = start

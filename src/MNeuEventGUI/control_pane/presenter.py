@@ -1,6 +1,7 @@
+import json
+
 import numpy as np
 from dash import no_update
-from MuonDataLib.filters import Filters
 from MNeuEventLib import _get_filter_times
 
 from MNeuEventGUI.control_pane.view import ControlPaneView
@@ -275,5 +276,5 @@ class ControlPanePresenter(PresenterTemplate):
         :returns: the filter data, the state for the time filter
         (include/exclude) and the column headers
         """
-        data = Filters.from_json(name)
+        data = json.load(name)
         return self._filter.load(data)

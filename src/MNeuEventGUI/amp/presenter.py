@@ -1,10 +1,10 @@
 import numpy as np
-from MuonDataLib.filters import PeakProperty
 
 from MNeuEventGUI.amp.view import AmplitudeView
 from MNeuEventGUI.plot_area.presenter import PlotAreaPresenter
 from MNeuEventGUI.table.presenter import PresenterTemplate
 
+BASELINE = 18446744073709551615
 
 class AmpPresenter(PresenterTemplate):
     """
@@ -22,14 +22,14 @@ class AmpPresenter(PresenterTemplate):
         self._plot = PlotAreaPresenter('amp')
         self._view = AmplitudeView(self)
 
-    def load(self, data: PeakProperty):
+    def load(self, data: dict):
         """
         Loads the amplitude data from
         a PeakProperty object.
         :param data: the PeakProperty object.
         :returns: the amplitude filter details
         """
-        return data.Amplitudes
+        return data[BASELINE]
 
     def plot(self, data):
         """

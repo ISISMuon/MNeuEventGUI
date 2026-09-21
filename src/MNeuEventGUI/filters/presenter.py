@@ -1,4 +1,3 @@
-from MuonDataLib.filters import Filters, HistogramSettings
 from MNeuEventLib import _get_filter_times
 
 from MNeuEventGUI.amp.presenter import AmpPresenter
@@ -13,7 +12,7 @@ class FilterPresenter(PresenterTemplate):
     """
     A class for the filter widget's presenter.
     This code follows the MVP template,
-    note that the model is MuonDataLib.
+    note that the model is MNeuEventLib's BatchData class.
     """
     def __init__(self):
         """
@@ -30,7 +29,6 @@ class FilterPresenter(PresenterTemplate):
         self._time_file_data = []
         self._log_file_data = []
         self._amp_file_data = 0
-        self._hist_data = HistogramSettings()
 
     def show_file(self,
                   name,
@@ -242,29 +240,26 @@ class FilterPresenter(PresenterTemplate):
         N = f"{self._data.get_n_events(0)[0]:,}"
         return self._view.get_N(N), ''
 
-    def load(self, filters: Filters):
+    def load(self, filters: dict):
         """
-        Loads the filters that have been reported from a Filters object.
-        :param filters: the dataclass of filters
+        Loads the filters that have been reported from a Filters json.
+        :param filters: the JSON filter data
         :returns: the time filters, the sample log
         filters, the amplitude filters, if to include/exclude the time filters,
         and the table headers
         """
-        time_data, state = self._time.load(filters.time_filters)
+        state = filters["time_filter_type"]
+        time_data = self._time.load(filters["time_filters"])
         self._time_file_data = time_data
         self._time.set_state(state)
 
-        log_data = self._log.load(filters.sample_log_filters)
+        log_data = self._log.load(filters["sample_log_filters"])
         self._log_file_data = log_data
 
-        self._amp_file_data = self._amp.load(filters.peak_property)
-
-        self._hist_data = filters.histogram_settings
+        self._amp_file_data = self._amp.load(filters["amplitudes"])
 
         print('loading filters ....')
-        return (time_data, log_data, self._amp_file_data,
-                self._hist_data.min_time, self._hist_data.max_time,
-                self._hist_data.num_bins, state, self.headers)
+        return (time_data, log_data, self._amp_file_data, state, self.headers)
 
     def update_N_events(self, update: list[dict], current_str: str) -> str:
         """

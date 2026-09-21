@@ -1,5 +1,3 @@
-from MuonDataLib.filters import TimeFilters
-
 from MNeuEventGUI.table.column import (
     NumericColumn,
     TableColumns,
@@ -125,7 +123,7 @@ class TimePresenter(TablePresenter):
         """
         self.cols.set_title(2, f'{value} Filter details')
 
-    def load(self, filters: TimeFilters):
+    def load(self, filters: list[dict]):
         """
         A method to load filters from a TimeFilters object.
         :param filters: the dataclass of time filters.
@@ -133,21 +131,11 @@ class TimePresenter(TablePresenter):
         for the time table (exluding the remove button),
         and the new state (include/exclude)
         """
-        filter_list = filters.remove_filters
-        new_state = 'Exclude'
-        if (len(filters.keep_filters) > 0 and
-                len(filters.remove_filters) > 0):
-            raise RuntimeError("Cannot have both include and "
-                               "exclude time filters")
-        elif len(filters.keep_filters) > 0:
-            filter_list = filters.keep_filters
-            new_state = 'Include'
 
         data = []
-        for f in filter_list:
-            data.append({'Name_' + TIME_TABLE: f.name,
-                         'Start_' + TIME_TABLE: f.start,
-                         'End_' + TIME_TABLE: f.end})
+        for f in filters:
+            data.append({'Name_' + TIME_TABLE: f["name"],
+                         'Start_' + TIME_TABLE: f["start"],
+                         'End_' + TIME_TABLE: f["end"]})
 
-        self._previous = new_state
-        return data, new_state
+        return data

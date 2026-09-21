@@ -1,4 +1,4 @@
-from dash import Input, Output, State, callback, dcc, html
+from dash import dcc, html
 
 from MNeuEventGUI.table.view import TableView
 

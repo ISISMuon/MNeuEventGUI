@@ -1,14 +1,7 @@
-import numpy as np
-from MuonDataLib.data.utils import create_data_from_function
-
 from MNeuEventGUI.control_pane.presenter import ControlPanePresenter
 from MNeuEventGUI.load_bar.presenter import LoadBarPresenter
 from MNeuEventGUI.load_bar.view import CURRENT
 from MNeuEventGUI.save_bar.presenter import SaveBarPresenter
-
-
-def osc(x, A, omega, phi):
-    return A*np.sin(omega*x + phi)
 
 
 class MainAppPresenter:
@@ -156,25 +149,6 @@ class MainAppPresenter:
             return file, ''
         except Exception as err:
             return '', f'Saving Error: {err}'
-
-    def gen_fake_data(self, data):
-        """
-        This creates fake data for the sample log.
-        It will not be present long term.
-        We assume one data point per second.
-        :param data: the muon event data object
-        :returns: the fake data
-        """
-        frame_start_times = data.get_frame_start_times()
-        start = frame_start_times[0]
-        end = frame_start_times[-1] + 1
-        # 1 days worth of logs at 1 per second
-        N = 60*60*24
-        step = (end - start)/N
-        return create_data_from_function(start, end,
-                                         step,
-                                         [3, 6.1, 0.91],
-                                         osc, seed=1)
 
     def plot(self):
         """

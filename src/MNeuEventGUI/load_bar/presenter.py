@@ -8,7 +8,7 @@ class LoadBarPresenter(PresenterTemplate):
     """
     Class for the load bar's presenter.
     This follows the MVP pattern.
-    The model is MuonDataLib.
+    The model is MNeuEventLib's BatchData class.
     """
     def __init__(self):
         """
@@ -38,14 +38,13 @@ class LoadBarPresenter(PresenterTemplate):
     def load_nxs(self, name):
         """
         Reads a muon event nexus file
-        and creates a MuonDataLib object
+        and creates a BatchData object
         """
         self._data = BatchData(name, 64, 1)
 
     @property
     def get_data(self):
         """
-        :returns: the loaded MuonDataLib
-        object.
+        :returns: the loaded BatchData object.
         """
         return self._data
