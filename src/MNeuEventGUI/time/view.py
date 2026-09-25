@@ -1,4 +1,4 @@
-from dash import dcc, html
+from dash import dcc, html, callback, Input
 
 from MNeuEventGUI.table.view import TableView
 
@@ -18,8 +18,8 @@ class TimeView(TableView):
 
         return html.Div([
             html.Div([html.P('Filter Type:'),
-                     dcc.Dropdown(['Exclude', 'Include'],
-                                  'Exclude',
+                     dcc.Dropdown(['Include', 'Exclude'],
+                                  'Include',
                                   style={'width': 105,
                                          'margin-left': '10px'},
                                   id='dropdown-time',
@@ -31,3 +31,11 @@ class TimeView(TableView):
             html.H3(""),
             super().generate(presenter)])
 
+    def set_callbacks(self, presenter):
+        """
+        Set the callbacks for the GUI.
+        :param presenter: The presenter for the GUI.
+        """
+        super().set_callbacks(presenter)
+
+        callback(Input('dropdown-time', 'value'))(presenter.set_state)

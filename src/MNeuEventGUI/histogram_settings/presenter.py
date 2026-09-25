@@ -58,3 +58,11 @@ class HistSettingsPresenter(PresenterTemplate):
         if not any(invalid) and min_time > max_time:
             return (True, True)
         return invalid
+
+    def load(self, settings: dict) -> (float, float, int):
+        """
+        Load the histogram settings from a data dictionary.
+        :param settings: The dictionary to get the settings from.
+        :returns: The 
+        """
+

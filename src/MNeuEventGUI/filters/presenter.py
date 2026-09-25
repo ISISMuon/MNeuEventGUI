@@ -52,12 +52,13 @@ class FilterPresenter(PresenterTemplate):
         :param amp_data: The amplitude filter data
         :returns: if to hide the name in the GUI
         """
+        hist_settings = self._data._dict(0)["hist_settings"]
         return not (self._time_file_data == time_data
             and self._log_file_data == log_data
             and self._amp_file_data == float(amp_data)
-            and self._hist_data.min_time == min_time
-            and self._hist_data.max_time == max_time
-            and self._hist_data.num_bins == num_bins)
+            and hist_settings["min_time"] == min_time
+            and hist_settings["max_time"] == max_time
+            and hist_settings["num_bins"] == num_bins)
 
     @property
     def headers(self):
@@ -70,113 +71,33 @@ class FilterPresenter(PresenterTemplate):
     def set_data(self, data):
         """
         A method to set the muon data
-        :param data: MuonEventData
+        :param data: MNeuEventLib Data object
         """
         self._data = data
+        self._time.set_data(data)
         self._log.set_data(data)
         times = self._data.dataset.get_frame_times() * 1e-9
 
         self._time.set_time_range(times[0], times[-1] + 32e-6)
 
-    def apply_filters(self,
-                      time_filters,
-                      state,
-                      log_filters,
-                      amp_filters,
-                      hist_settings=None):
+    def read_filters(self) -> tuple:
         """
-        A method to apply the filters to the
-        muon event data object. This allows
-        for the user to state if the time
-        window is included or excluded.
-        :param time_filters: A list of filters (dicts)
-        :param state: If to include or exclude the data
-        :param log_filters: a list of log filters
-        :param amp_filters: amplitude filter
-        :param hist_settings: histogram settings
+        Read the filter tables with the data from the Data object.
         """
-        # if no data, raise an error:
-        if self._data is None:
-            raise RuntimeError("Cannot save filters when no data is loaded")
+        # todo: expand for batch processing
+        data = self._data._dict(0)
 
-        # todo: use the data cache properly
-        if (len(time_filters) == 0
-            and len(log_filters) == 0
-            and amp_filters == 0):
-            # if no filters, do nothing
-            return
-
-        self._data.clear_filters(0)
-        self._data.set_time_type(0, state)
-
-        # include time filters
-        for filter_details in time_filters:
-            self._data.add_time_filter(0,
-                    filter_details['Name_time-table'],
-                    filter_details['Start_time-table'],
-                    filter_details['End_time-table'])
-
-        for i, filter_details in enumerate(log_filters):
-            # loop over log filters
-            filter_type = filter_details['filter_log-table']
-            sample_log = filter_details['sample_log-table']
-            start = filter_details['y0_log-table']
-            stop = filter_details['yN_log-table']
-
-            if filter_type == 'between':
-                self._data.add_log_filter(0, "NAME_{i}",
-                                          sample_log,
-                                          start,
-                                          stop)
-            elif filter_type == 'above':
-                self._data.add_log_filter_above(0, "NAME_{i}",
-                                                sample_log,
-                                                start)
-            elif filter_type == 'below':
-                self.add_log_filter_below(0, "NAME_{i}",
-                                          sample_log,
-                                          stop)
-
-        self._data.set_amps_baseline(0, float(amp_filters))
-        if hist_settings is not None:
-            if any(value is None for value in hist_settings):
-                raise RuntimeError("Cannot leave histogram settings blank.")
-            self._data.set_histogram_settings(0, *hist_settings)
-
-    def update_filters(self,
-                       time_filters,
-                       state,
-                       log_filters,
-                       amp_filters):
-        """
-        Gets the updated start and stop times for the
-        exclude filters. The first step is a bit
-        heavy handed, but it makes sure that we
-        have no repeated names for the filters
-        by clearning all of them.
-        :param time_filters: the data from the time
-        filter table
-        :param state: the state (include or exclude)
-        for the time filter table
-        :param log_filters: the data from the sample
-        log filter table
-        :param amp_filters: the amplitude filter
-        :param hist_settings: the histogram settings
-        :returns: a list of the exclude filter start times,
-        a list of the exclude filter end times,
-        an error message.
-        """
-        if len(time_filters) == 0 and len(log_filters) == 0:
-            return [], [], ''
-        try:
-            self.apply_filters(time_filters,
-                               state,
-                               log_filters,
-                               amp_filters)
-        except RuntimeError as msg:
-            return [], [], str(msg)
-        start, stop = _get_filter_times(0, self._data)
-        return start, stop, ''
+        # note we convert min_time and max_time to microseconds
+        return (data["time_filter_type"],
+        self._time.load(data["time_filters"]),
+        self._log.load(data["sample_log_filters"]),
+        self._amp.load(data["amplitudes"]),
+        data["hist_settings"]["min_time"] * 1e-3,
+        data["hist_settings"]["max_time"] * 1e-3,
+        data["hist_settings"]["n_bins"],
+        self.headers,
+        ""
+        )
 
     def get_log_y_range(self, row_log):
         """
@@ -204,9 +125,7 @@ class FilterPresenter(PresenterTemplate):
 
         return row_log['y_min_log-table'], row_log['y_max_log-table']
 
-    def calculate(self, n_clicks, time_filters, state,
-                  log_filters, amp_filter, min_time, max_time,
-                  num_bins):
+    def calculate(self, n_clicks):
         """
         A method to calculate the number of
         events that would be used to make
@@ -226,16 +145,6 @@ class FilterPresenter(PresenterTemplate):
         :param max_time: the maximum time for the histogram
         :param num_bins: the number of bins for the histogram
         """
-        self._data.clear_filters(0)
-        hist_settings = (min_time, max_time, num_bins)
-        try:
-            self.apply_filters(time_filters,
-                               state,
-                               log_filters,
-                               amp_filter,
-                               hist_settings)
-        except RuntimeError as msg:
-            return self._view.get_N(0), str(msg)
         _ = self._data.calculate()
         N = f"{self._data.get_n_events(0)[0]:,}"
         return self._view.get_N(N), ''

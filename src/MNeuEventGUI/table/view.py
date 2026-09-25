@@ -32,6 +32,12 @@ class TableView(ViewTemplate):
             html.Div(id=presenter.ID + '-dropdown-container')
             ])
 
+    @property
+    def model(self):
+        """
+        The part of the Data object that this is a view of.
+        """
+
     def set_callbacks(self, presenter):
         """
         Set the callbacks for the GUI.
@@ -67,5 +73,4 @@ class TableView(ViewTemplate):
         """
         callback(Output(presenter.ID, 'rowData', allow_duplicate=True),
                  Input(presenter.ID + '_add', 'n_clicks'),
-                 State(presenter.ID, 'virtualRowData'),
-                 prevent_initial_call=True)(presenter.add)
+                 prevent_initial_call=True)(lambda _: presenter.add())

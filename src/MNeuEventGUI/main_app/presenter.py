@@ -67,31 +67,13 @@ class MainAppPresenter:
 
         print("debug mode " + tmp)
 
-    def load_filter(self, name, debug):
+    def load_filter(self, name):
         """
-        Loads a filter file into the GUI
-        and applies it to the muon
-        event data.
+        Loads a filter file into the GUI.
         :param name: The name of the filter file
-        :param debug: If debug mode is on or off
-        :returns: The list of rows for the time filter table,
-        the list of rows for the sample log filter table,
-        the amplitude filter,
-        the state of the time filters (include/exclude),
-        the column headers
-        and an error message (if it fails)
         """
-        try:
-            if debug:
-                raise RuntimeError("Filter error")
+        return self.control.read_filter(name)
 
-            filters = name[len(CURRENT):]
-            result = self.control.read_filter(filters)
-            return (*result, '')
-        except Exception as err:
-            cols = self.control.headers
-            return ([], [], 0, 0, 0, 0, 'Exclude',
-                    cols, f'Load filter error: {err}')
 
     def alert(self, text):
         """

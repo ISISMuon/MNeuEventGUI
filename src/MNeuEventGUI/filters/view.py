@@ -55,13 +55,6 @@ class FilterView(ViewTemplate):
         callback([Output('N_events', 'children'),
                   Output('error_msg', 'children', allow_duplicate=True)],
                  Input('calc_btn', 'n_clicks'),
-                 [State('time-table', 'rowData'),
-                  State('dropdown-time', 'value'),
-                  State('log-table', 'rowData'),
-                  State('Amp', 'value'),
-                  State('min-time', 'value'),
-                  State('max-time', 'value'),
-                  State('num-bin', 'value'),],
                  prevent_initial_call=True)(presenter.calculate)
 
         # show filename if filter data is equal to that in the file

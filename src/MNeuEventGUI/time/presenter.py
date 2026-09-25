@@ -20,8 +20,10 @@ class TimePresenter(TablePresenter):
         """
         This creates the presenter object for the
         widget.
+        :param data: The underlying data object.
         """
-        self._previous = 'Exclude'
+        self._previous = 'Include'
+        self.data = None
 
         # create columns
         name = TextColumn('Name_' + TIME_TABLE, 'Name')
@@ -47,6 +49,12 @@ class TimePresenter(TablePresenter):
         Overwrite the view to give a time table view
         """
         return TimeView(self)
+
+    def set_data(self, data):
+        """
+        Set the underlying model data.
+        """
+        self.data = data
 
     def set_time_range(self, start, end):
         """
@@ -96,16 +104,6 @@ class TimePresenter(TablePresenter):
         data[changed['rowIndex']][col_name] = new_value
         return data, msg
 
-    @property
-    def default_row(self):
-        """
-        The code needed to create a default
-        row for the time table
-        :returns: dict of the values for the time table.
-        """
-        return {'Start_' + TIME_TABLE: 0.33 * self.end,
-                'End_' + TIME_TABLE: 0.66 * self.end}
-
     def get_range(self, data):
         """
         Gets the x range from the time table data.
@@ -121,12 +119,37 @@ class TimePresenter(TablePresenter):
         :param value: the updated part of the table name
         (expect either Include or Exclude)
         """
+        self.data.set_time_type(0, value)
         self.cols.set_title(2, f'{value} Filter details')
+
+    def add(self) -> dict:
+        """
+        Add a new time filter.
+        :returns: The new time filter data.
+        """
+        self.data.add_time_filter(0,
+                                  f"filter {next(self.count)}",
+                                  0.33 * self.end,
+                                  0.66 * self.end)
+        return self.load(self.data._dict(0)["time_filters"])
+
+    def delete_row(self, info, data):
+        """
+        Remove a row from a table.
+        :param info: dict of intormation about deleted row
+        :param data: the table data (list of rows)
+        :returns: Updated data values
+        """
+        row = info["rowIndex"]
+        name = data[row]['Name_' + TIME_TABLE]
+        self.data.remove_time_filter(0, name)
+        return self.load(self.data._dict(0)["time_filters"])
+
 
     def load(self, filters: list[dict]):
         """
-        A method to load filters from a TimeFilters object.
-        :param filters: the dataclass of time filters.
+        A method to load filters from a list of filters.
+        :param filters: the list of time filters.
         :returns: a list of the row details
         for the time table (exluding the remove button),
         and the new state (include/exclude)

@@ -1,4 +1,5 @@
 from collections import Counter
+from itertools import count
 
 from MNeuEventGUI.presenter_template import PresenterTemplate
 from MNeuEventGUI.table.view import TableView
@@ -23,7 +24,7 @@ class TablePresenter(PresenterTemplate):
         """
         self.ID = ID
         self.name_col = name_col
-        self.count = 0
+        self.count = count(start=1)
 
         self.cols = columns
         self._view = self._set_view()
@@ -35,17 +36,13 @@ class TablePresenter(PresenterTemplate):
         """
         return TableView(self)
 
-    def add(self, n, data):
+    def add(self, n) -> dict:
         """
         Adds a row to the table.
         :param n: the number of clicks of the add button
-        :param data: A list of the row data (as a dict)
-        :returns: the data for the table and if its valid
+        :returns: the new data for the table.
         """
-        if not isinstance(data, list):
-            data = []
-        data.append(self.generate_default)
-        return data
+        raise NotImplementedError
 
     def validate(self, row, data):
         """
@@ -80,15 +77,14 @@ class TablePresenter(PresenterTemplate):
         data[changed['rowIndex']][col_name] = row[col_name]
         return data, ''
 
-    def delete_row(self, info, data):
+    def delete_row(self, info: dict, data: dict) -> dict:
         """
-        A method to remove a row from a table.
+        Remove a row from a table.
         :param info: dict of intormation about deleted row
         :param data: the table data (list of rows)
         :returns: Updated data values
         """
-        data.pop(info['rowIndex'])
-        return data
+        raise NotImplementedError
 
     @property
     def get_next_row_name(self):

@@ -81,12 +81,9 @@ class ControlPanePresenter(PresenterTemplate):
             names = [self._filter._log.get_new_log_name([])]
         logs = [self._data.dataset.get_sample_log(n) for n in names]
         self._plot.new_plot(names, logs)
-        start, stop, _ = self._filter.update_filters(time_data,
-                                                       state,
-                                                       log_data,
-                                                       amp_data)
+        start, stop = _get_filter_times(0, self._data)
 
-        self.add_filters(start, stop, log_data)
+        self.add_filter_shading(start, stop, log_data)
 
         return self._plot.fig
 
@@ -125,7 +122,7 @@ class ControlPanePresenter(PresenterTemplate):
         """
         self._plot.add_rect(x0, y0, xN, yN, ax)
 
-    def add_filters(self, start, stop, log_data):
+    def add_filter_shading(self, start, stop, log_data):
         """
         This gets the filters for that data,
         as defined by the tables, and plots
@@ -273,8 +270,6 @@ class ControlPanePresenter(PresenterTemplate):
         A method to get the filters from a file
         and populate the GUI.
         :param name: the name of the json file
-        :returns: the filter data, the state for the time filter
-        (include/exclude) and the column headers
         """
-        data = json.load(name)
-        return self._filter.load(data)
+        self._data.load_filters(name)
+        return self._filter.read_filters()

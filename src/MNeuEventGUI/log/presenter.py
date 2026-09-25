@@ -270,7 +270,7 @@ class LogPresenter(TablePresenter):
             return options, self._selected_name
         return options, self.get_new_log_name(data)
 
-    def close_modal(self, ok, cancel, name, data):
+    def close_modal(self, ok, cancel, log, data):
         """
         A method for closing the pop up. To tell
         if ok or cancel has been pressed we track
@@ -280,7 +280,7 @@ class LogPresenter(TablePresenter):
         :param ok: number of times ok has been pressed
         :param cancel: the number of times cancel has
         been pressed
-        :param name: the name of the sample log being viewed
+        :param log: the name of the sample log being viewed
         (if ok is pressed it will be added/updated in the table)
         :param data: the sample log table data
         :returns if the pop up is open (always no) and
@@ -292,27 +292,23 @@ class LogPresenter(TablePresenter):
         # was ok or cancel pressed?
         if self._ok_clicks < ok:
             # ok pressed
-            row = 0
             if self._replace is not None:
+                # todo: figure out what this is and make it work
                 # replace/update row (i.e. graph button pressed)
-                data[self._replace]['sample_log-table'] = name
-                row = self._replace
+                data[self._replace]['sample_log-table'] = log
             else:
-                # new row (i.e. from add button)
-                data.append(self.generate_default(data,
-                                                  name))
-                row = len(data) - 1
-            self._ok_clicks += 1
-            log = self._data.dataset.get_sample_log(name)
+                self._ok_clicks += 1
+                log_data = self._data.dataset.get_sample_log(log)
 
-            min_value = np.min(log['value'])
-            data[row]['y_min_' + LOG_TABLE] = min_value
-            data[row]['y0_' + LOG_TABLE] = min_value
+                min_value = np.min(log_data['value'])
+                max_value = np.max(log_data['value'])
 
-            max_value = np.max(log['value'])
-            data[row]['y_max_' + LOG_TABLE] = max_value
-            data[row]['yN_' + LOG_TABLE] = max_value
-        return False, data
+                self._data.add_log_filter(0,
+                                          f"filter {next(self.count)}",
+                                          log,
+                                          min_value,
+                                          max_value)
+        return False, self.load(self._data._dict(0)["sample_log_filters"])
 
     def add(self, n, data):
         """
@@ -326,21 +322,16 @@ class LogPresenter(TablePresenter):
         self._selected_name = self.get_new_log_name(data)
         return True, self.get_new_log_name(data)
 
-    def generate_default(self, data, name):
+    def delete_row(self, info: dict, data: dict):
         """
-        Code to create some default values
-        :returns: a default dict
+        Remove a row from the table.
+        :param info: Dash information about the deleted row.
+        :param data: The row data.
         """
-        default_filter = 'between'
-        return {'Delete_' + self.ID: '',
-                self.name_col: 'log_' + self.get_next_row_name,
-                'sample_log-table': name,
-                'filter_' + LOG_TABLE: default_filter,
-                'y0_' + LOG_TABLE: 0,
-                'yN_' + LOG_TABLE: 1,
-                'magic': default_filter,
-                'y_min_' + LOG_TABLE: 0,
-                'y_max_' + LOG_TABLE: 1}
+        row = info["rowIndex"]
+        name = data[row]['Name_' + LOG_TABLE]
+        self._data.remove_log_filter(0, name)
+        return self.load(self._data._dict(0)["sample_log_filters"])
 
     def load(self, filters: list[dict]):
         """
@@ -354,12 +345,13 @@ class LogPresenter(TablePresenter):
         """
         data = []
         for f in filters:
-            key = f["log"]
+            name = f["name"]
+            log = f["log"]
             start = f["lower"]
             end = f["upper"]
 
-            log = self._data.dataset.get_sample_log(key)
-            y = log["value"]
+            log_data = self._data.dataset.get_sample_log(log)
+            y = log_data["value"]
 
             y_min = np.min(y)
             y_max = np.max(y)
@@ -379,8 +371,8 @@ class LogPresenter(TablePresenter):
                 load_filter = 'between'
                 y_0 = start
                 y_N = end
-            data.append({self.name_col: 'log_' + self.get_next_row_name,
-                         'sample_log-table': key,
+            data.append({self.name_col: name,
+                         'sample_log-table': log,
                          'filter_' + LOG_TABLE: load_filter,
                          'y0_' + LOG_TABLE: y_0,
                          'yN_' + LOG_TABLE: y_N,
