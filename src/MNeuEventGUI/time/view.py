@@ -38,4 +38,5 @@ class TimeView(TableView):
         """
         super().set_callbacks(presenter)
 
-        callback(Input('dropdown-time', 'value'))(presenter.set_state)
+        callback(Input('dropdown-time', 'value'),
+                 prevent_initial_call=True)(presenter.set_state)

@@ -80,9 +80,18 @@ class TablePresenter(PresenterTemplate):
     def delete_row(self, info: dict, data: dict) -> dict:
         """
         Remove a row from a table.
-        :param info: dict of intormation about deleted row
+        :param info: dict of information about deleted row
         :param data: the table data (list of rows)
         :returns: Updated data values
+        """
+        raise NotImplementedError
+
+    def edit_row(self, info: dict, data: dict) -> dict:
+        """
+        Edit a row in the table.
+        :param info: dict of information about deleted row
+        :param data: the table data (list of rows)
+        :returns: Updated table values
         """
         raise NotImplementedError
 

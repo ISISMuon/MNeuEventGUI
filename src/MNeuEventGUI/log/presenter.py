@@ -28,7 +28,7 @@ class LogPresenter(TablePresenter):
         """
 
         # a handle to the data object
-        self._data = None
+        self.data = None
         # a list of default sample logs
         self._defaults = ['Temp_Sample']
         # number of time ok has been clicked in pop-up
@@ -107,7 +107,7 @@ class LogPresenter(TablePresenter):
         Set the data object.
         :param logs: the data object
         """
-        self._data = data
+        self.data = data
 
     def validate_row(self, change, data):
         """
@@ -226,9 +226,9 @@ class LogPresenter(TablePresenter):
         :param data: the sample log table data
         :returns: the next name to be used
         """
-        if self._data is None:
+        if self.data is None:
             return ''
-        names = self._data.dataset.sample_log_names
+        names = self.data.dataset.sample_log_names
         for default in self._defaults:
             if default in names:
                 return default
@@ -246,7 +246,7 @@ class LogPresenter(TablePresenter):
         - the min y value
         - the sigma (std)
         """
-        log = self._data.dataset.get_sample_log(name)
+        log = self.data.dataset.get_sample_log(name)
         value = log['value']
 
         return (self._plot.new_plot([name], [log]),
@@ -264,7 +264,7 @@ class LogPresenter(TablePresenter):
         :returns: a list of names for the combo box and the
         selected value
         """
-        options = self._data.dataset.sample_log_names
+        options = self.data.dataset.sample_log_names
         # if replacing/updating a row want to keep the name
         if self._replace is not None:
             return options, self._selected_name
@@ -298,17 +298,17 @@ class LogPresenter(TablePresenter):
                 data[self._replace]['sample_log-table'] = log
             else:
                 self._ok_clicks += 1
-                log_data = self._data.dataset.get_sample_log(log)
+                log_data = self.data.dataset.get_sample_log(log)
 
                 min_value = np.min(log_data['value'])
                 max_value = np.max(log_data['value'])
 
-                self._data.add_log_filter(0,
+                self.data.add_log_filter(0,
                                           f"filter {next(self.count)}",
                                           log,
                                           min_value,
                                           max_value)
-        return False, self.load(self._data._dict(0)["sample_log_filters"])
+        return False, self.load(self.data._dict(0)["sample_log_filters"])
 
     def add(self, n, data):
         """
@@ -330,8 +330,30 @@ class LogPresenter(TablePresenter):
         """
         row = info["rowIndex"]
         name = data[row]['Name_' + LOG_TABLE]
-        self._data.remove_log_filter(0, name)
-        return self.load(self._data._dict(0)["sample_log_filters"])
+        self.data.remove_log_filter(0, name)
+        return self.load(self.data._dict(0)["sample_log_filters"])
+
+    def edit_row(self, info, data):
+        """
+        Edit a row in the table.
+        :param info: dict of information about deleted row
+        :param data: the table data (list of rows)
+        :returns: Updated table values
+        """
+        # todo: use edit methods when added
+        row = info[0]["rowIndex"]
+        row_name = data[row]["Name_" + self.ID]
+
+        # contrary to the Dash docs, the new value is "value" not "newValue"
+        new_data = info[0]["data"]
+
+        self.data.remove_log_filter(0, row_name)
+        self.data.add_log_filter(0, new_data["Name_" + self.ID],
+                                 new_data["sample_" + self.ID],
+                                  new_data["y0_" + self.ID],
+                                  new_data["yN_" + self.ID])
+
+        return self.load(self.data._dict(0)["sample_log_filters"])
 
     def load(self, filters: list[dict]):
         """
@@ -350,7 +372,7 @@ class LogPresenter(TablePresenter):
             start = f["lower"]
             end = f["upper"]
 
-            log_data = self._data.dataset.get_sample_log(log)
+            log_data = self.data.dataset.get_sample_log(log)
             y = log_data["value"]
 
             y_min = np.min(y)
