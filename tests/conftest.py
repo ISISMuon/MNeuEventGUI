@@ -22,4 +22,4 @@ def handle_test_json_data():
     yield  # run tests
 
     # this happens at end of pytest session; clean up json files
-    #(data_dir / "load_filter.json").unlink()
+    (data_dir / "load_filter.json").unlink()
