@@ -36,10 +36,9 @@ class TablePresenter(PresenterTemplate):
         """
         return TableView(self)
 
-    def add(self, n) -> dict:
+    def add(self) -> dict:
         """
         Adds a row to the table.
-        :param n: the number of clicks of the add button
         :returns: the new data for the table.
         """
         raise NotImplementedError
@@ -94,35 +93,6 @@ class TablePresenter(PresenterTemplate):
         :returns: Updated table values
         """
         raise NotImplementedError
-
-    @property
-    def get_next_row_name(self):
-        """
-        Gets a name for a new row.
-        This provides the name
-        default_N, where N is the number
-        of times this method has been called
-        :returns: the name
-        """
-        self.count += 1
-        return f'default_{self.count}'
-
-    @property
-    def generate_default(self):
-        """
-        Code to create some default values
-        :returns: a default dict
-        """
-        return {'Delete_' + self.ID: '',
-                self.name_col: self.get_next_row_name,
-                **self.default_row}
-
-    @property
-    def default_row(self):
-        """
-        This will define the default row for the table
-        """
-        raise NotImplementedError(f"Need to set a default_row for {self.ID}")
 
     @property
     def _delete_row_col(self):
