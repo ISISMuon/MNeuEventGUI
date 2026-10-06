@@ -1,13 +1,12 @@
+import os
+import sys
 import unittest
 from unittest import mock
 
-import numpy as np
 from MNeuEventLib import BatchData
 
 from MNeuEventGUI.log.presenter import LogPresenter
 from MNeuEventGUI.test_helpers.unit_test import TestHelper
-import os
-import sys
 
 current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
@@ -97,7 +96,7 @@ class LogPresenterTest(TestHelper):
         data = {key: value for key, value in data.items()
                 if key != 'Delete_log-table'}
         self.assertEqual(data.keys(), expected.keys())
-        for key in data.keys():
+        for key in data:
             if isinstance(expected[key], str):
                 self.assertEqual(data[key], expected[key])
             else:

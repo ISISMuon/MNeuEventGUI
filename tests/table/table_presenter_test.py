@@ -1,12 +1,14 @@
 import unittest
 from unittest import mock
-from MNeuEventGUI.table.column import (TableGroup,
-                                       TextColumn,
-                                       NumericColumn,
-                                       TableColumns)
+
+from MNeuEventGUI.table.column import (
+    NumericColumn,
+    TableColumns,
+    TableGroup,
+    TextColumn,
+)
 from MNeuEventGUI.table.presenter import TablePresenter
 from MNeuEventGUI.test_helpers.unit_test import TestHelper
-
 
 NAME = 'Name_table_test'
 

@@ -1,10 +1,12 @@
-import unittest
-from unittest import mock
-from MNeuEventGUI.time.presenter import TimePresenter
-from MNeuEventGUI.test_helpers.unit_test import TestHelper
-from MNeuEventLib import BatchData
 import os
 import sys
+import unittest
+from unittest import mock
+
+from MNeuEventLib import BatchData
+
+from MNeuEventGUI.test_helpers.unit_test import TestHelper
+from MNeuEventGUI.time.presenter import TimePresenter
 
 current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
@@ -118,13 +120,13 @@ class TimePresenterTest(TestHelper):
 
     def test_validate_pass_stat(self):
         change, data = get_validation_data_start(900)
-        result, err = self.presenter.validate_row(change,
+        result, _ = self.presenter.validate_row(change,
                                                   data)
         self.assert_data_start(result, 900)
 
     def test_validate_pass_end(self):
         change, data = get_validation_data_end(900)
-        result, err = self.presenter.validate_row(change,
+        result, _ = self.presenter.validate_row(change,
                                                   data)
         self.assert_data_end(result, 900)
 

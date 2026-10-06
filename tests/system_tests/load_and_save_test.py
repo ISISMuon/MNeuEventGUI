@@ -1,12 +1,12 @@
-from MNeuEventGUI.main_app.view import MainApp
-from MNeuEventGUI.test_helpers.gui import (check_no_alert,
-                                           wait_and_press_btn)
-
 import os
-import h5py
-import numpy as np
 import sys
 import time
+
+import h5py
+import numpy as np
+
+from MNeuEventGUI.main_app.view import MainApp
+from MNeuEventGUI.test_helpers.gui import check_no_alert, wait_and_press_btn
 
 current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
@@ -43,7 +43,6 @@ def test_launch(dash_duo):
     dash_duo.start_server(app)
     dash_duo.wait_for_page()
 
-    pass
 
 
 def test_load_nxs_error(dash_duo):

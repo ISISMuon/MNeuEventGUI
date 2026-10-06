@@ -1,17 +1,19 @@
-import unittest
-from unittest import mock
-from MNeuEventGUI.filters.presenter import FilterPresenter
-from MNeuEventGUI.test_helpers.unit_test import TestHelper
-from MNeuEventLib import BatchData
-import numpy as np
 import os
 import sys
+import unittest
+from unittest import mock
+
+import numpy as np
+from MNeuEventLib import BatchData
+
+from MNeuEventGUI.filters.presenter import FilterPresenter
+from MNeuEventGUI.test_helpers.unit_test import TestHelper
+
 current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
 sys.path.append(parent)
 
 from data_paths import FILE  # noqa: E402
-
 
 TT = '_time-table'
 LT = '_log-table'

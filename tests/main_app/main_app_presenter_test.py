@@ -1,20 +1,19 @@
+import os
+import sys
 import unittest
 from unittest import mock
-import pytest
-import os
-import numpy as np
+
 import h5py
+import numpy as np
+import pytest
 
 from MNeuEventGUI.main_app.presenter import MainAppPresenter
 from MNeuEventGUI.test_helpers.unit_test import TestHelper
-from MuonDataLib.filters import Filter, Filters, TimeFilters
-import sys
 
 current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
 sys.path.append(parent)
 from data_paths import FILE, FILTER  # noqa: E402
-
 
 """
 Only testing debug = False,

@@ -1,8 +1,10 @@
 import unittest
 from unittest import mock
+
+import numpy as np
+
 from MNeuEventGUI.plot_area.presenter import PlotAreaPresenter
 from MNeuEventGUI.test_helpers.unit_test import TestHelper
-import numpy as np
 
 
 class PlotAreaPresenterTest(TestHelper):

@@ -1,10 +1,12 @@
+import os
+import sys
 import unittest
 from unittest import mock
+
 from MNeuEventLib import BatchData
+
 from MNeuEventGUI.load_bar.presenter import LoadBarPresenter
 from MNeuEventGUI.test_helpers.unit_test import TestHelper
-import sys
-import os
 
 current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)

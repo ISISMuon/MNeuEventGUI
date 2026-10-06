@@ -1,20 +1,19 @@
+import os
+import sys
 import unittest
 from unittest import mock
-import sys
-import os
-
-from MNeuEventGUI.control_pane.presenter import ControlPanePresenter
-from MNeuEventGUI.test_helpers.unit_test import TestHelper
 
 import numpy as np
 from dash import no_update
 from MNeuEventLib import BatchData
 
+from MNeuEventGUI.control_pane.presenter import ControlPanePresenter
+from MNeuEventGUI.test_helpers.unit_test import TestHelper
+
 current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
 sys.path.append(parent)
 from data_paths import FILTER  # noqa: E402
-
 
 TT = '_time-table'
 LT = '_log-table'
