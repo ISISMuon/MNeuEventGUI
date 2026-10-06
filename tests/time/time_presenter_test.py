@@ -2,7 +2,14 @@ import unittest
 from unittest import mock
 from MNeuEventGUI.time.presenter import TimePresenter
 from MNeuEventGUI.test_helpers.unit_test import TestHelper
-from MuonDataLib.filters import TimeFilters, Filter
+from MNeuEventLib import BatchData
+import os
+import sys
+
+current = os.path.dirname(os.path.realpath(__file__))
+parent = os.path.dirname(current)
+sys.path.append(parent)
+from data_paths import FILE  # noqa: E402
 
 
 def get_validation_data_end(new_value):
@@ -59,6 +66,8 @@ class TimePresenterTest(TestHelper):
     def setUp(self, view):
         self.view = view
         self.presenter = TimePresenter()
+        self.data = BatchData(FILE, 64, 1)
+        self.presenter.set_data(self.data)
 
     def test_set_view(self):
         self.view.assert_called_once()
@@ -119,18 +128,20 @@ class TimePresenterTest(TestHelper):
                                                   data)
         self.assert_data_end(result, 900)
 
-    def test_default_row(self):
-        row = self.presenter.default_row
-        self.assertEqual(row,
-                         {'Start_time-table': 330,
-                          'End_time-table': 660})
+    def test_add(self):
+        data = self.presenter.add()
+        self.assertEqual(data,
+                         [{'Name_time-table': 'filter 1',
+                           'Start_time-table': 330,
+                           'End_time-table': 660}])
 
-    def test_default_row_updated(self):
+    def test_add_updated_range(self):
         self.presenter.set_time_range(1, 200)
-        row = self.presenter.default_row
-        self.assertEqual(row,
-                         {'Start_time-table': 66,
-                          'End_time-table': 132})
+        data = self.presenter.add()
+        self.assertEqual(data,
+                         [{'Name_time-table': 'filter 1',
+                           'Start_time-table': 66,
+                           'End_time-table': 132}])
 
     def test_get_range(self):
         row = {'Delete_time-table': '',
@@ -145,117 +156,30 @@ class TimePresenterTest(TestHelper):
         self.assertEqual(cols[2]['headerName'],
                          'Exclude Filter details')
 
-        self.presenter.set_state('Include')
-        cols = self.presenter.cols.get_column_dict
-        self.assertEqual(cols[2]['headerName'],
-                         'Include Filter details')
+        for state in ['Exclude', 'Include']:
+            with self.subTest(state=state):
+                self.presenter.set_state(state)
+                cols = self.presenter.cols.get_column_dict
+                self.assertEqual(cols[2]['headerName'],
+                                 f'{state} Filter details')
+                self.assertEqual(self.data._dict(0)['time_filter_type'],
+                                 state)
 
-    def test_display_confirm_empty_table(self):
-        self.assertEqual(self.presenter._previous, 'Exclude')
-        show, cols = self.presenter.display_confirm('Include', [])
-        self.assertEqual(self.presenter._previous, 'Include')
-        self.assertFalse(show)
+    def test_load(self):
+        filters = {'default_1': {'start': 200, 'end': 400},
+                   'default_2': {'start': 800, 'end': 1000}}
 
-        # just check the updated part
-        self.assertEqual(cols[2]['headerName'],
-                         'Include Filter details')
+        data = self.presenter.load(filters)
 
-    def test_display_confirm(self):
-        self.assertEqual(self.presenter._previous, 'Exclude')
-        _, data = get_validation_data_start(800)
+        self.assertEqual(data, [{'Name_time-table': 'default_1',
+                                 'Start_time-table': 200,
+                                 'End_time-table': 400},
+                                {'Name_time-table': 'default_2',
+                                 'Start_time-table': 800,
+                                 'End_time-table': 1000}])
 
-        show, cols = self.presenter.display_confirm('Include', data)
-        self.assertEqual(self.presenter._previous, 'Exclude')
-        self.assertTrue(show)
-
-        # just check the updated part
-        self.assertEqual(cols[2]['headerName'],
-                         'Exclude Filter details')
-
-    def test_confirm(self):
-        _, data = get_validation_data_start(800)
-        self.assertEqual(self.presenter._previous, 'Exclude')
-
-        state, data, cols, change = self.presenter.confirm(4,
-                                                           1,
-                                                           'Include',
-                                                           data)
-
-        self.assertEqual(self.presenter._previous, 'Include')
-        self.assertEqual(data, [])
-        self.assertEqual(cols[2]['headerName'],
-                         'Include Filter details')
-        self.assertTrue(change)
-
-    def test_confirm_cancel(self):
-        _, data_in = get_validation_data_start(800)
-        self.assertEqual(self.presenter._previous, 'Exclude')
-
-        state, data, cols, change = self.presenter.confirm(1,
-                                                           3,
-                                                           'Include',
-                                                           data_in)
-
-        self.assertEqual(self.presenter._previous, 'Exclude')
-        self.assertEqual(data_in, data)
-        self.assertEqual(len(data_in), 2)
-        self.assertEqual(cols[2]['headerName'],
-                         'Exclude Filter details')
-        self.assertFalse(change)
-
-    def test_load_keep_filters(self):
-        filter_data = TimeFilters(
-                          keep_filters = [Filter('default_1', 200, 400),
-                                          Filter('default_2', 800, 1000)]
-                      )
-
-        data, state = self.presenter.load(filter_data)
-
-        self.assertEqual(len(data), 2)
-        self.assertEqual(data[0], {'Name_time-table': 'default_1',
-                                   'Start_time-table': 200,
-                                   'End_time-table': 400})
-
-        self.assertEqual(data[1], {'Name_time-table': 'default_2',
-                                   'Start_time-table': 800,
-                                   'End_time-table': 1000})
-
-        self.assertEqual(self.presenter._previous, 'Include')
-        self.assertEqual(state, 'Include')
-
-    def test_load_remove_filters(self):
-        filter_data = TimeFilters(
-                          remove_filters = [Filter('default_1', 200, 400),
-                                            Filter('default_2', 800, 1000)]
-                      )
-
-        data, state = self.presenter.load(filter_data)
-
-        self.assertEqual(len(data), 2)
-        self.assertEqual(data[0], {'Name_time-table': 'default_1',
-                                   'Start_time-table': 200,
-                                   'End_time-table': 400})
-
-        self.assertEqual(data[1], {'Name_time-table': 'default_2',
-                                   'Start_time-table': 800,
-                                   'End_time-table': 1000})
-
-        self.assertEqual(self.presenter._previous, 'Exclude')
-        self.assertEqual(state, 'Exclude')
-
-    def test_load_fails(self):
-
-        filter_data = TimeFilters(
-                          keep_filters = [Filter('default_1', 200, 400)],
-                          remove_filters = [Filter('default_2', 800, 1000)]
-                      )
-        try:
-            data, state = self.presenter.load(filter_data)
-        except RuntimeError as err:
-            self.assertEqual(str(err), 'Cannot have both include and'
-                             ' exclude time filters')
-            return
-        self.fail("should fail for a mixed filter file")
+    def test_load_empty(self):
+        self.assertEqual(self.presenter.load({}), [])
 
 
 if __name__ == '__main__':
