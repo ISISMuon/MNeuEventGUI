@@ -30,7 +30,7 @@ class LogPresenter(TablePresenter):
         # a handle to the data object
         self.data = None
         # a list of default sample logs
-        self._defaults = ['Temp_Sample']
+        self._defaults = ['Temp_Sample', 'Temp']
         # number of time ok has been clicked in pop-up
         self._ok_clicks = 0
         # if we are replacing a sample log (if so which row)
@@ -292,22 +292,25 @@ class LogPresenter(TablePresenter):
         # was ok or cancel pressed?
         if self._ok_clicks < ok:
             # ok pressed
+            self._ok_clicks += 1
             if self._replace is not None:
-                # todo: figure out what this is and make it work
                 # replace/update row (i.e. graph button pressed)
-                data[self._replace]['sample_log-table'] = log
+                name = data[self._replace][self.name_col]
+                self.data.remove_log_filter(0, name)
             else:
-                self._ok_clicks += 1
-                log_data = self.data.dataset.get_sample_log(log)
+                # new row (i.e. from add button)
+                name = f"filter {next(self.count)}"
 
-                min_value = np.min(log_data['value'])
-                max_value = np.max(log_data['value'])
+            # the filter keeps all of the data in the log
+            log_data = self.data.dataset.get_sample_log(log)
+            min_value = np.min(log_data['value'])
+            max_value = np.max(log_data['value'])
 
-                self.data.add_log_filter(0,
-                                          f"filter {next(self.count)}",
-                                          log,
-                                          min_value,
-                                          max_value)
+            self.data.add_log_filter(0,
+                                     name,
+                                     log,
+                                     min_value,
+                                     max_value)
         return False, self.load(self.data._dict(0)["sample_log_filters"])
 
     def add(self, n, data):

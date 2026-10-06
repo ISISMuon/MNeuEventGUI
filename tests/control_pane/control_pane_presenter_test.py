@@ -149,8 +149,7 @@ class ControlPanePresenterTest(TestHelper):
 
         self.presenter.make_plot([], [], 'Exclude', 0)
 
-        # no default sample log in the file, so use the first one
-        self.assert_new_plot(['B'])
+        self.assert_new_plot(['Temp'])
         self.assert_shading([], [], [])
 
     def test_make_plot_one_log(self):
