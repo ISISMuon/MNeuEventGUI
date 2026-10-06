@@ -21,6 +21,7 @@ class AmpPresenter(PresenterTemplate):
         # create a plot area
         self._plot = PlotAreaPresenter('amp')
         self._view = AmplitudeView(self)
+        self.data = None
 
     def load(self, data: dict):
         """
@@ -30,6 +31,18 @@ class AmpPresenter(PresenterTemplate):
         :returns: the amplitude filter details
         """
         return data.get(str(BASELINE), 0)
+
+    def set_data(self, data):
+        """
+        Set the muon data
+        """
+        self.data = data
+
+    def edit_baseline(self, value):
+        """
+        Set the amplitude baseline.
+        """
+        self.data.set_amps_baseline(0, float(value))
 
     def plot(self, data):
         """

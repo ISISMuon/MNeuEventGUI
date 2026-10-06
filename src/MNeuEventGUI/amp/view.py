@@ -1,4 +1,4 @@
-from dash import dcc, html
+from dash import dcc, html, callback, Input
 
 from MNeuEventGUI.view_template import ViewTemplate
 
@@ -22,3 +22,12 @@ class AmplitudeView(ViewTemplate):
                                 value=0,
                                 type='numeric')])
             ])
+
+    def set_callbacks(self, presenter):
+        """
+        Set the callback for editing the amplitude.
+        """
+        super().set_callbacks(presenter)
+
+        callback(Input('Amp', 'value'),
+                 prevent_inital_call=True)(presenter.edit_baseline)
