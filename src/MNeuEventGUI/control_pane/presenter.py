@@ -83,6 +83,8 @@ class ControlPanePresenter(PresenterTemplate):
         self._plot.new_plot(names, logs)
         start, stop = _get_filter_times(0, self._data)
 
+        start = [x * 1e-9 for x in start]
+        stop = [x * 1e-9 for x in stop]
         self.add_filter_shading(start, stop, log_data)
 
         return self._plot.fig
@@ -147,19 +149,11 @@ class ControlPanePresenter(PresenterTemplate):
         #  first axis has no number, second is number 2
         axis[0] = ''
 
-        if len(start) == 0:
-            # no filters
-            new_start = [self._plot._min]
-            new_stop = [self._plot._max]
-        else:
-            new_start, new_stop = _get_filter_times(0, self._data)
-            new_start = [x * 1e-9 for x in new_start]
-            new_stop = [x * 1e-9 for x in new_stop]
         if len(log_data) == 0:
             # If only have time filters
             self._loop_over_filters(self.wrap_add_shaded_region,
-                                    new_start,
-                                    new_stop)
+                                    start,
+                                    stop)
             return
 
         # loop over plots (sample logs)
@@ -168,36 +162,11 @@ class ControlPanePresenter(PresenterTemplate):
             self._plot.add_hline(y_min)
             self._plot.add_hline(y_max)
             self._loop_over_filters(self.wrap_add_rect,
-                                    new_start,
-                                    new_stop,
+                                    start,
+                                    stop,
                                     y_min,
                                     y_max,
                                     ax)
-
-    def apply_data(self, start, end):
-        """
-        Applies shading to the plot for included regions.
-        :param start: A list of start values.
-        :param end: A list of end values.
-        """
-        if len(start) == 0:
-            return
-
-        sorted_start = np.sort(start)
-        sorted_end = np.sort(end)
-
-        f_start = [sorted_start[0]]
-        f_end = []
-
-        for j in range(len(sorted_start)-1):
-            if sorted_start[j+1] > sorted_end[j]:
-                f_end.append(sorted_end[j])
-                f_start.append(sorted_start[j+1])
-        f_end.append(sorted_end[-1])
-
-        self._plot.add_shaded_region(self._plot._min, f_start[0])
-        for j in range(1, len(f_start)):
-            self._plot.add_shaded_region(f_start[j], f_end[j])
 
     def set_data(self, data):
         """

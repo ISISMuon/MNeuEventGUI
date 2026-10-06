@@ -1,5 +1,4 @@
 from MNeuEventGUI.main_app.view import MainApp
-from MNeuEventGUI.load_bar.view import CURRENT
 from MNeuEventGUI.test_helpers.gui import (check_no_alert,
                                            wait_and_press_btn)
 
@@ -16,11 +15,11 @@ from data_paths import FILE, FILTER  # noqa: E402
 
 
 def mock_load_nxs(n_clicks):
-    return CURRENT + FILE
+    return FILE
 
 
 def mock_bad_load(n_clicks):
-    return CURRENT + 'bad_file.txt'
+    return 'bad_file.txt'
 
 
 def mock_load_json(n_clicks):
@@ -74,7 +73,7 @@ def test_load_nxs(dash_duo):
     dash_duo.find_element('#Load').click()
 
     check_no_alert(dash_duo)
-    assert (dash_duo.find_element('#file_name').text == CURRENT + FILE)
+    assert (dash_duo.find_element('#file_name').text == FILE)
 
     wait_and_press_btn(dash_duo, 'Save')
 
