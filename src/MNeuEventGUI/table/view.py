@@ -49,7 +49,7 @@ class TableView(ViewTemplate):
                  State(presenter.ID, 'virtualRowData'),
                  prevent_initial_call=True)(presenter.validate)
 
-        callback([Output(presenter.ID, 'rowData', allow_duplicate=True)],
+        callback(Output(presenter.ID, 'rowData', allow_duplicate=True),
                  Input(presenter.ID, 'cellValueChanged'),
                  State(presenter.ID, 'virtualRowData'),
                  prevent_initial_call=True)(presenter.edit_row)
