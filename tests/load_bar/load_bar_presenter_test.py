@@ -1,5 +1,6 @@
 import unittest
 from unittest import mock
+from MNeuEventLib import BatchData
 from MNeuEventGUI.load_bar.presenter import LoadBarPresenter
 from MNeuEventGUI.test_helpers.unit_test import TestHelper
 import sys
@@ -29,14 +30,20 @@ class LoadBarPresenterTest(TestHelper):
     def test_load_nxs(self):
         self.load.load_nxs(FILE)
 
-        self.assertEqual(self.load._data._dict['raw_data']._dict['run_number'],
-                         195790)
+        self.assertIsInstance(self.load._data, BatchData)
+        # check it is the test file
+        self.assertEqual(self.load._data.dataset.sample_log_names,
+                         ['B', 'I', 'Temp'])
+        self.load._data.calculate()
+        self.assertEqual(self.load._data.get_n_events(0), [64147])
 
-    @mock.patch("MNeuEventGUI.load_bar.presenter.load_events")
+    @mock.patch("MNeuEventGUI.load_bar.presenter.BatchData")
     def test_get_data(self, data_mock):
         data_mock.return_value = mock.Mock()
         self.load.load_nxs(FILE)
+        data_mock.assert_called_once_with(FILE, 64, 1)
         self.assertEqual(self.load._data, data_mock())
+        self.assertEqual(self.load.get_data, data_mock())
 
     def test_set_file(self):
         self.assertEqual(self.load.name, '')
