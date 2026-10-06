@@ -53,12 +53,13 @@ class FilterPresenter(PresenterTemplate):
         :returns: if to hide the name in the GUI
         """
         hist_settings = self._data._dict(0)["hist_settings"]
+        # the data stores times in ns, the GUI uses microseconds
         return not (self._time_file_data == time_data
             and self._log_file_data == log_data
             and self._amp_file_data == float(amp_data)
-            and hist_settings["min_time"] == min_time
-            and hist_settings["max_time"] == max_time
-            and hist_settings["num_bins"] == num_bins)
+            and hist_settings["min_time"] / 1e3 == min_time
+            and hist_settings["max_time"] / 1e3 == max_time
+            and hist_settings["n_bins"] == num_bins)
 
     @property
     def headers(self):
@@ -136,7 +137,10 @@ class FilterPresenter(PresenterTemplate):
         :param max_time: the maximum time for the histogram
         :param num_bins: the number of bins for the histogram
         """
-        _ = self._data.calculate()
+        try:
+            _ = self._data.calculate()
+        except RuntimeError as msg:
+            return self._view.get_N(0), str(msg)
         N = f"{self._data.get_n_events(0)[0]:,}"
         return self._view.get_N(N), ''
 
