@@ -366,11 +366,10 @@ class LogPresenter(TablePresenter):
         for the log table (exluding the remove button),
         """
         data = []
-        for f in filters:
-            name = f["name"]
-            log = f["log"]
-            start = f["lower"]
-            end = f["upper"]
+        for name, values in filters.items():
+            log = values["log"]
+            start = values["lower"]
+            end = values["upper"]
 
             log_data = self.data.dataset.get_sample_log(log)
             y = log_data["value"]

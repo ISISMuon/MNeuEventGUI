@@ -22,10 +22,3 @@ class AmplitudeView(ViewTemplate):
                                 value=0,
                                 type='numeric')])
             ])
-
-    def set_callbacks(self, presenter):
-        """
-        Sets the callbacks for the GUI.
-        :param presenter: the presenter object
-        """
-        super().set_callbacks(presenter)

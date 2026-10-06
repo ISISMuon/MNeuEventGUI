@@ -271,5 +271,5 @@ class ControlPanePresenter(PresenterTemplate):
         and populate the GUI.
         :param name: the name of the json file
         """
-        self._data.load_filters(name)
+        self._data.load_filters(0, name)
         return self._filter.read_filters()

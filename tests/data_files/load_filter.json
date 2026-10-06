@@ -1,0 +1,24 @@
+{
+  "time_filter_type": "Include",
+  "overwrite_type": "Relaxed",
+  "time_filters": {
+    "second": {
+      "start": 0.05,
+      "end": 0.06
+    },
+    "first": {
+      "start": 0.01,
+      "end": 0.02
+    }
+  },
+  "sample_log_filters": {
+    "log_default_1": {
+      "log": "Temp",
+      "lower": 0.0044,
+      "upper": 0.163
+    }
+  },
+  "amplitudes": {
+    "18446744073709551615": 3.14
+  }
+}

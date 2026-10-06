@@ -1,20 +1,11 @@
 import os
+from pathlib import Path
 
+pwd = Path(os.path.abspath(__file__))
+data_dir = Path(pwd.parent, "data_files")
 
-current = os.path.dirname(os.path.realpath(__file__))
+# test nexus data file
+FILE = str(data_dir / "HIFI00195790.nxs")
 
-
-shared = os.path.join(os.path.dirname(current),
-                      'tests', 'data_files')
-
-
-FILE = os.path.join(shared,
-                    'HIFI00195790.nxs')
-
-
-FILTER = os.path.join(shared,
-                      'load_filter.json')
-
-
-BADFILTER = os.path.join(shared,
-                         'load_bad_filter.json')
+# test filter file generated from `data_files/filters.py`
+FILTER = str(data_dir / "load_filter.json")

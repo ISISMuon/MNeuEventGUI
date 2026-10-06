@@ -1,6 +1,5 @@
 from MNeuEventGUI.control_pane.presenter import ControlPanePresenter
 from MNeuEventGUI.load_bar.presenter import LoadBarPresenter
-from MNeuEventGUI.load_bar.view import CURRENT
 from MNeuEventGUI.save_bar.presenter import SaveBarPresenter
 
 
@@ -71,6 +70,12 @@ class MainAppPresenter:
         """
         Loads a filter file into the GUI.
         :param name: The name of the filter file
+        :returns: the table data for each part of the GUI:
+          - time data;
+          - log data;
+          - amplitude;
+          - state;
+          - table headers.
         """
         return self.control.read_filter(name)
 
@@ -85,9 +90,7 @@ class MainAppPresenter:
         """
         return text != ''
 
-    def save_data(self, name, time_filters, time_mode,
-                  log_filters, amp_filters,
-                  min_time, max_time, num_bin, debug):
+    def save_data(self, name):
         """
         Saves either a muon histogram nexus file
         or a filter file, from the current muon
@@ -112,25 +115,15 @@ class MainAppPresenter:
             return '', ''
         dtype = name[0]
         file = name[1:]
-        try:
-            if debug:
-                raise RuntimeError("Saving error")
 
-            hist_settings = (min_time, max_time, num_bin)
+        print("saving to ", file)
+        if dtype == "n":
+            print(file)
+            data.save(0, file)
+        elif dtype == 'j':
+            data.save_filters(0, file)
+        return file, ''
 
-            print("saving to ", file)
-            self.control._filter.apply_filters(time_filters,
-                                               time_mode,
-                                               log_filters,
-                                               amp_filters,
-                                               hist_settings)
-            if dtype == "n":
-                data.save(file)
-            elif dtype == 'j':
-                data.save_filters(file)
-            return file, ''
-        except Exception as err:
-            return '', f'Saving Error: {err}'
 
     def plot(self):
         """
@@ -153,8 +146,7 @@ class MainAppPresenter:
                  log_data, debug_state):
         """
         Loads a muon event nexus file.
-        :param name: the 'CURRENT' text string and
-        the name of the file to open.
+        :param name: the name of the file to open.
         :param time_data: the time filter table data
         :param log_data: the log filter table data
         :param debug_state: if debug mode is on or off.
@@ -187,22 +179,8 @@ class MainAppPresenter:
                     self.control.headers,
                     {},
                     '')
-        try:
-            if debug_state:
-                raise RuntimeError("Loading error")
 
-            self.load.load_nxs(name[len(CURRENT):])
-
-        except Exception as err:
-            self.control.clear()
-            return (self.plot(),
-                    [],
-                    True,
-                    [],
-                    True,
-                    self.control.headers,
-                    {},
-                    f'An error occurred: {err}')
+        self.load.load_nxs(name)
 
         data = self.load.get_data
         self.control.set_data(data)

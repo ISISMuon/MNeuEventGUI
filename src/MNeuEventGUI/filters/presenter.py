@@ -88,16 +88,7 @@ class FilterPresenter(PresenterTemplate):
         data = self._data._dict(0)
 
         # note we convert min_time and max_time to microseconds
-        return (data["time_filter_type"],
-        self._time.load(data["time_filters"]),
-        self._log.load(data["sample_log_filters"]),
-        self._amp.load(data["amplitudes"]),
-        data["hist_settings"]["min_time"] * 1e-3,
-        data["hist_settings"]["max_time"] * 1e-3,
-        data["hist_settings"]["n_bins"],
-        self.headers,
-        ""
-        )
+        return self.load(data)
 
     def get_log_y_range(self, row_log):
         """

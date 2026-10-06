@@ -29,7 +29,7 @@ class AmpPresenter(PresenterTemplate):
         :param data: the PeakProperty object.
         :returns: the amplitude filter details
         """
-        return data[BASELINE]
+        return data.get(str(BASELINE), 0)
 
     def plot(self, data):
         """

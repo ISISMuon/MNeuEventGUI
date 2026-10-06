@@ -175,11 +175,10 @@ class TimePresenter(TablePresenter):
         for the time table (exluding the remove button),
         and the new state (include/exclude)
         """
-
         data = []
-        for f in filters:
-            data.append({'Name_' + TIME_TABLE: f["name"],
-                         'Start_' + TIME_TABLE: f["start"],
-                         'End_' + TIME_TABLE: f["end"]})
+        for name, values in filters.items():
+            data.append({'Name_' + TIME_TABLE: name,
+                         'Start_' + TIME_TABLE: values["start"],
+                         'End_' + TIME_TABLE: values["end"]})
 
         return data
