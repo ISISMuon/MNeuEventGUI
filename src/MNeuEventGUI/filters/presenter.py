@@ -1,4 +1,3 @@
-from MNeuEventLib import _get_filter_times
 
 from MNeuEventGUI.amp.presenter import AmpPresenter
 from MNeuEventGUI.filters.view import FilterView

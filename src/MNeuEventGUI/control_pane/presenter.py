@@ -1,6 +1,4 @@
-import json
 
-import numpy as np
 from dash import no_update
 from MNeuEventLib import _get_filter_times
 

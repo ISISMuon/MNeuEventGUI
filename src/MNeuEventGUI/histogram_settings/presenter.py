@@ -63,6 +63,6 @@ class HistSettingsPresenter(PresenterTemplate):
         """
         Load the histogram settings from a data dictionary.
         :param settings: The dictionary to get the settings from.
-        :returns: The 
+        :returns: The histogram settings.
         """
 

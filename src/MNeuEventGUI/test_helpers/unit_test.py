@@ -95,9 +95,11 @@ class TestHelper(unittest.TestCase):
         if missing_rhs or missing_lhs:
             msg = ""
             if missing_rhs:
-                msg += "Missing from right-hand array: " + ", ".join(missing_rhs) + "\n\n"
+                msg += "Missing from right-hand array: "
+                + ", ".join(missing_rhs) + "\n\n"
             if missing_lhs:
-                msg += "Missing from left-hand array: " + ", ".join(missing_lhs) + "\n\n"
+                msg += "Missing from left-hand array: "
+                + ", ".join(missing_lhs) + "\n\n"
 
             raise AssertionError(msg)
 

@@ -1,4 +1,4 @@
-from dash import dcc, html, callback, Input
+from dash import Input, callback, dcc, html
 
 from MNeuEventGUI.view_template import ViewTemplate
 
