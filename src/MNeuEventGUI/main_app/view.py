@@ -41,7 +41,7 @@ class MainApp(Dash):
         return dbc.Container(
             [
                 html.H1(
-                    "MuonDataGUI",
+                    "MNeuEventGUI",
                     style={"textAlign": "center"},
                     className="mb-3"),
 
@@ -58,7 +58,7 @@ class MainApp(Dash):
 
                 # this is also placed inside Loading, so it produces
                 # a nice loading message when the GUI is busy.
-                # The delay stops the spinner flashing on screan.
+                # The delay stops the spinner flashing on screen.
                 dcc.Loading([self.presenter.load.layout,
                              self.presenter.control.layout,
                              self.presenter.save.layout,
