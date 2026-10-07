@@ -77,9 +77,7 @@ class FilterPresenter(PresenterTemplate):
         self._time.set_data(data)
         self._log.set_data(data)
         self._amp.set_data(data)
-        times = self._data.dataset.get_frame_times() * 1e-9
-
-        self._time.set_time_range(times[0], times[-1] + 32e-6)
+        self._hist_settings.set_data(data)
 
     def read_filters(self) -> tuple:
         """

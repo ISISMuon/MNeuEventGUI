@@ -47,7 +47,7 @@ class TimePresenter(TablePresenter):
     def _set_view(self):
         """
         Overwrite the view to give a time table view
-"""
+        """
         return TimeView(self)
 
     def set_data(self, data):
@@ -55,6 +55,9 @@ class TimePresenter(TablePresenter):
         Set the underlying model data.
         """
         self.data = data
+        # set allowed time range for filters
+        times = self.data.dataset.get_frame_times() * 1e-9
+        self.set_time_range(times[0], times[-1] + 32e-6)
 
     def set_time_range(self, start, end):
         """

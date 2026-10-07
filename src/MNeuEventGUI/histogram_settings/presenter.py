@@ -38,6 +38,18 @@ class HistSettingsPresenter(PresenterTemplate):
 
         return f"Resolution: {width:.2f} ns"
 
+    def set_data(self, data):
+        """
+        Set the data model for this presenter.
+        """
+        self.data = data
+
+    def set_values(self, min_time, max_time, num_bins):
+        """
+        Set the histogram settings in the data to some values.
+        """
+        self.data.set_histogram_settings(0, min_time, max_time, num_bins)
+
     def check_num_bins_invalid(self, num_bins: int) -> bool:
         """
         Check whether the number of bins is valid.

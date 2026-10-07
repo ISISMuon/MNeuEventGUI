@@ -65,7 +65,7 @@ class FilterView(ViewTemplate):
                   Input('Amp', 'value'),
                   Input('min-time', 'value'),
                   Input('max-time', 'value'),
-                  Input('num-bin', 'value'),
+                  Input('num-bins', 'value'),
                   ],
                  prevent_initial_call=True)(presenter.show_file)
 
@@ -76,7 +76,10 @@ class FilterView(ViewTemplate):
                   Input('time-table_add', 'n_clicks'),
                   Input('log-table_add', 'n_clicks'),
                   Input('time-table', 'cellRendererData'),
-                  Input('log-table', 'cellRendererData')],
+                  Input('log-table', 'cellRendererData'),
+                  Input('min-time', 'value'),
+                  Input('max-time', 'value'),
+                  Input('num-bins', 'value')],
                  prevent_initial_call=True)(lambda *_: self.no_events_str)
 
         # clear events string if time filter parameters change
