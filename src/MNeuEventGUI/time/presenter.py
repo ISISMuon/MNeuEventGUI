@@ -122,6 +122,8 @@ class TimePresenter(TablePresenter):
         :param value: the updated part of the table name
         (expect either Include or Exclude)
         """
+        if self.data is None:
+            return
         self.data.set_time_type(0, value)
         self.cols.set_title(2, f'{value} Filter details')
 
@@ -130,8 +132,15 @@ class TimePresenter(TablePresenter):
         Add a new time filter.
         :returns: The new time filter data.
         """
+        # new row (i.e. from add button)
+        existing_filters = self.data._dict(0)["time_filters"]
+        name = f"filter {next(self.count)}"
+        # if filters already exist, avoid overwriting
+        while name in existing_filters:
+            name = f"filter {next(self.count)}"
+
         self.data.add_time_filter(0,
-                                  f"filter {next(self.count)}",
+                                  name,
                                   0.33 * self.end,
                                   0.66 * self.end)
         return self.load(self.data._dict(0)["time_filters"])

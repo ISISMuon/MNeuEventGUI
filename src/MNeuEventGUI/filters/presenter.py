@@ -39,7 +39,7 @@ class FilterPresenter(PresenterTemplate):
                   num_bins):
         """
         If to display the name of the loaded
-        filter file. This method chekcs
+        filter file. This method checks
         the data currently in the table,
         so if you alter it and then change it
         back the file name will reappear.
@@ -51,6 +51,9 @@ class FilterPresenter(PresenterTemplate):
         :param amp_data: The amplitude filter data
         :returns: if to hide the name in the GUI
         """
+        if self._data is None:
+            return True
+
         hist_settings = self._data._dict(0)["hist_settings"]
         # the data stores times in ns, the GUI uses microseconds
         return not (self._time_file_data == time_data

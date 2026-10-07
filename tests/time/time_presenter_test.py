@@ -70,6 +70,7 @@ class TimePresenterTest(TestHelper):
         self.presenter = TimePresenter()
         self.data = BatchData(FILE, 64, 1)
         self.presenter.set_data(self.data)
+        self.presenter.set_time_range(0, 1000)
 
     def test_set_view(self):
         self.view.assert_called_once()

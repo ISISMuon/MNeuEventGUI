@@ -81,9 +81,12 @@ class ControlPanePresenter(PresenterTemplate):
         self._plot.new_plot(names, logs)
         start, stop = _get_filter_times(0, self._data)
 
-        start = [x * 1e-9 for x in start]
-        stop = [x * 1e-9 for x in stop]
-        self.add_filter_shading(start, stop, log_data)
+        filters = self._data._dict(0)
+        if start or not (filters["time_filters"]
+                         or filters["sample_log_filters"]):
+            start = [x * 1e-9 for x in start]
+            stop = [x * 1e-9 for x in stop]
+            self.add_filter_shading(start, stop, log_data)
 
         return self._plot.fig
 

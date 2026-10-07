@@ -358,7 +358,7 @@ class ControlPanePresenterTest(TestHelper):
         (data, log_data, amp, state, cols) = self.presenter.read_filter(FILTER)
         self.assertEqual(state, 'Include')
         self.assertEqual(len(data), 2)
-        self.assertContents(data, [{'Name' + TT: 'first',
+        self.assertCountEqual(data, [{'Name' + TT: 'first',
                                    'Start' + TT: 0.01,
                                    'End' + TT: 0.02},
                                    {'Name' + TT: 'second',

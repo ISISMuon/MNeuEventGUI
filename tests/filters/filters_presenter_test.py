@@ -210,7 +210,7 @@ class FilterPresenterTest(TestHelper):
          state, headers) = self.presenter.load(data._dict(0))
         self.assertEqual(state, 'Include')
         # the data does not preserve the order the filters were added
-        self.assertContents(times, [{'Name' + TT: 'unit',
+        self.assertCountEqual(times, [{'Name' + TT: 'unit',
                                      'Start' + TT: 1,
                                      'End' + TT: 2},
                                     {'Name' + TT: 'test',
@@ -241,7 +241,7 @@ class FilterPresenterTest(TestHelper):
          state, headers) = self.presenter.load(data._dict(0))
         self.assertEqual(state, 'Exclude')
         # the data does not preserve the order the filters were added
-        self.assertContents(times, [{'Name' + TT: 'more',
+        self.assertCountEqual(times, [{'Name' + TT: 'more',
                                      'Start' + TT: 5,
                                      'End' + TT: 6},
                                     {'Name' + TT: 'tests',

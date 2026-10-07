@@ -30,4 +30,4 @@ class AmplitudeView(ViewTemplate):
         super().set_callbacks(presenter)
 
         callback(Input('Amp', 'value'),
-                 prevent_inital_call=True)(presenter.edit_baseline)
+                 prevent_initial_call=True)(presenter.edit_baseline)

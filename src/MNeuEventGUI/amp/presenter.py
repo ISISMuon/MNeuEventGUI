@@ -42,6 +42,9 @@ class AmpPresenter(PresenterTemplate):
         """
         Set the amplitude baseline.
         """
+        if self.data is None or value is None:
+            return
+
         self.data.set_amps_baseline(0, float(value))
 
     def plot(self, data):

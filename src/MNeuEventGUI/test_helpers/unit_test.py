@@ -73,37 +73,6 @@ class TestHelper(unittest.TestCase):
             self.assertArrays(args[k],
                               expected_args[k])
 
-    def assertContents(self, expected, actual):
-        """
-        Assert two lists have the same contents.
-        """
-        if len(expected) != len(actual):
-            msg = f"Lists not the same size: {len(expected)} vs {len(actual)}"
-            raise AssertionError(msg)
-
-        # find items missing on 'actual' list
-        missing_rhs = []
-        for item in expected:
-            if item not in actual:
-                missing_rhs.append(item)
-
-        missing_lhs = []
-        for item in actual:
-            if item not in expected:
-                missing_lhs.append(item)
-
-        if missing_rhs or missing_lhs:
-            msg = ""
-            if missing_rhs:
-                msg += "Missing from right-hand array: "
-                + ", ".join(missing_rhs) + "\n\n"
-            if missing_lhs:
-                msg += "Missing from left-hand array: "
-                + ", ".join(missing_lhs) + "\n\n"
-
-            raise AssertionError(msg)
-
-
     def check_shape(self, shape, k, x0, x1, y0, y1, ax):
         """
         A method to compare the vertical rectangles

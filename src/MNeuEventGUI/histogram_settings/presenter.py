@@ -9,6 +9,7 @@ class HistSettingsPresenter(PresenterTemplate):
 
     def __init__(self):
         self._view = HistSettingsView(self)
+        self.data = None
 
     def display_width(self, min_time, max_time, num_bins):
         """
@@ -48,6 +49,8 @@ class HistSettingsPresenter(PresenterTemplate):
         """
         Set the histogram settings in the data to some values.
         """
+        if self.data is None:
+            return
         self.data.set_histogram_settings(0, min_time, max_time, num_bins)
 
     def check_num_bins_invalid(self, num_bins: int) -> bool:

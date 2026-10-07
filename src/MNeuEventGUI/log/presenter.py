@@ -299,7 +299,11 @@ class LogPresenter(TablePresenter):
                 self.data.remove_log_filter(0, name)
             else:
                 # new row (i.e. from add button)
+                existing_filters = self.data._dict(0)["sample_log_filters"]
                 name = f"filter {next(self.count)}"
+                # if filters already exist, avoid overwriting
+                while name in existing_filters:
+                    name = f"filter {next(self.count)}"
 
             # the filter keeps all of the data in the log
             log_data = self.data.dataset.get_sample_log(log)

@@ -266,14 +266,14 @@ class MainAppPresenterTest(TestHelper):
         app = MainAppPresenter(dummy_open)
         _ = app.load_nxs(FILE, [], [], DEBUG)
         result = app.load_filter(FILTER)
-        self.assertContents(result[0], [{'Name' + TT: 'first',
+        self.assertCountEqual(result[0], [{'Name' + TT: 'first',
                                       'Start' + TT: 0.01,
                                       'End' + TT: 0.02},
                                      {'Name' + TT: 'second',
                                       'Start' + TT: 0.05,
                                       'End' + TT: 0.06},
                                      ])
-        self.assertContents(result[1], [{'Name_log-table': 'log_default_1',
+        self.assertCountEqual(result[1], [{'Name_log-table': 'log_default_1',
                                       'filter_log-table': 'between',
                                       'magic': 'between',
                                       'sample_log-table': 'Temp',
