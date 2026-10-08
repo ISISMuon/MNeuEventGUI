@@ -2,12 +2,12 @@ import unittest
 from unittest import mock
 
 from MNeuEventGUI.utils.errors import (
-    ALERT,
     DETAILS,
     DETAILS_BTN,
     DETAILS_COLLAPSE,
     ERROR_PREFIX,
     HIDE_DETAILS,
+    MODAL,
     MSG,
     SHOW_DETAILS,
     UNEXPECTED_MSG,
@@ -77,7 +77,7 @@ class ErrorsTest(unittest.TestCase):
                          {'children': ERROR_PREFIX + 'Nice message'})
         self.assertTrue('the original error'
                         in props[DETAILS]['children'])
-        self.assertEqual(props[ALERT], {'is_open': True})
+        self.assertEqual(props[MODAL], {'is_open': True})
 
     @mock.patch('MNeuEventGUI.utils.errors.set_props')
     def test_display_error_hides_details_of_a_new_error(self, set_props):

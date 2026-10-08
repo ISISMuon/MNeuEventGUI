@@ -7,7 +7,7 @@ from MNeuEventGUI.utils.errors import (
     DETAILS_BTN,
     DETAILS_COLLAPSE,
     display_error,
-    error_alert,
+    error_modal,
     toggle_details,
 )
 
@@ -53,8 +53,8 @@ class MainApp(Dash):
                     style={"textAlign": "center"},
                     className="mb-3"),
 
-                # place the notifcations just under the title
-                error_alert(),
+                # errors pop up over the GUI, so this can go anywhere
+                error_modal(),
                 # ------------------------------------------------- #
 
                 # this is also placed inside Loading, so it produces
@@ -100,7 +100,7 @@ class MainApp(Dash):
         save buttons is pressed.
 
         """
-        # Shows/hides the full error in the alert.
+        # Shows/hides the full error in the pop up.
         callback([Output(DETAILS_COLLAPSE, 'is_open'),
                   Output(DETAILS_BTN, 'children')],
                  Input(DETAILS_BTN, 'n_clicks'),
