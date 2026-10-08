@@ -3,7 +3,13 @@ import dash_bootstrap_components as dbc
 from dash import Dash, Input, Output, State, callback, dcc, html
 
 from MNeuEventGUI.main_app.presenter import MainAppPresenter
-from MNeuEventGUI.utils.errors import display_error
+from MNeuEventGUI.utils.errors import (
+    DETAILS_BTN,
+    DETAILS_COLLAPSE,
+    display_error,
+    error_alert,
+    toggle_details,
+)
 
 
 class MainApp(Dash):
@@ -48,14 +54,7 @@ class MainApp(Dash):
                     className="mb-3"),
 
                 # place the notifcations just under the title
-                dbc.Alert([html.H4("   ERROR MESSAGE",
-                                   className='bi-x-octagon-fill'),
-                           html.P("Error", id='error_msg')],
-                          id='error',
-                          dismissable=True,
-                          fade=False,
-                          color='danger',
-                          is_open=False),
+                error_alert(),
                 # ------------------------------------------------- #
 
                 # this is also placed inside Loading, so it produces
@@ -101,6 +100,13 @@ class MainApp(Dash):
         save buttons is pressed.
 
         """
+        # Shows/hides the full error in the alert.
+        callback([Output(DETAILS_COLLAPSE, 'is_open'),
+                  Output(DETAILS_BTN, 'children')],
+                 Input(DETAILS_BTN, 'n_clicks'),
+                 State(DETAILS_COLLAPSE, 'is_open'),
+                 prevent_initial_call=True)(toggle_details)
+
         # Updates the information on the loaded filter.
         callback([
                   Output('time-table', 'rowData', allow_duplicate=True),
