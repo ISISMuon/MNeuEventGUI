@@ -85,16 +85,6 @@ class MainAppPresenter:
         return self.control.read_filter(name)
 
 
-    def alert(self, text):
-        """
-        Opens the alert if new information
-        has been uploaded.
-        :param text: the text to be displayed in
-        the alert.
-        :returns: if to open the alert
-        """
-        return text != ''
-
     def save_data(self, name):
         """
         Saves either a muon histogram nexus file
@@ -112,12 +102,11 @@ class MainAppPresenter:
         :param max_time: the histogram maximum time
         :param num_bin: the number of histogram bins
         :param debug: if debug mode is on or off.
-        :returns: the name of the saved file and
-        the alert message
+        :returns: the name of the saved file
         """
         data = self.load.get_data
         if 'None' in name:
-            return '', ''
+            return ''
         dtype = name[0]
         file = name[1:]
 
@@ -127,7 +116,7 @@ class MainAppPresenter:
             data.save(0, file)
         elif dtype == 'j':
             data.save_filters(0, file)
-        return file, ''
+        return file
 
 
     def plot(self):
@@ -168,7 +157,6 @@ class MainAppPresenter:
         - the histogram's number of bins
         - the filter table column names
         - plot of the amplitude histogram
-        - the alert message
         - the number of events string
         """
         if name == self.load.file:
@@ -184,7 +172,6 @@ class MainAppPresenter:
                     amp, state, min_time, max_time, num_bins,
                     headers,
                     self.control._filter._amp._plot.fig,
-                    '',
                     no_update)
         self.load.set_file(name)
 
@@ -201,7 +188,6 @@ class MainAppPresenter:
                     no_update, no_update, no_update, no_update, no_update,
                     self.control.headers,
                     {},
-                    '',
                     no_events)
 
         self.load.load_nxs(name)
@@ -215,5 +201,5 @@ class MainAppPresenter:
 
         return (self.plot(), times, False, logs, False,
                 amp, state, min_time, max_time, num_bins,
-                headers, self.plot_amps(data), '',
+                headers, self.plot_amps(data),
                 no_events)
