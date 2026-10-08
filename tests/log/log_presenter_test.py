@@ -1,9 +1,22 @@
+import os
+import sys
 import unittest
 from unittest import mock
 
+from MNeuEventLib import BatchData
+
 from MNeuEventGUI.log.presenter import LogPresenter
 from MNeuEventGUI.test_helpers.unit_test import TestHelper
-from MuonDataLib.test_helpers.utils import get_sample_logs
+
+current = os.path.dirname(os.path.realpath(__file__))
+parent = os.path.dirname(current)
+sys.path.append(parent)
+from data_paths import FILE  # noqa: E402
+
+# range of the sample logs in the test file
+TEMP_MIN, TEMP_MAX = 35., 39.
+B_MIN, B_MAX = 0.6967067, 1.
+I_MIN, I_MAX = 0.4493289, 1.
 
 
 def make_log_table():
@@ -38,6 +51,19 @@ def make_change(row, old, new, name):
              'timestamp': 1}]
 
 
+def row_index(data, name):
+    """
+    Get the index of a named row in the table.
+    The data does not preserve the order the filters
+    were added, so we cannot rely on the row order.
+    :param data: the log table data
+    :param name: the name of the row
+    :returns: the index of the row
+    """
+    names = [row['Name_log-table'] for row in data]
+    return names.index(name)
+
+
 class LogPresenterTest(TestHelper):
 
     @mock.patch("MNeuEventGUI.log.presenter.LogView")
@@ -45,11 +71,20 @@ class LogPresenterTest(TestHelper):
         self.view = view
         self.view.return_value = mock.Mock()
         self.presenter = LogPresenter()
-        self.presenter.set_logs(get_sample_logs())
+        self.data = BatchData(FILE, 64, 1)
+        self.presenter.set_data(self.data)
+
+    def add_filters(self):
+        """
+        Add two log filters to the data.
+        :returns: the log table data for the filters
+        """
+        self.data.add_log_filter(0, 'mag_field', 'B', 0.7, 0.9)
+        self.data.add_log_filter(0, 'log_default_1', 'Temp', 36., 37.)
+        return self.presenter.load(self.data._dict(0)['sample_log_filters'])
 
     def assertData(self, data, name, log, f_type, y_min, y_max, y0, yN):
-        expected = {'Delete_log-table': '',
-                    'Name_log-table': name,
+        expected = {'Name_log-table': name,
                     'filter_log-table': f_type,
                     'magic': f_type,
                     'sample_log-table': log,
@@ -57,18 +92,21 @@ class LogPresenterTest(TestHelper):
                     'yN_log-table': yN,
                     'y_min_log-table': y_min,
                     'y_max_log-table': y_max}
-        self.assertEqual(len(data.keys()), len(expected.keys()))
-        for key in data.keys():
-            self.assertEqual(data[key], expected[key])
+        # the delete button is only in the table, not the loaded data
+        data = {key: value for key, value in data.items()
+                if key != 'Delete_log-table'}
+        self.assertEqual(data.keys(), expected.keys())
+        for key in data:
+            if isinstance(expected[key], str):
+                self.assertEqual(data[key], expected[key])
+            else:
+                self.assertAlmostEqual(data[key], expected[key], 5)
 
     def test_init(self):
-        self.presenter._logs = None
         self.assertEqual(self.presenter._view,
                          self.view())
-        self.assertEqual(self.presenter._logs,
-                         None)
         self.assertEqual(self.presenter._defaults,
-                         ['Temp_Sample'])
+                         ['Temp_Sample', 'Temp'])
 
         self.assertEqual(self.presenter._ok_clicks,
                          0)
@@ -78,20 +116,24 @@ class LogPresenterTest(TestHelper):
         self.assertEqual(self.presenter._selected_name,
                          'Temp_Sample')
 
-    def test_set_logs(self):
-        self.presenter.set_logs('logs')
-        self.assertEqual(self.presenter._logs,
-                         'logs')
+    def test_set_data(self):
+        self.presenter.set_data('data')
+        self.assertEqual(self.presenter.data,
+                         'data')
 
     def test_delete_btn_pressed(self):
+        table = self.add_filters()
         info = {'colId': 'Delete_log-table',
-                'rowIndex': 1,
+                'rowIndex': row_index(table, 'log_default_1'),
                 'rowId': '1',
                 'timestamp': 174}
-        data, state = self.presenter.btn_pressed(info, make_log_table())
+        data, state = self.presenter.btn_pressed(info, table)
         self.assertFalse(state)
         self.assertEqual(len(data), 1)
-        self.assertData(data[0], 'mag_field', 'B', 'between', 0, 3, 0, 1)
+        self.assertData(data[0], 'mag_field', 'B', 'between',
+                        B_MIN, B_MAX, 0.7, 0.9)
+        self.assertEqual(list(self.data._dict(0)['sample_log_filters']),
+                         ['mag_field'])
 
     def test_plot_btn_pressed(self):
         info = {'colId': 'change_btn_log-table',
@@ -110,116 +152,110 @@ class LogPresenterTest(TestHelper):
         self.assertEqual(self.presenter._selected_name, 'Temp')
         self.assertEqual(self.presenter._replace, 1)
 
-    def test_get_available_logs_empty(self):
-        data = {}
-
-        names = self.presenter.get_available_logs(data)
-        self.assertArrays(names, ['Temp', 'B', 'I'])
-
-    def test_get_available_logs_with_log_filter(self):
-        data = [{'sample_log-table': 'B'}]
-
-        names = self.presenter.get_available_logs(data)
-        self.assertArrays(names, ['Temp', 'I'])
-
-    def test_get_available_logs_with_replace_filter(self):
-        data = [{'sample_log-table': 'B'},
-                {'sample_log-table': 'I'}]
-        self.presenter._replace = 1
-        self.presenter._selected_name = 'B'
-
-        names = self.presenter.get_available_logs(data)
-        self.assertArrays(names, ['Temp', 'B'])
-
     def test_get_new_log_name_none(self):
-        self.presenter._logs = None
+        self.presenter.data = None
         self.assertEqual(self.presenter.get_new_log_name({}),
                          '')
 
-    def test_get_new_log_name_no_default(self):
+    def test_get_new_log_name_default(self):
         self.assertEqual(self.presenter.get_new_log_name({}),
                          'Temp')
 
-    def test_get_new_log_name_default(self):
+    def test_get_new_log_name_no_default(self):
+        self.presenter._defaults = ['not a log']
+        # use the first log
+        self.assertEqual(self.presenter.get_new_log_name({}),
+                         'B')
+
+    def test_get_new_log_name_custom_default(self):
         self.presenter._defaults = ['B']
         self.assertEqual(self.presenter.get_new_log_name({}),
                          'B')
 
-    def test_get_new_log_name_after_defaults(self):
-        self.presenter._defaults = ['B']
-        data = [{'sample_log-table': 'B'}]
+    def test_get_new_log_name_in_use(self):
+        # a sample log can be used by multiple filters
+        data = [{'sample_log-table': 'Temp'}]
         self.assertEqual(self.presenter.get_new_log_name(data),
                          'Temp')
 
     def test_get_new_log_name_second_default(self):
-        self.presenter._defaults = ['B', 'I']
-        data = [{'sample_log-table': 'B'}]
-        self.assertEqual(self.presenter.get_new_log_name(data),
+        self.presenter._defaults = ['not a log', 'I']
+        self.assertEqual(self.presenter.get_new_log_name({}),
                          'I')
 
     def test_show_log_data(self):
         self.presenter._plot.new_plot = mock.Mock()
 
         result = self.presenter.show_log_data('B')
-        self.assertEqual(result[1], 'Max: 2.000')
-        self.assertEqual(result[2], 'Mean: 1.250')
-        self.assertEqual(result[3], 'Min: 0.500')
-        self.assertEqual(result[4], 'Sigma (std): 0.559')
+        self.assertEqual(result[1], 'Max: 1.000')
+        self.assertEqual(result[2], 'Mean: 0.885')
+        self.assertEqual(result[3], 'Min: 0.697')
+        self.assertEqual(result[4], 'Sigma (std): 0.112')
 
     def test_selecct_log_new(self):
         options, value = self.presenter.select_log(True, {})
-        self.assertArrays(options, ['Temp', 'B', 'I'])
+        self.assertArrays(options, ['B', 'I', 'Temp'])
         self.assertEqual(value, 'Temp')
 
     def test_selecct_log_new_with_filters(self):
-        data = [{'sample_log-table': 'B'}]
+        # all logs are available, even if in use
+        data = [{'sample_log-table': 'Temp'}]
         options, value = self.presenter.select_log(True, data)
-        self.assertArrays(options, ['Temp', 'I'])
+        self.assertArrays(options, ['B', 'I', 'Temp'])
         self.assertEqual(value, 'Temp')
 
     def test_selecct_log_replace(self):
         data = [{'sample_log-table': 'B'}]
-        self.presenter._replace = 1
+        self.presenter._replace = 0
         self.presenter._selected_name = 'B'
         options, value = self.presenter.select_log(True, data)
-        self.assertArrays(options, ['Temp', 'B', 'I'])
+        self.assertArrays(options, ['B', 'I', 'Temp'])
         self.assertEqual(value, 'B')
 
     def test_close_modal_cancel_pressed(self):
+        table = self.add_filters()
         state, result = self.presenter.close_modal(0,
                                                    1,
                                                    'Temp',
-                                                   [make_log_table()[0]])
+                                                   table)
         self.assertFalse(state)
-        self.assertEqual(len(result), 1)
-        self.assertData(result[0], 'mag_field', 'B', 'between', 0, 3, 0, 1)
+        self.assertEqual(result, table)
 
     def test_close_modal_ok_new_row(self):
+        table = self.add_filters()
         state, result = self.presenter.close_modal(1,
                                                    1,
                                                    'Temp',
-                                                   [make_log_table()[0]])
+                                                   table)
         self.assertFalse(state)
-        self.assertEqual(len(result), 2)
-        self.assertData(result[0], 'mag_field', 'B',
-                        'between', 0, 3, 0, 1)
-        self.assertData(result[1], 'log_default_1', 'Temp',
-                        'between', -1.9, -1.6, -1.9, -1.6)
+        self.assertEqual(len(result), 3)
+        self.assertData(result[row_index(result, 'mag_field')],
+                        'mag_field', 'B', 'between',
+                        B_MIN, B_MAX, 0.7, 0.9)
+        self.assertData(result[row_index(result, 'log_default_1')],
+                        'log_default_1', 'Temp', 'between',
+                        TEMP_MIN, TEMP_MAX, 36, 37)
+        # new filter keeps all of the data
+        self.assertData(result[row_index(result, 'filter 1')],
+                        'filter 1', 'Temp', 'between',
+                        TEMP_MIN, TEMP_MAX, TEMP_MIN, TEMP_MAX)
 
     def test_close_modal_ok_replace_row(self):
-
-        self.presenter._replace = 1
+        table = self.add_filters()
+        self.presenter._replace = row_index(table, 'log_default_1')
         state, result = self.presenter.close_modal(1,
                                                    1,
                                                    'I',
-                                                   make_log_table())
+                                                   table)
         self.assertFalse(state)
         self.assertEqual(len(result), 2)
-        self.assertData(result[0], 'mag_field', 'B',
-                        'between', y0=0, yN=1, y_min=0, y_max=3)
+        self.assertData(result[row_index(result, 'mag_field')],
+                        'mag_field', 'B', 'between',
+                        B_MIN, B_MAX, 0.7, 0.9)
         # updates y values (filter + limits)
-        self.assertData(result[1], 'log_default_1', 'I',
-                        'between', y0=1, yN=4, y_min=1, y_max=4)
+        self.assertData(result[row_index(result, 'log_default_1')],
+                        'log_default_1', 'I', 'between',
+                        I_MIN, I_MAX, I_MIN, I_MAX)
 
     def test_close_modal_ok_multiple_clicks(self):
         data = []
@@ -238,18 +274,20 @@ class LogPresenterTest(TestHelper):
                                                  data)
         self.assertFalse(state)
         self.assertEqual(len(data), 2)
-        self.assertData(data[0], 'log_default_1', 'Temp',
-                        'between', -1.9, -1.6, -1.9, -1.6)
-        self.assertData(data[1], 'log_default_2', 'B',
-                        'between', 0.5, 2, 0.5, 2)
+        self.assertData(data[row_index(data, 'filter 1')],
+                        'filter 1', 'Temp', 'between',
+                        TEMP_MIN, TEMP_MAX, TEMP_MIN, TEMP_MAX)
+        self.assertData(data[row_index(data, 'filter 2')],
+                        'filter 2', 'B', 'between',
+                        B_MIN, B_MAX, B_MIN, B_MAX)
 
     def test_add(self):
         data = [{'Delete_log-table': '',
                  'Name_log-table': 'mag_field',
                  'sample_log-table': 'B'}]
 
-        self._replace = 0
-        self._selected_name = 'B'
+        self.presenter._replace = 0
+        self.presenter._selected_name = 'B'
 
         state, name = self.presenter.add(1, data)
         self.assertTrue(state)
@@ -258,17 +296,6 @@ class LogPresenterTest(TestHelper):
                          'Temp')
         self.assertEqual(self.presenter._replace,
                          None)
-
-    def test_generate_default(self):
-        data = []
-        result = self.presenter.generate_default(data, 'B')
-        self.assertData(result, 'log_default_1', 'B', 'between', 0, 1, 0, 1)
-
-    def test_generate_default_multiple_calls(self):
-        data = []
-        data.append(self.presenter.generate_default(data, 'B'))
-        result = self.presenter.generate_default(data, 'I')
-        self.assertData(result, 'log_default_2', 'I', 'between', 0, 1, 0, 1)
 
     def test__validate_row(self):
         """

@@ -1,5 +1,6 @@
 import unittest
 from unittest import mock
+
 from MNeuEventGUI.save_bar.presenter import SaveBarPresenter
 from MNeuEventGUI.test_helpers.unit_test import TestHelper
 

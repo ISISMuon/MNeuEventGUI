@@ -41,7 +41,7 @@ class MainApp(Dash):
         return dbc.Container(
             [
                 html.H1(
-                    "MuonDataGUI",
+                    "MNeuEventGUI",
                     style={"textAlign": "center"},
                     className="mb-3"),
 
@@ -58,7 +58,7 @@ class MainApp(Dash):
 
                 # this is also placed inside Loading, so it produces
                 # a nice loading message when the GUI is busy.
-                # The delay stops the spinner flashing on screan.
+                # The delay stops the spinner flashing on screen.
                 dcc.Loading([self.presenter.load.layout,
                              self.presenter.control.layout,
                              self.presenter.save.layout,
@@ -108,14 +108,9 @@ class MainApp(Dash):
                   Output('time-table', 'rowData', allow_duplicate=True),
                   Output('log-table', 'rowData', allow_duplicate=True),
                   Output('Amp', 'value', allow_duplicate=True),
-                  Output('min-time', 'value', allow_duplicate=True),
-                  Output('max-time', 'value', allow_duplicate=True),
-                  Output('num-bin', 'value', allow_duplicate=True),
                   Output('dropdown-time', 'value', allow_duplicate=True),
-                  Output('time-table', 'columnDefs', allow_duplicate=True),
-                  Output('error_msg', 'children', allow_duplicate=True)],
+                  Output('time-table', 'columnDefs', allow_duplicate=True),],
                  Input('title_test', 'children'),
-                 State('debug', 'on'),
                  prevent_initial_call=True)(self.presenter.load_filter)
 
         # Plots the data after it is loaded.
@@ -141,15 +136,6 @@ class MainApp(Dash):
         callback([Output('save_exe_dummy', 'children'),
                   Output('error_msg', 'children', allow_duplicate=True)],
                  Input('save_btn_dummy', 'children'),
-                 [State('time-table', 'rowData'),
-                  State('dropdown-time', 'value'),
-                  State('log-table', 'rowData'),
-                  State('Amp', 'value'),
-                  # histogram settings
-                  State('min-time', 'value'),
-                  State('max-time', 'value'),
-                  State('num-bin', 'value'),
-                  State('debug', 'on')],
                  prevent_initial_call=True)(self.presenter.save_data)
 
         callback([Output('load_confirm', 'displayed'),

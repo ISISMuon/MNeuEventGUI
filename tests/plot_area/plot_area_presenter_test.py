@@ -1,9 +1,10 @@
 import unittest
 from unittest import mock
+
+import numpy as np
+
 from MNeuEventGUI.plot_area.presenter import PlotAreaPresenter
 from MNeuEventGUI.test_helpers.unit_test import TestHelper
-from MuonDataLib.test_helpers.utils import get_sample_logs
-import numpy as np
 
 
 class PlotAreaPresenterTest(TestHelper):
@@ -77,9 +78,8 @@ class PlotAreaPresenterTest(TestHelper):
                          -1000)
 
     def test_new_plot_1(self):
-        logs = get_sample_logs()
-
-        x_data, _ = logs.get_sample_log('Temp').get_values()
+        x_data = np.linspace(0, 4, 5)
+        logs = [{'name': 'Temp', 'time': x_data, 'value': x_data*.1 - 2}]
         self.presenter.plot = mock.Mock()
 
         _ = self.presenter.new_plot(['Temp'], logs)
@@ -89,8 +89,9 @@ class PlotAreaPresenterTest(TestHelper):
                              [x_data*.1 - 2]])
 
     def test_new_plot_2(self):
-        logs = get_sample_logs()
-        x_data, _ = logs.get_sample_log('Temp').get_values()
+        x_data = np.linspace(0, 4, 5)
+        logs = [{'name': 'Temp', 'time': x_data, 'value': x_data*.1 - 2},
+                {'name': 'I', 'time': x_data, 'value': x_data}]
         self.presenter.plot = mock.Mock()
 
         _ = self.presenter.new_plot(['Temp', 'I'], logs)

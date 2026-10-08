@@ -9,6 +9,7 @@ class HistSettingsPresenter(PresenterTemplate):
 
     def __init__(self):
         self._view = HistSettingsView(self)
+        self.data = None
 
     def display_width(self, min_time, max_time, num_bins):
         """
@@ -38,6 +39,20 @@ class HistSettingsPresenter(PresenterTemplate):
 
         return f"Resolution: {width:.2f} ns"
 
+    def set_data(self, data):
+        """
+        Set the data model for this presenter.
+        """
+        self.data = data
+
+    def set_values(self, min_time, max_time, num_bins):
+        """
+        Set the histogram settings in the data to some values.
+        """
+        if self.data is None:
+            return
+        self.data.set_histogram_settings(0, min_time, max_time, num_bins)
+
     def check_num_bins_invalid(self, num_bins: int) -> bool:
         """
         Check whether the number of bins is valid.
@@ -58,3 +73,11 @@ class HistSettingsPresenter(PresenterTemplate):
         if not any(invalid) and min_time > max_time:
             return (True, True)
         return invalid
+
+    def load(self, settings: dict) -> (float, float, int):
+        """
+        Load the histogram settings from a data dictionary.
+        :param settings: The dictionary to get the settings from.
+        :returns: The histogram settings.
+        """
+

@@ -1,4 +1,4 @@
-from dash import Input, Output, State, callback, dcc, html
+from dash import Input, callback, dcc, html
 
 from MNeuEventGUI.table.view import TableView
 
@@ -17,18 +17,9 @@ class TimeView(TableView):
         """
 
         return html.Div([
-            dcc.ConfirmDialog(
-                              id='confirm-time',
-                              message='This will clear all of the filters. '
-                                      'If you want to keep them, you should '
-                                      'save the filters first. '
-                                      'Are you sure you want to continue?',
-                              submit_n_clicks_timestamp=0,
-                              cancel_n_clicks_timestamp=0
-                              ),
             html.Div([html.P('Filter Type:'),
-                     dcc.Dropdown(['Exclude', 'Include'],
-                                  'Exclude',
+                     dcc.Dropdown(['Include', 'Exclude'],
+                                  'Include',
                                   style={'width': 105,
                                          'margin-left': '10px'},
                                   id='dropdown-time',
@@ -41,21 +32,11 @@ class TimeView(TableView):
             super().generate(presenter)])
 
     def set_callbacks(self, presenter):
+        """
+        Set the callbacks for the GUI.
+        :param presenter: The presenter for the GUI.
+        """
         super().set_callbacks(presenter)
 
-        callback([Output('confirm-time', 'displayed'),
-                  Output('time-table', 'columnDefs')],
-                 Input('dropdown-time', 'value'),
-                 State('time-table', 'rowData'),
-                 prevent_initial_call=True)(presenter.display_confirm)
-
-        callback([Output('dropdown-time', 'value'),
-                  Output('time-table', 'rowData', allow_duplicate=True),
-                  Output('time-table', 'columnDefs', allow_duplicate=True),
-                  Output('time-table_changed_state', 'data')
-                  ],
-                 [Input('confirm-time', 'submit_n_clicks_timestamp'),
-                  Input('confirm-time', 'cancel_n_clicks_timestamp')],
-                 State('dropdown-time', 'value'),
-                 State('time-table', 'rowData'),
-                 prevent_initial_call=True)(presenter.confirm)
+        callback(Input('dropdown-time', 'value'),
+                 prevent_initial_call=True)(presenter.set_state)

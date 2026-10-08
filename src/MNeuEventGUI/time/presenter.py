@@ -1,5 +1,3 @@
-from MuonDataLib.filters import TimeFilters
-
 from MNeuEventGUI.table.column import (
     NumericColumn,
     TableColumns,
@@ -22,8 +20,10 @@ class TimePresenter(TablePresenter):
         """
         This creates the presenter object for the
         widget.
+        :param data: The underlying data object.
         """
-        self._previous = 'Exclude'
+        self._previous = 'Include'
+        self.data = None
 
         # create columns
         name = TextColumn('Name_' + TIME_TABLE, 'Name')
@@ -49,6 +49,15 @@ class TimePresenter(TablePresenter):
         Overwrite the view to give a time table view
         """
         return TimeView(self)
+
+    def set_data(self, data):
+        """
+        Set the underlying model data.
+        """
+        self.data = data
+        # set allowed time range for filters
+        times = self.data.dataset.get_frame_times() * 1e-9
+        self.set_time_range(times[0], times[-1] + 32e-6)
 
     def set_time_range(self, start, end):
         """
@@ -98,16 +107,6 @@ class TimePresenter(TablePresenter):
         data[changed['rowIndex']][col_name] = new_value
         return data, msg
 
-    @property
-    def default_row(self):
-        """
-        The code needed to create a default
-        row for the time table
-        :returns: dict of the values for the time table.
-        """
-        return {'Start_' + TIME_TABLE: 0.33 * self.end,
-                'End_' + TIME_TABLE: 0.66 * self.end}
-
     def get_range(self, data):
         """
         Gets the x range from the time table data.
@@ -123,67 +122,75 @@ class TimePresenter(TablePresenter):
         :param value: the updated part of the table name
         (expect either Include or Exclude)
         """
+        if self.data is None:
+            return
+        self.data.set_time_type(0, value)
         self.cols.set_title(2, f'{value} Filter details')
 
-    def display_confirm(self, value, data):
+    def add(self) -> dict:
         """
-        Check if to display a confirmation dialog
-        :param value: the new mode (Exclude/Include)
+        Add a new time filter.
+        :returns: The new time filter data.
+        """
+        # new row (i.e. from add button)
+        existing_filters = self.data._dict(0)["time_filters"]
+        name = f"filter {next(self.count)}"
+        # if filters already exist, avoid overwriting
+        while name in existing_filters:
+            name = f"filter {next(self.count)}"
+
+        self.data.add_time_filter(0,
+                                  name,
+                                  0.33 * self.end,
+                                  0.66 * self.end)
+        return self.load(self.data._dict(0)["time_filters"])
+
+    def delete_row(self, info, data):
+        """
+        Remove a row from a table.
+        :param info: dict of intormation about deleted row
         :param data: the table data (list of rows)
-        :returns: if to show the display and the
-        coloumn headers as a dict
+        :returns: Updated data values
         """
-        state = False
-        if len(data) == 0:
-            self._previous = value
-            self.cols.set_title(2, f'{value} Filter details')
+        row = info["rowIndex"]
+        name = data[row]['Name_' + TIME_TABLE]
+        self.data.remove_time_filter(0, name)
+        return self.load(self.data._dict(0)["time_filters"])
 
-        elif self._previous != value:
-            state = True
-        return state, self.cols.get_column_dict
+    def edit_row(self, info, data):
+        """
+        Edit a row in the table.
+        :param info: dict of information about deleted row
+        :param data: the table data (list of rows)
+        :returns: Updated table values
+        """
+        # todo: use edit methods when added
+        row = info[0]["rowIndex"]
+        row_name = data[row]["Name_" + self.ID]
 
-    def confirm(self, submit, cancel, value, data):
-        """
-        Takes the user selection for the confirm dialog
-        and does the appropriate response
-        :param submit: the timestamp for the last time submit was pressed
-        :param cancel: the timestamp for the last time cancel was pressed
-        :param value: if to include or exclude the time table data
-        :param data: the data in the time table
-        :returns: the state for the time table (include/exclude),
-        the data for the table, the list of column names and
-        if the data has been changed
-        """
-        if submit > cancel:
-            self._previous = value
-            self.cols.set_title(2, f'{value} Filter details')
-            return value, [], self.cols.get_column_dict, True
-        else:
-            return self._previous, data, self.cols.get_column_dict, False
+        # contrary to the Dash docs, the new value is "value" not "newValue"
+        new_data = info[0]["data"]
 
-    def load(self, filters: TimeFilters):
+        self.data.remove_time_filter(0, row_name)
+        self.data.add_time_filter(0, new_data["Name_" + self.ID],
+                                  new_data["Start_" + self.ID],
+                                  new_data["End_" + self.ID])
+
+        return self.load(self.data._dict(0)["time_filters"])
+
+
+    def load(self, filters: list[dict]):
         """
-        A method to load filters from a TimeFilters object.
-        :param filters: the dataclass of time filters.
+        A method to load filters from a list of filters.
+        :param filters: the list of time filters.
         :returns: a list of the row details
         for the time table (exluding the remove button),
         and the new state (include/exclude)
         """
-        filter_list = filters.remove_filters
-        new_state = 'Exclude'
-        if (len(filters.keep_filters) > 0 and
-                len(filters.remove_filters) > 0):
-            raise RuntimeError("Cannot have both include and "
-                               "exclude time filters")
-        elif len(filters.keep_filters) > 0:
-            filter_list = filters.keep_filters
-            new_state = 'Include'
-
         data = []
-        for f in filter_list:
-            data.append({'Name_' + TIME_TABLE: f.name,
-                         'Start_' + TIME_TABLE: f.start,
-                         'End_' + TIME_TABLE: f.end})
+        for name, values in filters.items():
+            data.append({'Name_' + TIME_TABLE: name,
+                         'Start_' + TIME_TABLE: values["start"],
+                         'End_' + TIME_TABLE: values["end"]})
 
-        self._previous = new_state
-        return data, new_state
+        return data

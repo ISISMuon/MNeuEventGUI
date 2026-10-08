@@ -4,8 +4,6 @@ from dash import Input, Output, callback, dcc, html
 
 from MNeuEventGUI.view_template import ViewTemplate
 
-CURRENT = "Current File: "
-
 
 class LoadBarView(ViewTemplate):
     """
@@ -34,7 +32,7 @@ class LoadBarView(ViewTemplate):
                        className='me-md-2'),
             dbc.Button('Load filters', id='load_filters', color='primary',
                        n_clicks=0, className='me-md-2'),
-            html.Div(id='file_name', children=CURRENT, className='me-md-2'),
+            html.Div(id='file_name', className='me-md-2'),
 
             dbc.Button(id='settings', color='primary',
                        n_clicks=0, className='bi-gear-fill ms-auto'),

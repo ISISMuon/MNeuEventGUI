@@ -1,6 +1,4 @@
 import numpy as np
-from MuonDataLib.data.utils import NONE
-from MuonDataLib.filters import Filter
 
 from MNeuEventGUI.log.view import LogView
 from MNeuEventGUI.plot_area.presenter import PlotAreaPresenter
@@ -29,10 +27,10 @@ class LogPresenter(TablePresenter):
         widget.
         """
 
-        # a copy of sample logs object
-        self._logs = None
+        # a handle to the data object
+        self.data = None
         # a list of default sample logs
-        self._defaults = ['Temp_Sample']
+        self._defaults = ['Temp_Sample', 'Temp']
         # number of time ok has been clicked in pop-up
         self._ok_clicks = 0
         # if we are replacing a sample log (if so which row)
@@ -104,12 +102,12 @@ class LogPresenter(TablePresenter):
         """
         return LogView(self)
 
-    def set_logs(self, logs):
+    def set_data(self, data):
         """
-        Sets the sample logs object
-        :param logs: the sample logs object
+        Set the data object.
+        :param logs: the data object
         """
-        self._logs = logs
+        self.data = data
 
     def validate_row(self, change, data):
         """
@@ -220,31 +218,6 @@ class LogPresenter(TablePresenter):
         else:
             return self.delete_row(info, data), False
 
-    def get_available_logs(self, data):
-        """
-        We want to prevent the same sample log being selected
-        multiple times. This method gets a list of unused sample
-        logs. This also includes logic to keep a sample log
-        if its being replaced by the user pressing the graph
-        button in the table.
-        :param data: the sample log table data (so we
-        know which are in use)
-        :returns: a list of the unused sample logs
-        """
-        # need to make a copy of the list so not to delete sample logs
-        names = self._logs.get_names().copy()
-        in_use = [row['sample_' + LOG_TABLE] for row in data]
-        for taken in in_use:
-            """
-            If the user has pressed the graph button, the sample log
-            is being replaced (not None value). Otherwise its a new row.
-            If the sample log is being replaced/updated then we only want
-            to keep the name of the one being replaced.
-            """
-            if self._replace is None or self._selected_name != taken:
-                names.remove(taken)
-        return names
-
     def get_new_log_name(self, data):
         """
         This gets the name of the next sample log,
@@ -253,9 +226,9 @@ class LogPresenter(TablePresenter):
         :param data: the sample log table data
         :returns: the next name to be used
         """
-        if self._logs is None:
+        if self.data is None:
             return ''
-        names = self.get_available_logs(data)
+        names = self.data.dataset.sample_log_names
         for default in self._defaults:
             if default in names:
                 return default
@@ -273,13 +246,14 @@ class LogPresenter(TablePresenter):
         - the min y value
         - the sigma (std)
         """
-        _, y = self._logs.get_sample_log(name).get_original_values()
+        log = self.data.dataset.get_sample_log(name)
+        value = log['value']
 
-        return (self._plot.new_plot([name], self._logs),
-                f'Max: {np.max(y):.3f}',
-                f'Mean: {np.mean(y):.3f}',
-                f'Min: {np.min(y):.3f}',
-                f'Sigma (std): {np.std(y):.3f}')
+        return (self._plot.new_plot([name], [log]),
+                f'Max: {np.max(value):.3f}',
+                f'Mean: {np.mean(value):.3f}',
+                f'Min: {np.min(value):.3f}',
+                f'Sigma (std): {np.std(value):.3f}')
 
     def select_log(self, is_open, data):
         """
@@ -290,13 +264,13 @@ class LogPresenter(TablePresenter):
         :returns: a list of names for the combo box and the
         selected value
         """
-        options = self.get_available_logs(data)
+        options = self.data.dataset.sample_log_names
         # if replacing/updating a row want to keep the name
         if self._replace is not None:
             return options, self._selected_name
         return options, self.get_new_log_name(data)
 
-    def close_modal(self, ok, cancel, name, data):
+    def close_modal(self, ok, cancel, log, data):
         """
         A method for closing the pop up. To tell
         if ok or cancel has been pressed we track
@@ -306,7 +280,7 @@ class LogPresenter(TablePresenter):
         :param ok: number of times ok has been pressed
         :param cancel: the number of times cancel has
         been pressed
-        :param name: the name of the sample log being viewed
+        :param log: the name of the sample log being viewed
         (if ok is pressed it will be added/updated in the table)
         :param data: the sample log table data
         :returns if the pop up is open (always no) and
@@ -318,27 +292,30 @@ class LogPresenter(TablePresenter):
         # was ok or cancel pressed?
         if self._ok_clicks < ok:
             # ok pressed
-            row = 0
+            self._ok_clicks += 1
             if self._replace is not None:
                 # replace/update row (i.e. graph button pressed)
-                data[self._replace]['sample_log-table'] = name
-                row = self._replace
+                name = data[self._replace][self.name_col]
+                self.data.remove_log_filter(0, name)
             else:
                 # new row (i.e. from add button)
-                data.append(self.generate_default(data,
-                                                  name))
-                row = len(data) - 1
-            self._ok_clicks += 1
-            _, y = self._logs.get_sample_log(name).get_original_values()
+                existing_filters = self.data._dict(0)["sample_log_filters"]
+                name = f"filter {next(self.count)}"
+                # if filters already exist, avoid overwriting
+                while name in existing_filters:
+                    name = f"filter {next(self.count)}"
 
-            value = np.min(y)
-            data[row]['y_min_' + LOG_TABLE] = value
-            data[row]['y0_' + LOG_TABLE] = value
+            # the filter keeps all of the data in the log
+            log_data = self.data.dataset.get_sample_log(log)
+            min_value = np.min(log_data['value'])
+            max_value = np.max(log_data['value'])
 
-            value = np.max(y)
-            data[row]['y_max_' + LOG_TABLE] = np.max(y)
-            data[row]['yN_' + LOG_TABLE] = np.max(y)
-        return False, data
+            self.data.add_log_filter(0,
+                                     name,
+                                     log,
+                                     min_value,
+                                     max_value)
+        return False, self.load(self.data._dict(0)["sample_log_filters"])
 
     def add(self, n, data):
         """
@@ -352,23 +329,40 @@ class LogPresenter(TablePresenter):
         self._selected_name = self.get_new_log_name(data)
         return True, self.get_new_log_name(data)
 
-    def generate_default(self, data, name):
+    def delete_row(self, info: dict, data: dict):
         """
-        Code to create some default values
-        :returns: a default dict
+        Remove a row from the table.
+        :param info: Dash information about the deleted row.
+        :param data: The row data.
         """
-        default_filter = 'between'
-        return {'Delete_' + self.ID: '',
-                self.name_col: 'log_' + self.get_next_row_name,
-                'sample_log-table': name,
-                'filter_' + LOG_TABLE: default_filter,
-                'y0_' + LOG_TABLE: 0,
-                'yN_' + LOG_TABLE: 1,
-                'magic': default_filter,
-                'y_min_' + LOG_TABLE: 0,
-                'y_max_' + LOG_TABLE: 1}
+        row = info["rowIndex"]
+        name = data[row]['Name_' + LOG_TABLE]
+        self.data.remove_log_filter(0, name)
+        return self.load(self.data._dict(0)["sample_log_filters"])
 
-    def load(self, filters: list[Filter]):
+    def edit_row(self, info, data):
+        """
+        Edit a row in the table.
+        :param info: dict of information about deleted row
+        :param data: the table data (list of rows)
+        :returns: Updated table values
+        """
+        # todo: use edit methods when added
+        row = info[0]["rowIndex"]
+        row_name = data[row]["Name_" + self.ID]
+
+        # contrary to the Dash docs, the new value is "value" not "newValue"
+        new_data = info[0]["data"]
+
+        self.data.remove_log_filter(0, row_name)
+        self.data.add_log_filter(0, new_data["Name_" + self.ID],
+                                 new_data["sample_" + self.ID],
+                                  new_data["y0_" + self.ID],
+                                  new_data["yN_" + self.ID])
+
+        return self.load(self.data._dict(0)["sample_log_filters"])
+
+    def load(self, filters: list[dict]):
         """
         A method to load filters from a json file
         If the filter values are outside of the data
@@ -379,23 +373,24 @@ class LogPresenter(TablePresenter):
         for the log table (exluding the remove button),
         """
         data = []
-        for f in filters:
-            key = f.name
-            start = f.start
-            end = f.end
+        for name, values in filters.items():
+            log = values["log"]
+            start = values["lower"]
+            end = values["upper"]
 
-            _, y = self._logs.get_sample_log(key).get_original_values()
+            log_data = self.data.dataset.get_sample_log(log)
+            y = log_data["value"]
 
             y_min = np.min(y)
             y_max = np.max(y)
             y_0 = y_min
             y_N = y_max
-            if start == NONE:
+            if start is None:
                 load_filter = 'below'
                 if y_min < end < y_max:
                     y_N = end
 
-            elif end == NONE:
+            elif end is None:
                 load_filter = 'above'
                 if start > y_min:
                     y_0 = start
@@ -404,8 +399,8 @@ class LogPresenter(TablePresenter):
                 load_filter = 'between'
                 y_0 = start
                 y_N = end
-            data.append({self.name_col: 'log_' + self.get_next_row_name,
-                         'sample_log-table': key,
+            data.append({self.name_col: name,
+                         'sample_log-table': log,
                          'filter_' + LOG_TABLE: load_filter,
                          'y0_' + LOG_TABLE: y_0,
                          'yN_' + LOG_TABLE: y_N,

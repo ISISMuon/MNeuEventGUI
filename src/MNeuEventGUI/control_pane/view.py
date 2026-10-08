@@ -33,9 +33,9 @@ class ControlPaneView(ViewTemplate):
         """
         callback(Output('main_plot', 'figure', allow_duplicate=True),
                  [Input('time-table', 'rowData'),
-                  Input('log-table', 'rowData')],
-                 [State('Amp', 'value'),
-                  State('dropdown-time', 'value')],
+                  Input('log-table', 'rowData'),
+                  Input('dropdown-time', 'value')],
+                 [State('Amp', 'value')],
                  prevent_initial_call=True)(presenter.make_plot)
 
         callback([Output('main_tooltip', 'show', allow_duplicate=True),
