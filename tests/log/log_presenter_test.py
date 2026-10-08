@@ -5,8 +5,9 @@ from unittest import mock
 
 from MNeuEventLib import BatchData
 
-from MNeuEventGUI.log.presenter import LogPresenter
+from MNeuEventGUI.log.presenter import LOG_TABLE, LogPresenter
 from MNeuEventGUI.test_helpers.unit_test import TestHelper
+from MNeuEventGUI.utils.errors import GUIError
 
 current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
@@ -354,31 +355,34 @@ class LogPresenterTest(TestHelper):
                                      case[2])
 
                 # run validation
-                data, msg = self.presenter.validate_row(change,
-                                                        table)
+                if case[-1] == 1:
+                    # an invalid edit is raised, the reverted
+                    # table data is carried on the error
+                    with self.assertRaises(GUIError) as context:
+                        self.presenter.validate_row(change, table)
+                    err = context.exception
+                    data = err.revert[LOG_TABLE]['rowData']
+                else:
+                    data = self.presenter.validate_row(change,
+                                                       table)
                 # check if the other limit is as expected
                 self.assertEqual(data[0][case[5]],
                                  case[4])
                 # if no error
                 if case[-1] == 0:
                     # success
-                    self.assertEqual(msg, '')
                     self.assertEqual(data[0][case[2]],
                                      case[1])
 
                 elif case[-1] == 1:
-                    # error and reset
-                    print(msg)
                     # check an error is produced
-                    self.assertGreater(len(msg), 0)
+                    self.assertGreater(len(str(err)), 0)
                     # check value is reverted
                     self.assertEqual(data[0][case[2]],
                                      case[0])
 
                 elif case[-1] == 2:
                     # silently fixes unused filter
-                    # check an error is produced
-                    self.assertEqual(len(msg), 0)
                     # check value is reverted
                     self.assertEqual(data[0][case[5]],
                                      case[4])

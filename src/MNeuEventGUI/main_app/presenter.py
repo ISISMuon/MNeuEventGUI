@@ -1,6 +1,7 @@
 from MNeuEventGUI.control_pane.presenter import ControlPanePresenter
 from MNeuEventGUI.load_bar.presenter import LoadBarPresenter
 from MNeuEventGUI.save_bar.presenter import SaveBarPresenter
+from MNeuEventGUI.utils.errors import GUIError
 
 
 class MainAppPresenter:
@@ -76,19 +77,14 @@ class MainAppPresenter:
           - amplitude;
           - state;
           - table headers.
+        :raises GUIError: if the filter file cannot be read
         """
-        return self.control.read_filter(name)
+        try:
+            return self.control.read_filter(name)
+        except Exception as error:
+            raise GUIError(f'The filter file {name} '
+                           f'could not be loaded.') from error
 
-
-    def alert(self, text):
-        """
-        Opens the alert if new information
-        has been uploaded.
-        :param text: the text to be displayed in
-        the alert.
-        :returns: if to open the alert
-        """
-        return text != ''
 
     def save_data(self, name):
         """
@@ -107,22 +103,26 @@ class MainAppPresenter:
         :param max_time: the histogram maximum time
         :param num_bin: the number of histogram bins
         :param debug: if debug mode is on or off.
-        :returns: the name of the saved file and
-        the alert message
+        :returns: the name of the saved file
+        :raises GUIError: if the data cannot be saved
         """
         data = self.load.get_data
         if 'None' in name:
-            return '', ''
+            return ''
         dtype = name[0]
         file = name[1:]
 
         print("saving to ", file)
-        if dtype == "n":
-            print(file)
-            data.save(0, file)
-        elif dtype == 'j':
-            data.save_filters(0, file)
-        return file, ''
+        try:
+            if dtype == "n":
+                print(file)
+                data.save(0, file)
+            elif dtype == 'j':
+                data.save_filters(0, file)
+        except Exception as error:
+            raise GUIError(f'The data could not be '
+                           f'saved to {file}.') from error
+        return file
 
 
     def plot(self):
@@ -158,7 +158,7 @@ class MainAppPresenter:
         - if the sample log table is disabled
         - the filter table column names
         - plot of the amplitude histogram
-        - the alert message
+        :raises GUIError: if the file cannot be read
         """
         if name == self.load.file:
             # same file
@@ -166,8 +166,7 @@ class MainAppPresenter:
                     time_data, False,
                     log_data, False,
                     self.control.headers,
-                    self.control._filter._amp._plot.fig,
-                    '')
+                    self.control._filter._amp._plot.fig)
         self.load.set_file(name)
 
         if 'None' in name:
@@ -177,13 +176,15 @@ class MainAppPresenter:
                     [],
                     True,
                     self.control.headers,
-                    {},
-                    '')
+                    {})
 
-        self.load.load_nxs(name)
-
-        data = self.load.get_data
-        self.control.set_data(data)
+        try:
+            self.load.load_nxs(name)
+            data = self.load.get_data
+            self.control.set_data(data)
+        except Exception as error:
+            raise GUIError(f'The file {name} '
+                           f'could not be loaded.') from error
 
         return (self.plot(), [], False, [], False,
-                self.control.headers, self.plot_amps(data), '')
+                self.control.headers, self.plot_amps(data))

@@ -1,17 +1,17 @@
 import time
 
 
-def check_no_alert(dash_duo):
+def check_no_error_popup(dash_duo):
     """
-    Want to check that the alert has not
-    opened if everything works.
+    Want to check that the error pop up has
+    not opened if everything works.
     This means that the 'error' element
     is not findable. So we use a try
     :input dash_duo:
     """
     try:
         assert (dash_duo.find_element('#error').is_enabled)
-        # should not have an alert, so above should throw
+        # should not have a pop up, so above should throw
         assert (False)
     except Exception:
         return
