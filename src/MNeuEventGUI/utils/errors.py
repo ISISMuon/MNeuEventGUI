@@ -8,7 +8,7 @@ UNEXPECTED_MSG = 'Something went wrong.'
 SHOW_DETAILS = 'Show details'
 HIDE_DETAILS = 'Hide details'
 
-ALERT = 'error'
+MODAL = 'error'
 MSG = 'error_msg'
 DETAILS = 'error_details'
 DETAILS_BTN = 'error_details_btn'
@@ -24,7 +24,7 @@ class GUIError(Exception):
     user understands (e.g. "The file could not be loaded").
     The error that caused it should be kept by raising with
     `from`, so the user can still see the full original
-    error in the details dropdown of the alert.
+    error in the details dropdown of the pop up.
 
     A callback that raises does not update its own
     outputs, so anything that still has to be set
@@ -41,30 +41,37 @@ class GUIError(Exception):
         self.revert = revert or {}
 
 
-def error_alert():
+def error_modal():
     """
-    Creates the alert used to report errors. It shows a
+    Creates the pop up used to report errors. It shows a
     readable message, with the full original error hidden
     behind a dropdown (see display_error).
-    :returns: the alert component
+
+    The pop up is centred on the screen and can be closed
+    with its close button, by clicking outside of it or by
+    pressing escape.
+    :returns: the modal component
     """
-    return dbc.Alert([html.H4("   ERROR MESSAGE",
-                              className='bi-x-octagon-fill'),
-                      html.P("Error", id=MSG),
-                      dbc.Button(SHOW_DETAILS,
-                                 id=DETAILS_BTN,
-                                 color='danger',
-                                 size='sm',
-                                 n_clicks=0),
-                      dbc.Collapse(html.Pre('',
-                                            id=DETAILS,
-                                            className='mt-2 mb-0'),
-                                   id=DETAILS_COLLAPSE,
-                                   is_open=False)],
-                     id=ALERT,
-                     dismissable=True,
+    return dbc.Modal([dbc.ModalHeader(
+                          dbc.ModalTitle("   Error",
+                                         className='bi-x-octagon-fill')),
+                      dbc.ModalBody([
+                          html.P("Error", id=MSG),
+                          dbc.Button(SHOW_DETAILS,
+                                     id=DETAILS_BTN,
+                                     color='danger',
+                                     size='sm',
+                                     n_clicks=0),
+                          dbc.Collapse(html.Pre('',
+                                                id=DETAILS,
+                                                className='mt-2 mb-0'),
+                                       id=DETAILS_COLLAPSE,
+                                       is_open=False)])],
+                     id=MODAL,
+                     centered=True,
+                     scrollable=True,
+                     size='lg',
                      fade=False,
-                     color='danger',
                      is_open=False)
 
 
@@ -101,9 +108,9 @@ def display_error(err):
     """
     The global callback error handler. Instead of the
     exception only reaching the terminal, it is shown
-    in the alert at the top of the GUI. The readable
-    message is always visible and the full error is
-    in the details dropdown.
+    in a pop up over the GUI. The readable message is
+    always visible and the full error is in the details
+    dropdown.
 
     Errors that are not GUIErrors have no message for
     the user, so they only get a generic one.
@@ -120,4 +127,4 @@ def display_error(err):
     # a new error starts with its details hidden
     set_props(DETAILS_COLLAPSE, {'is_open': False})
     set_props(DETAILS_BTN, {'children': SHOW_DETAILS})
-    set_props(ALERT, {'is_open': True})
+    set_props(MODAL, {'is_open': True})
