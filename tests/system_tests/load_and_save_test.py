@@ -7,6 +7,7 @@ import numpy as np
 
 from MNeuEventGUI.main_app.view import MainApp
 from MNeuEventGUI.test_helpers.gui import check_no_alert, wait_and_press_btn
+from MNeuEventGUI.utils.errors import ERROR_PREFIX
 
 current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
@@ -58,8 +59,9 @@ def test_load_nxs_error(dash_duo):
     time.sleep(.1)
     # check that the error alert has appeared with correct msg
     assert (dash_duo.find_element('#error').is_enabled)
-    msg = "An error occurred: The file bad_file.txt cannot be read"
-    assert (dash_duo.find_element('#error_msg').text == msg)
+    msg = dash_duo.find_element('#error_msg').text
+    assert (msg.startswith(ERROR_PREFIX))
+    assert ('bad_file.txt' in msg)
 
 
 def test_load_nxs(dash_duo):

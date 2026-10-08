@@ -118,8 +118,8 @@ class LogPresenter(TablePresenter):
         changed row
         :param data: the data from the sample log
         filter table.
-        :returns: the updated sample log table and
-        an error message
+        :returns: the updated sample log table
+        :raises GUIError: if the new value is not valid
         """
         changed = change[0]
         col_name = changed['colId']
@@ -197,7 +197,9 @@ class LogPresenter(TablePresenter):
 
         data[changed['rowIndex']][col_name] = new_value
 
-        return data, msg
+        if msg:
+            self.reject(data, msg)
+        return data
 
     def btn_pressed(self, info, data):
         """

@@ -3,6 +3,7 @@ from itertools import count
 
 from MNeuEventGUI.presenter_template import PresenterTemplate
 from MNeuEventGUI.table.view import TableView
+from MNeuEventGUI.utils.errors import GUIError
 
 
 class TablePresenter(PresenterTemplate):
@@ -43,6 +44,17 @@ class TablePresenter(PresenterTemplate):
         """
         raise NotImplementedError
 
+    def reject(self, data, msg):
+        """
+        Rejects an edit to the table. The corrected data is
+        carried on the error, because a callback that raises
+        does not update its own outputs.
+        :param data: the corrected table data (list of rows)
+        :param msg: why the edit was rejected
+        :raises GUIError: always
+        """
+        raise GUIError(msg, {self.ID: {'rowData': data}})
+
     def validate(self, row, data):
         """
         A validation check for the table.
@@ -50,13 +62,14 @@ class TablePresenter(PresenterTemplate):
         must be unique.
         :param row: the change in the table (row)
         :param data: the data in the table (list of rows)
-        :returns it to update and the error message
+        :returns: the data to update the table with
+        :raises GUIError: if the new name is already in use
         """
         names = [row['Name_' + self.ID] for row in data]
         repeat, num = Counter(names).most_common(1)[0]
         if num > 1:
             data[row[0]['rowIndex']]['Name_'+self.ID] = row[0]['oldValue']
-            return data, f'Repeated name {repeat}'
+            self.reject(data, f'Repeated name {repeat}')
 
         return self.validate_row(row, data)
 
@@ -67,14 +80,14 @@ class TablePresenter(PresenterTemplate):
         must be unique.
         :param change: the change in the table (row)
         :param data: the data in the table (list of rows)
-        :returns: it to update and the error message
+        :returns: the data to update the table with
         """
         changed = change[0]
         col_name = changed['colId']
         row = changed['data']
 
         data[changed['rowIndex']][col_name] = row[col_name]
-        return data, ''
+        return data
 
     def delete_row(self, info: dict, data: dict) -> dict:
         """

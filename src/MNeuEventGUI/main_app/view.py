@@ -3,6 +3,7 @@ import dash_bootstrap_components as dbc
 from dash import Dash, Input, Output, State, callback, dcc, html
 
 from MNeuEventGUI.main_app.presenter import MainAppPresenter
+from MNeuEventGUI.utils.errors import display_error
 
 
 class MainApp(Dash):
@@ -24,7 +25,8 @@ class MainApp(Dash):
         save buttons is pressed.
         """
         super().__init__(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP,
-                                                         dbc.icons.BOOTSTRAP])
+                                                         dbc.icons.BOOTSTRAP],
+                         on_error=display_error)
 
         self.N_submit = 0
         self.presenter = MainAppPresenter(open_nxs)
@@ -85,11 +87,13 @@ class MainApp(Dash):
         by the GUI.
 
         Callbacks should all have unique Output's. However,
-        we want several things to be able to return an
-        error message. Instead of using the callback
-        context to determine what was called (and a long
-        if elif block) it was decided to use the
-        'allow_duplicate' option instead.
+        several widgets write to the same table data, so the
+        'allow_duplicate' option is used instead of the
+        callback context (and a long if elif block).
+
+        Errors are not returned by the callbacks, they are
+        raised and then reported by the global error handler
+        (see utils/errors.py).
 
         :param open_json: the function call for when the load
         filters button is pressed.
@@ -97,13 +101,7 @@ class MainApp(Dash):
         save buttons is pressed.
 
         """
-        # opens the error notifcation if the error message changes
-        callback(Output('error', 'is_open'),
-                 Input('error_msg', 'children'),
-                 prevent_initial_call=True)(self.presenter.alert)
-
-        # Updates the information on the loaded filter. With error
-        # catching.
+        # Updates the information on the loaded filter.
         callback([
                   Output('time-table', 'rowData', allow_duplicate=True),
                   Output('log-table', 'rowData', allow_duplicate=True),
@@ -120,8 +118,7 @@ class MainApp(Dash):
                   Output('log-table', 'rowData', allow_duplicate=True),
                   Output('log-table_add', 'disabled'),
                   Output('time-table', 'columnDefs', allow_duplicate=True),
-                  Output('amp_plot', 'figure'),
-                  Output('error_msg', 'children', allow_duplicate=True)],
+                  Output('amp_plot', 'figure')],
                  Input('file_name', 'children'),
                  [State('time-table', 'rowData'),
                   State('log-table', 'rowDara'),
@@ -133,8 +130,7 @@ class MainApp(Dash):
                  prevent_initial_call=True)(self.presenter.debug)
 
         # Saves the data (both histogram and filter file).
-        callback([Output('save_exe_dummy', 'children'),
-                  Output('error_msg', 'children', allow_duplicate=True)],
+        callback(Output('save_exe_dummy', 'children'),
                  Input('save_btn_dummy', 'children'),
                  prevent_initial_call=True)(self.presenter.save_data)
 

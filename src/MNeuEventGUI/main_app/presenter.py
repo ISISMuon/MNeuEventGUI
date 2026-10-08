@@ -80,16 +80,6 @@ class MainAppPresenter:
         return self.control.read_filter(name)
 
 
-    def alert(self, text):
-        """
-        Opens the alert if new information
-        has been uploaded.
-        :param text: the text to be displayed in
-        the alert.
-        :returns: if to open the alert
-        """
-        return text != ''
-
     def save_data(self, name):
         """
         Saves either a muon histogram nexus file
@@ -107,12 +97,11 @@ class MainAppPresenter:
         :param max_time: the histogram maximum time
         :param num_bin: the number of histogram bins
         :param debug: if debug mode is on or off.
-        :returns: the name of the saved file and
-        the alert message
+        :returns: the name of the saved file
         """
         data = self.load.get_data
         if 'None' in name:
-            return '', ''
+            return ''
         dtype = name[0]
         file = name[1:]
 
@@ -122,7 +111,7 @@ class MainAppPresenter:
             data.save(0, file)
         elif dtype == 'j':
             data.save_filters(0, file)
-        return file, ''
+        return file
 
 
     def plot(self):
@@ -158,7 +147,6 @@ class MainAppPresenter:
         - if the sample log table is disabled
         - the filter table column names
         - plot of the amplitude histogram
-        - the alert message
         """
         if name == self.load.file:
             # same file
@@ -166,8 +154,7 @@ class MainAppPresenter:
                     time_data, False,
                     log_data, False,
                     self.control.headers,
-                    self.control._filter._amp._plot.fig,
-                    '')
+                    self.control._filter._amp._plot.fig)
         self.load.set_file(name)
 
         if 'None' in name:
@@ -177,8 +164,7 @@ class MainAppPresenter:
                     [],
                     True,
                     self.control.headers,
-                    {},
-                    '')
+                    {})
 
         self.load.load_nxs(name)
 
@@ -186,4 +172,4 @@ class MainAppPresenter:
         self.control.set_data(data)
 
         return (self.plot(), [], False, [], False,
-                self.control.headers, self.plot_amps(data), '')
+                self.control.headers, self.plot_amps(data))

@@ -133,17 +133,15 @@ class FilterPresenter(PresenterTemplate):
         sample log filter table
         :param amp_filter: the amplitude filter
         :returns: The string to display the number
-        of events, the error message (if there is one)
+        of events
         :param min_time: the minimum time for the histogram
         :param max_time: the maximum time for the histogram
         :param num_bins: the number of bins for the histogram
+        :raises RuntimeError: if the filters cannot be applied
         """
-        try:
-            _ = self._data.calculate()
-        except RuntimeError as msg:
-            return self._view.get_N(0), str(msg)
+        self._data.calculate()
         N = f"{self._data.get_n_events(0)[0]:,}"
-        return self._view.get_N(N), ''
+        return self._view.get_N(N)
 
     def load(self, filters: dict):
         """

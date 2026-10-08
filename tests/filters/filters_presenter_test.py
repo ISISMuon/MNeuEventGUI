@@ -145,8 +145,7 @@ class FilterPresenterTest(TestHelper):
 
     def test_calculate_no_filters(self):
         self.presenter._data = load_data()
-        N_str, err_msg = self.presenter.calculate(1)
-        self.assertEqual(err_msg, '')
+        N_str = self.presenter.calculate(1)
         self.assertEqual(N_str.children,
                          'Number of events: 64,147')
 
@@ -154,8 +153,7 @@ class FilterPresenterTest(TestHelper):
         data = load_data()
         data.set_amps_baseline(0, 2500.)
         self.presenter._data = data
-        N_str, err_msg = self.presenter.calculate(1)
-        self.assertEqual(err_msg, '')
+        N_str = self.presenter.calculate(1)
         self.assertEqual(N_str.children,
                          'Number of events: 7,944')
 
@@ -164,8 +162,7 @@ class FilterPresenterTest(TestHelper):
         data.set_time_type(0, 'exclude')
         data.add_time_filter(0, 'unit', 0.1, 1.2)
         self.presenter._data = data
-        N_str, err_msg = self.presenter.calculate(1)
-        self.assertEqual(err_msg, '')
+        N_str = self.presenter.calculate(1)
         self.assertEqual(N_str.children,
                          'Number of events: 57,653')
 
@@ -174,8 +171,7 @@ class FilterPresenterTest(TestHelper):
         data.set_time_type(0, 'include')
         data.add_time_filter(0, 'unit', 0.1, 1.2)
         self.presenter._data = data
-        N_str, err_msg = self.presenter.calculate(1)
-        self.assertEqual(err_msg, '')
+        N_str = self.presenter.calculate(1)
         self.assertEqual(N_str.children,
                          'Number of events: 6,494')
 
@@ -183,8 +179,7 @@ class FilterPresenterTest(TestHelper):
         data = load_data()
         data.add_log_filter_above(0, 'log', 'Temp', 35.5)
         self.presenter._data = data
-        N_str, err_msg = self.presenter.calculate(1)
-        self.assertEqual(err_msg, '')
+        N_str = self.presenter.calculate(1)
         self.assertEqual(N_str.children,
                          'Number of events: 58,972')
 
@@ -192,10 +187,9 @@ class FilterPresenterTest(TestHelper):
         data = mock.Mock()
         data.calculate.side_effect = RuntimeError("mock throw")
         self.presenter._data = data
-        N_str, err_msg = self.presenter.calculate(1)
-        self.assertEqual(err_msg, 'mock throw')
-        self.assertEqual(N_str.children,
-                         'Number of events: 0')
+        # the global error handler reports this to the user
+        with self.assertRaises(RuntimeError):
+            self.presenter.calculate(1)
 
     def test_load_include(self):
         data = load_data()

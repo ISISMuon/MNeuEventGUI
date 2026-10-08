@@ -9,6 +9,7 @@ from MNeuEventGUI.table.column import (
 )
 from MNeuEventGUI.table.presenter import TablePresenter
 from MNeuEventGUI.test_helpers.unit_test import TestHelper
+from MNeuEventGUI.utils.errors import GUIError
 
 NAME = 'Name_table_test'
 
@@ -66,9 +67,8 @@ class TablePresenterTest(TestHelper):
         data = [make_row('default_1', 42),
                 make_row('default_2', 42)]
 
-        data, err = self.presenter.validate(row, data)
+        data = self.presenter.validate(row, data)
 
-        self.assertEqual(err, '')
         self.assertEqual(len(data), 2)
 
         self.assert_data(data[0], 'default', 42)
@@ -84,9 +84,15 @@ class TablePresenterTest(TestHelper):
         data = [make_row('default_1', 42),
                 make_row('default_1', 42)]
 
-        data, err = self.presenter.validate(row, data)
+        with self.assertRaises(GUIError) as context:
+            self.presenter.validate(row, data)
 
-        self.assertEqual(err, 'Repeated name default_1')
+        self.assertEqual(str(context.exception),
+                         'Repeated name default_1')
+
+        # the corrected data is carried on the error, so the
+        # error handler can put it back into the table
+        data = context.exception.revert[self.presenter.ID]['rowData']
         self.assertEqual(len(data), 2)
 
         # the name is reverted
@@ -107,9 +113,8 @@ class TablePresenterTest(TestHelper):
         data = [make_row('default_1', 42),
                 make_row('default_2', 42)]
 
-        data, err = self.presenter.validate_row(row, data)
+        data = self.presenter.validate_row(row, data)
 
-        self.assertEqual(err, '')
         self.assertEqual(len(data), 2)
 
         self.assert_data(data[0], 'default', 42)

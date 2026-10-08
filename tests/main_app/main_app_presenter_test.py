@@ -143,7 +143,6 @@ class MainAppPresenterTest(TestHelper):
         self.assertEqual(result[4], False)
         self.assertEqual(len(result[5]), 3)
         self.assertEqual(result[6], 'amps')
-        self.assertEqual(result[7], '')
 
         self.assertMockOnce(app.plot, [])
 
@@ -170,7 +169,6 @@ class MainAppPresenterTest(TestHelper):
         self.assertEqual(result[4], True)
         self.assertEqual(len(result[5]), 3)
         self.assertEqual(result[6], {})
-        self.assertEqual(result[7], '')
 
         self.assertMockOnce(app.plot, [])
 
@@ -198,7 +196,6 @@ class MainAppPresenterTest(TestHelper):
         self.assertEqual(result[4], False)
         self.assertEqual(len(result[5]), 3)
         self.assertEqual(result[6], 'amps')
-        self.assertEqual(result[7], '')
 
         self.assertMockOnce(app.plot, [])
 
@@ -231,7 +228,6 @@ class MainAppPresenterTest(TestHelper):
         self.assertEqual(result[4], False)
         self.assertEqual(len(result[5]), 3)
         self.assertEqual(result[6], amps)
-        self.assertEqual(result[7], '')
 
     def test_load_nxs_none_with_filters(self):
         app = MainAppPresenter(dummy_open)
@@ -258,7 +254,6 @@ class MainAppPresenterTest(TestHelper):
         self.assertEqual(result[4], True)
         self.assertEqual(len(result[5]), 3)
         self.assertEqual(result[6], {})
-        self.assertEqual(result[7], '')
 
         self.assertMockOnce(app.plot, [])
 
@@ -296,16 +291,6 @@ class MainAppPresenterTest(TestHelper):
         with pytest.raises(RuntimeError):
             app.load_filter(bad_file)
 
-    def test_alert(self):
-
-        app = MainAppPresenter(dummy_open)
-        self.assertTrue(app.alert('error'))
-
-    def test_alert_empty(self):
-
-        app = MainAppPresenter(dummy_open)
-        self.assertFalse(app.alert(''))
-
     def test_save_nxs(self):
         """
         Just check that a file is saved
@@ -321,7 +306,7 @@ class MainAppPresenterTest(TestHelper):
 
         dtype = 'n'
         file_name = 'test.nxs'
-        name, msg = app.save_data(dtype + file_name)
+        name = app.save_data(dtype + file_name)
         self.assertTrue(os.path.isfile(file_name))
 
         with h5py.File(file_name, 'r') as file:
@@ -331,7 +316,6 @@ class MainAppPresenterTest(TestHelper):
 
         os.remove(file_name)
         self.assertEqual(name, file_name)
-        self.assertEqual(msg, '')
 
     def test_save_nxs_with_exclude_filter(self):
         """
@@ -350,7 +334,7 @@ class MainAppPresenterTest(TestHelper):
 
         dtype = 'n'
         file_name = 'test.nxs'
-        name, msg = app.save_data(dtype + file_name)
+        name = app.save_data(dtype + file_name)
         self.assertTrue(os.path.isfile(file_name))
 
         with h5py.File(file_name, 'r') as file:
@@ -360,7 +344,6 @@ class MainAppPresenterTest(TestHelper):
 
         os.remove(file_name)
         self.assertEqual(name, file_name)
-        self.assertEqual(msg, '')
 
     def test_save_nxs_with_include_filter(self):
         """
@@ -380,7 +363,7 @@ class MainAppPresenterTest(TestHelper):
         dtype = 'n'
         file_name = 'test.nxs'
 
-        name, msg = app.save_data(dtype + file_name)
+        name = app.save_data(dtype + file_name)
         self.assertTrue(os.path.isfile(file_name))
 
         with h5py.File(file_name, 'r') as file:
@@ -390,13 +373,11 @@ class MainAppPresenterTest(TestHelper):
 
         os.remove(file_name)
         self.assertEqual(name, file_name)
-        self.assertEqual(msg, '')
 
     def test_save_none(self):
         app = MainAppPresenter(dummy_open)
         result = app.save_data('None')
-        self.assertEqual(result[0], '')
-        self.assertEqual(result[1], '')
+        self.assertEqual(result, '')
 
 
 if __name__ == '__main__':
