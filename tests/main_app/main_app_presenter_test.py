@@ -9,6 +9,7 @@ import pytest
 
 from MNeuEventGUI.main_app.presenter import MainAppPresenter
 from MNeuEventGUI.test_helpers.unit_test import TestHelper
+from MNeuEventGUI.utils.errors import GUIError
 
 current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
@@ -152,8 +153,13 @@ class MainAppPresenterTest(TestHelper):
         app.gen_fake_data = mock.Mock(return_value=(np.array([1., 2., 3.]),
                                                     np.array([-1., 0., 1.])))
         bad_file = 'HIFI0.nxs'
-        with pytest.raises(RuntimeError):
+        with pytest.raises(GUIError) as error:
             app.load_nxs(bad_file, [], [], DEBUG)
+
+        self.assertEqual(str(error.value),
+                         f'The file {bad_file} could not be loaded.')
+        # the original error is kept, so the user can see it
+        self.assertTrue(isinstance(error.value.__cause__, RuntimeError))
 
     def test_load_nxs_none(self):
         app = MainAppPresenter(dummy_open)
@@ -288,8 +294,13 @@ class MainAppPresenterTest(TestHelper):
         app = MainAppPresenter(dummy_open)
         _ = app.load_nxs(FILE, [], [], DEBUG)
 
-        with pytest.raises(RuntimeError):
+        with pytest.raises(GUIError) as error:
             app.load_filter(bad_file)
+
+        self.assertEqual(str(error.value),
+                         f'The filter file {bad_file} could not be loaded.')
+        # the original error is kept, so the user can see it
+        self.assertTrue(isinstance(error.value.__cause__, RuntimeError))
 
     def test_save_nxs(self):
         """

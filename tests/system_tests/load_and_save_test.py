@@ -63,6 +63,16 @@ def test_load_nxs_error(dash_duo):
     assert (msg.startswith(ERROR_PREFIX))
     assert ('bad_file.txt' in msg)
 
+    # the full error is hidden until the user asks for it
+    details = dash_duo.find_element('#error_details')
+    assert (not details.is_displayed())
+
+    dash_duo.find_element('#error_details_btn').click()
+    time.sleep(.5)
+
+    assert (details.is_displayed())
+    assert ('Traceback' in details.text)
+
 
 def test_load_nxs(dash_duo):
     app = MainApp(mock_load_nxs,
