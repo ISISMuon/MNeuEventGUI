@@ -43,8 +43,7 @@ class TableView(ViewTemplate):
         Set the callbacks for the GUI.
         :param presenter: the presenter for the GUI
         """
-        callback([Output(presenter.ID, 'rowData', allow_duplicate=True),
-                  Output('error_msg', 'children', allow_duplicate=True)],
+        callback(Output(presenter.ID, 'rowData', allow_duplicate=True),
                  Input(presenter.ID, 'cellValueChanged'),
                  State(presenter.ID, 'virtualRowData'),
                  prevent_initial_call=True)(presenter.validate)

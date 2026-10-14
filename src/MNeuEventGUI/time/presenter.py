@@ -76,7 +76,8 @@ class TimePresenter(TablePresenter):
         must be unique.
         :param change: the change in the table (row)
         :param data: the table data as a list of rows (dicts)
-        :returns: the updated data and the error message
+        :returns: the data to update the table with
+        :raises GUIError: if the new value is not valid
         """
         changed = change[0]
         col_name = changed['colId']
@@ -105,7 +106,9 @@ class TimePresenter(TablePresenter):
                        f'smaller than the start value {start_value}')
                 new_value = changed['oldValue']
         data[changed['rowIndex']][col_name] = new_value
-        return data, msg
+        if msg:
+            self.reject(data, msg)
+        return data
 
     def get_range(self, data):
         """

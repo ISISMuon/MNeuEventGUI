@@ -3,6 +3,7 @@ from dash import no_update
 from MNeuEventGUI.control_pane.presenter import ControlPanePresenter
 from MNeuEventGUI.load_bar.presenter import LoadBarPresenter
 from MNeuEventGUI.save_bar.presenter import SaveBarPresenter
+from MNeuEventGUI.utils.errors import GUIError
 
 
 class MainAppPresenter:
@@ -81,19 +82,14 @@ class MainAppPresenter:
           - histogram maximum time;
           - histogram number of bins;
           - table headers.
+        :raises GUIError: if the filter file cannot be read
         """
-        return self.control.read_filter(name)
+        try:
+            return self.control.read_filter(name)
+        except Exception as error:
+            raise GUIError(f'The filter file {name} '
+                           f'could not be loaded.') from error
 
-
-    def alert(self, text):
-        """
-        Opens the alert if new information
-        has been uploaded.
-        :param text: the text to be displayed in
-        the alert.
-        :returns: if to open the alert
-        """
-        return text != ''
 
     def save_data(self, name):
         """
@@ -112,22 +108,26 @@ class MainAppPresenter:
         :param max_time: the histogram maximum time
         :param num_bin: the number of histogram bins
         :param debug: if debug mode is on or off.
-        :returns: the name of the saved file and
-        the alert message
+        :returns: the name of the saved file
+        :raises GUIError: if the data cannot be saved
         """
         data = self.load.get_data
         if 'None' in name:
-            return '', ''
+            return ''
         dtype = name[0]
         file = name[1:]
 
         print("saving to ", file)
-        if dtype == "n":
-            print(file)
-            data.save(0, file)
-        elif dtype == 'j':
-            data.save_filters(0, file)
-        return file, ''
+        try:
+            if dtype == "n":
+                print(file)
+                data.save(0, file)
+            elif dtype == 'j':
+                data.save_filters(0, file)
+        except Exception as error:
+            raise GUIError(f'The data could not be '
+                           f'saved to {file}.') from error
+        return file
 
 
     def plot(self):
@@ -168,8 +168,8 @@ class MainAppPresenter:
         - the histogram's number of bins
         - the filter table column names
         - plot of the amplitude histogram
-        - the alert message
         - the number of events string
+        :raises GUIError: if the file cannot be read
         """
         if name == self.load.file:
             # same file, so the data (and the number of
@@ -184,8 +184,8 @@ class MainAppPresenter:
                     amp, state, min_time, max_time, num_bins,
                     headers,
                     self.control._filter._amp._plot.fig,
-                    '',
                     no_update)
+        previous = self.load.file
         self.load.set_file(name)
 
         # any previous number of events was for the old data
@@ -201,13 +201,19 @@ class MainAppPresenter:
                     no_update, no_update, no_update, no_update, no_update,
                     self.control.headers,
                     {},
-                    '',
                     no_events)
 
-        self.load.load_nxs(name)
-
-        data = self.load.get_data
-        self.control.set_data(data)
+        try:
+            self.load.load_nxs(name)
+            data = self.load.get_data
+            self.control.set_data(data)
+        except Exception as error:
+            # the load bar names the file that is loaded, so a file
+            # that failed has to be taken back off of it
+            self.load.set_file(previous)
+            raise GUIError(f'The file {name} '
+                           f'could not be loaded.',
+                           {'file_name': {'children': previous}}) from error
 
         (times, logs, amp, state,
          min_time, max_time,
@@ -215,5 +221,5 @@ class MainAppPresenter:
 
         return (self.plot(), times, False, logs, False,
                 amp, state, min_time, max_time, num_bins,
-                headers, self.plot_amps(data), '',
+                headers, self.plot_amps(data),
                 no_events)
