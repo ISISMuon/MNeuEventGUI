@@ -1,12 +1,13 @@
 import unittest
-from MNeuEventGUI.table.column import (TableColumns,
-                                       ButtonColumn,
-                                       NumericColumn)
+
+from MNeuEventGUI.table.column import ButtonColumn, NumericColumn, TableColumns
+from MNeuEventGUI.test_helpers.table_ref_data import (
+    COL_GROUPS,
+    COLS,
+    EXPECTED_NUMERIC,
+    expected_col_dict,
+)
 from MNeuEventGUI.test_helpers.unit_test import TestHelper
-from MNeuEventGUI.test_helpers.table_ref_data import (COL_GROUPS,
-                                                      COLS,
-                                                      EXPECTED_NUMERIC)
-from MNeuEventGUI.test_helpers.table_ref_data import expected_col_dict
 
 
 class TableColumnsTest(TestHelper):
@@ -24,7 +25,6 @@ class TableColumnsTest(TestHelper):
                 try:
                     _ = TableColumns(data, False)
                 except ValueError:
-                    pass
                     return
                 self.fail(f'should not accept bad input {data}')
 
@@ -61,7 +61,6 @@ class TableColumnsTest(TestHelper):
                 try:
                     _ = TableColumns(data, True)
                 except RuntimeError:
-                    pass
                     return
                 self.fail('Should throw an error if no ID')
 
@@ -72,7 +71,6 @@ class TableColumnsTest(TestHelper):
                 try:
                     _ = TableColumns(data, True)
                 except RuntimeError:
-                    pass
                     return
                 self.fail('Should throw an error if no ID')
 

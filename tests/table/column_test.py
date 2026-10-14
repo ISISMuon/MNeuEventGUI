@@ -1,8 +1,9 @@
 import unittest
+
 from MNeuEventGUI.table.column import ButtonColumn, NumericColumn
-from MNeuEventGUI.test_helpers.unit_test import TestHelper
 from MNeuEventGUI.test_helpers.table_ref_data import VALID_DTYPES as VALID
 from MNeuEventGUI.test_helpers.table_ref_data import expected_col_dict
+from MNeuEventGUI.test_helpers.unit_test import TestHelper
 
 
 class ColumnTest(TestHelper):

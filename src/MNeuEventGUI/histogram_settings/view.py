@@ -31,7 +31,7 @@ class HistSettingsView(ViewTemplate):
                 ]),
             dbc.Row(
                 dbc.Col(["Number of bins:",
-                     dbc.Input(id='num-bin',
+                     dbc.Input(id='num-bins',
                                value=2048,
                                type='number',
                                step=1,
@@ -49,11 +49,17 @@ class HistSettingsView(ViewTemplate):
         callback(Output('display-width', 'children'),
                  Input('min-time', 'value'),
                  Input('max-time', 'value'),
-                 Input('num-bin', 'value'))(presenter.display_width)
+                 Input('num-bins', 'value'))(presenter.display_width)
+
+        # callback to update data when values change
+        callback(Input('min-time', 'value'),
+                 Input('max-time', 'value'),
+                 Input('num-bins', 'value'),
+                 prevent_initial_call=True)(presenter.set_values)
 
         # callback to mark number of bins if invalid
-        callback(Output('num-bin', 'invalid'),
-                 Input('num-bin', 'value'))(presenter.check_num_bins_invalid)
+        callback(Output('num-bins', 'invalid'),
+                 Input('num-bins', 'value'))(presenter.check_num_bins_invalid)
 
         # callback to mark min or max time if invalid
         callback([Output('min-time', 'invalid'),

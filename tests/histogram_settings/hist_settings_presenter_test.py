@@ -2,6 +2,7 @@
 from MNeuEventGUI.histogram_settings.presenter import HistSettingsPresenter
 from MNeuEventGUI.test_helpers.unit_test import TestHelper
 
+
 class HistogramSettingsPresenterTest(TestHelper):
 
     def setUp(self):

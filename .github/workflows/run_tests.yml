@@ -35,13 +35,13 @@ jobs:
           python tools/create_conda_yml.py ${{ matrix.python_version }}
           pwd
           ls
-          cat MuonDataLib-dev.yml
+          cat MNeuEventGUI-dev.yml
 
       - name: Setup Conda
         uses: conda-incubator/setup-miniconda@v3
         with:
           auto-update-conda: true
-          environment-file: MuonDataLib-dev.yml
+          environment-file: MNeuEventGUI-dev.yml
 
       - name: check install
         shell: bash -el {0}

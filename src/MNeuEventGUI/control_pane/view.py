@@ -31,11 +31,14 @@ class ControlPaneView(ViewTemplate):
         Set the callbacks for the widget
         :param pressenter: the presenter for the widget
         """
+        # the filter type is picked up from the model, so we trigger
+        # off the time table's changed state signal. Using the dropdown
+        # directly would race with the callback that updates the model.
         callback(Output('main_plot', 'figure', allow_duplicate=True),
                  [Input('time-table', 'rowData'),
-                  Input('log-table', 'rowData')],
-                 [State('Amp', 'value'),
-                  State('dropdown-time', 'value')],
+                  Input('log-table', 'rowData'),
+                  Input('time-table_changed_state', 'data')],
+                 [State('Amp', 'value')],
                  prevent_initial_call=True)(presenter.make_plot)
 
         callback([Output('main_tooltip', 'show', allow_duplicate=True),

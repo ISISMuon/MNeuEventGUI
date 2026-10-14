@@ -1,9 +1,12 @@
 import unittest
-from MNeuEventGUI.table.column import TableGroup, NumericColumn
-from MNeuEventGUI.test_helpers.unit_test import TestHelper
-from MNeuEventGUI.test_helpers.table_ref_data import COLS, EXPECTED_NUMERIC
-from MNeuEventGUI.test_helpers.table_ref_data import expected_col_dict
 
+from MNeuEventGUI.table.column import NumericColumn, TableGroup
+from MNeuEventGUI.test_helpers.table_ref_data import (
+    COLS,
+    EXPECTED_NUMERIC,
+    expected_col_dict,
+)
+from MNeuEventGUI.test_helpers.unit_test import TestHelper
 
 SINGLE = []
 for col in COLS:
