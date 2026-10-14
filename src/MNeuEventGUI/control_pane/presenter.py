@@ -89,7 +89,22 @@ class ControlPanePresenter(PresenterTemplate):
             stop = [x * 1e-9 for x in stop]
             self.add_filter_shading(start, stop, log_data)
 
+        # the lines are added last, so they are on top of any shading
+        self.add_time_filter_lines(time_data)
+
         return self._plot.fig
+
+    def add_time_filter_lines(self, time_data):
+        """
+        This adds a pair of vertical lines for each
+        time filter, one at its start and one at its
+        end.
+        :param time_data: the data from the time filter table
+        """
+        for filter_details in time_data:
+            start, end = self._filter._time.get_range(filter_details)
+            self._plot.add_vline(start)
+            self._plot.add_vline(end)
 
     def _loop_over_filters(self, func, f_start, f_stop, *kwargs):
         """

@@ -188,6 +188,65 @@ class ControlPanePresenterTest(TestHelper):
         # filter times are converted from ns to seconds
         self.assert_shading([1.], [4.], self.log_table)
 
+    def test_make_plot_adds_time_filter_lines(self):
+        self.presenter._plot.new_plot = mock.Mock()
+        self.presenter.add_filter_shading = mock.Mock()
+        self.presenter.add_time_filter_lines = mock.Mock()
+
+        time_data = [{'Name' + TT: 'time_Filter',
+                      'Start' + TT: 1,
+                      'End' + TT: 4}]
+        self.data.add_time_filter(0, 'time_Filter', 1., 4.)
+
+        self.presenter.make_plot(time_data,
+                                 self.log_table,
+                                 'Exclude',
+                                 0)
+
+        self.assertMockOnce(self.presenter.add_time_filter_lines,
+                            [time_data])
+
+    def test_make_plot_adds_time_filter_lines_when_all_excluded(self):
+        self.presenter._plot.new_plot = mock.Mock()
+        self.presenter.add_filter_shading = mock.Mock()
+        self.presenter.add_time_filter_lines = mock.Mock()
+
+        time_data = [{'Name' + TT: 'everything',
+                      'Start' + TT: 1,
+                      'End' + TT: 4}]
+        self.data.add_time_filter(0, 'everything', 1., 4.)
+        self.data.set_time_type(0, 'Exclude')
+
+        # the filters keep no data
+        with mock.patch('MNeuEventGUI.control_pane.presenter.'
+                        '_get_filter_times',
+                        return_value=([], [])):
+            self.presenter.make_plot(time_data,
+                                     self.log_table,
+                                     'Exclude',
+                                     0)
+
+        # no data is kept, so there is nothing to shade
+        self.presenter.add_filter_shading.assert_not_called()
+        self.assertMockOnce(self.presenter.add_time_filter_lines,
+                            [time_data])
+
+    def test_add_time_filter_lines(self):
+        self.presenter._plot.add_vline = mock.Mock()
+
+        self.presenter.add_time_filter_lines([{'Name' + TT: 'unit',
+                                               'Start' + TT: 0.4,
+                                               'End' + TT: 0.6},
+                                              {'Name' + TT: 'test',
+                                               'Start' + TT: 0.2,
+                                               'End' + TT: 0.7},
+                                              ])
+
+        self.assertEqual(self.presenter._plot.add_vline.call_count, 4)
+        values = [args[0][0] for args in
+                  self.presenter._plot.add_vline.call_args_list]
+        self.assertArrays(values, [0.4, 0.6, 0.2, 0.7])
+
     def test_set_data(self):
         reset = mock.Mock()
         self.presenter._plot.reset_plot_range = reset
