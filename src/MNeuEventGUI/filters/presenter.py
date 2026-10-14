@@ -71,6 +71,15 @@ class FilterPresenter(PresenterTemplate):
         """
         return self._time.cols.get_column_dict
 
+    @property
+    def no_events_str(self):
+        """
+        Get the string for when the number of events
+        has not been calculated.
+        :returns: the string for no events
+        """
+        return self._view.no_events_str
+
     def set_data(self, data):
         """
         A method to set the muon data
@@ -91,6 +100,39 @@ class FilterPresenter(PresenterTemplate):
 
         # note we convert min_time and max_time to microseconds
         return self.load(data)
+
+    def refresh(self) -> tuple:
+        """
+        Get the GUI values for the filters and settings
+        currently in the Data object.
+        :returns: the values for the filters and settings
+        (see read_values)
+        """
+        # todo: expand for batch processing
+        return self.read_values(self._data._dict(0))
+
+    def read_values(self, filters: dict) -> tuple:
+        """
+        Get the GUI values for a set of filters, as reported
+        by a Data object.
+        :param filters: the filter data
+        :returns: the time filters, the sample log filters,
+        the amplitude filter, if to include/exclude the time
+        filters, the histogram settings (minimum time, maximum
+        time and number of bins) and the table headers
+        """
+        state = filters["time_filter_type"]
+        time_data = self._time.load(filters["time_filters"])
+        self._time.set_state(state)
+
+        log_data = self._log.load(filters["sample_log_filters"])
+        amp_data = self._amp.load(filters["amplitudes"])
+
+        min_time, max_time, num_bins = self._hist_settings.load(
+            filters["hist_settings"])
+
+        return (time_data, log_data, amp_data, state,
+                min_time, max_time, num_bins, self.headers)
 
     def get_log_y_range(self, row_log):
         """
@@ -149,22 +191,19 @@ class FilterPresenter(PresenterTemplate):
         """
         Loads the filters that have been reported from a Filters json.
         :param filters: the JSON filter data
-        :returns: the time filters, the sample log
-        filters, the amplitude filters, if to include/exclude the time filters,
-        and the table headers
+        :returns: the values for the filters and settings
+        (see read_values)
         """
-        state = filters["time_filter_type"]
-        time_data = self._time.load(filters["time_filters"])
-        self._time_file_data = time_data
-        self._time.set_state(state)
+        values = self.read_values(filters)
 
-        log_data = self._log.load(filters["sample_log_filters"])
-        self._log_file_data = log_data
-
-        self._amp_file_data = self._amp.load(filters["amplitudes"])
+        # record the file's values, so we know if the GUI
+        # still matches the file that was loaded
+        (self._time_file_data,
+         self._log_file_data,
+         self._amp_file_data) = values[:3]
 
         print('loading filters ....')
-        return (time_data, log_data, self._amp_file_data, state, self.headers)
+        return values
 
     def update_N_events(self, update: list[dict], current_str: str) -> str:
         """

@@ -1,3 +1,5 @@
+from dash import no_update
+
 from MNeuEventGUI.control_pane.presenter import ControlPanePresenter
 from MNeuEventGUI.load_bar.presenter import LoadBarPresenter
 from MNeuEventGUI.save_bar.presenter import SaveBarPresenter
@@ -75,6 +77,9 @@ class MainAppPresenter:
           - log data;
           - amplitude;
           - state;
+          - histogram minimum time;
+          - histogram maximum time;
+          - histogram number of bins;
           - table headers.
         """
         return self.control.read_filter(name)
@@ -156,34 +161,59 @@ class MainAppPresenter:
         - if the time filter table is disabled
         - the sample log table data
         - if the sample log table is disabled
+        - the amplitude filter
+        - if to include/exclude the time filters
+        - the histogram's minimum time
+        - the histogram's maximum time
+        - the histogram's number of bins
         - the filter table column names
         - plot of the amplitude histogram
         - the alert message
+        - the number of events string
         """
         if name == self.load.file:
-            # same file
+            # same file, so the data (and the number of
+            # events) is unchanged and only the settings
+            # are read back
+            (_, _, amp, state,
+             min_time, max_time,
+             num_bins, headers) = self.control.refresh()
             return (self.control._plot.fig,
                     time_data, False,
                     log_data, False,
-                    self.control.headers,
+                    amp, state, min_time, max_time, num_bins,
+                    headers,
                     self.control._filter._amp._plot.fig,
-                    '')
+                    '',
+                    no_update)
         self.load.set_file(name)
 
+        # any previous number of events was for the old data
+        no_events = self.control.no_events_str
+
         if 'None' in name:
+            # there is no data to read the settings from
             return (self.plot(),
                     [],
                     True,
                     [],
                     True,
+                    no_update, no_update, no_update, no_update, no_update,
                     self.control.headers,
                     {},
-                    '')
+                    '',
+                    no_events)
 
         self.load.load_nxs(name)
 
         data = self.load.get_data
         self.control.set_data(data)
 
-        return (self.plot(), [], False, [], False,
-                self.control.headers, self.plot_amps(data), '')
+        (times, logs, amp, state,
+         min_time, max_time,
+         num_bins, headers) = self.control.refresh()
+
+        return (self.plot(), times, False, logs, False,
+                amp, state, min_time, max_time, num_bins,
+                headers, self.plot_amps(data), '',
+                no_events)

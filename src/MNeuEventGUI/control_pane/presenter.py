@@ -58,7 +58,7 @@ class ControlPanePresenter(PresenterTemplate):
         log = self._data.dataset.get_sample_log(name)
         return self._plot.new_plot([name], [log])
 
-    def make_plot(self, time_data, log_data, state, amp_data):
+    def make_plot(self, time_data, log_data, state_changed, amp_data):
         """
         This method creates a plot.
         If no sample logs are selected, it will just plot a
@@ -66,7 +66,8 @@ class ControlPanePresenter(PresenterTemplate):
         for the data that is kept.
         :param time_data: the data from the time filter table
         :param log_data: the data from the sample log filter table.
-        :param state: the state of the time filters (inc/exc)
+        :param state_changed: the signal for the state of the time
+        filters (inc/exc) having changed
         :param amp_data: the amplitudes from the sample log filter table.
         Its also used to get which plots to make.
         :returns: an updated figure
@@ -186,6 +187,14 @@ class ControlPanePresenter(PresenterTemplate):
         """
         return self._filter.headers
 
+    @property
+    def no_events_str(self):
+        """
+        :returns: the string for when the number of
+        events has not been calculated
+        """
+        return self._filter.no_events_str
+
     def display_hover(self, hover_info, filters, state):
         """
         A method for getting the hover text
@@ -234,6 +243,14 @@ class ControlPanePresenter(PresenterTemplate):
 
         children = self._view.hover_text(pt, txt)
         return True, bbox, children
+
+    def refresh(self):
+        """
+        A method to get the filters and settings
+        from the data.
+        :returns: the values for the filters and settings
+        """
+        return self._filter.refresh()
 
     def read_filter(self, name):
         """

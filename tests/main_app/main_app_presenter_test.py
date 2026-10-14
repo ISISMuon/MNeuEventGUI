@@ -6,6 +6,7 @@ from unittest import mock
 import h5py
 import numpy as np
 import pytest
+from dash import no_update
 
 from MNeuEventGUI.main_app.presenter import MainAppPresenter
 from MNeuEventGUI.test_helpers.unit_test import TestHelper
@@ -13,7 +14,7 @@ from MNeuEventGUI.test_helpers.unit_test import TestHelper
 current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
 sys.path.append(parent)
-from data_paths import FILE, FILTER  # noqa: E402
+from data_paths import FILE, FILTER, OTHER_FILE  # noqa: E402
 
 """
 Only testing debug = False,
@@ -21,6 +22,11 @@ as it will removed in the long term
 """
 DEBUG = False
 TT = '_time-table'
+# the amplitude, time filter type and histogram settings
+# that a freshly loaded data object reports
+DEFAULT_SETTINGS = [0, 'Include', 0., 32.768, 2048]
+# the number of events is only known after Calculate is pressed
+NO_EVENTS = 'Number of events: Not Calculated'
 DUMMY_SETTINGS = ([], 0, 0, 32.768, 2048, DEBUG)
 
 def dummy_open(N_clicks):
@@ -130,6 +136,27 @@ class MainAppPresenterTest(TestHelper):
         self.assertFalse(state)
         self.assertEqual(clicks, 2)
 
+    def change_settings(self, app):
+        """
+        Change the settings in the data, as the GUI
+        would when the user edits them.
+        :param app: the main app presenter
+        """
+        data = app.load.get_data
+        data.set_time_type(0, 'exclude')
+        data.set_amps_baseline(0, 2.7)
+        data.set_histogram_settings(0, 0.5, 15.22, 1024)
+
+    def assert_settings(self, result, expected):
+        """
+        Check the settings reported by load_nxs.
+        :param result: the values returned by load_nxs
+        :param expected: the expected amplitude, time filter
+        type and histogram settings
+        """
+        # the amplitude, time filter type and histogram settings
+        self.assertEqual(list(result[5:10]), list(expected))
+
     def test_load_nxs(self):
 
         app = MainAppPresenter(dummy_open)
@@ -141,11 +168,42 @@ class MainAppPresenterTest(TestHelper):
         self.assertEqual(result[2], False)
         self.assertEqual(result[3], [])
         self.assertEqual(result[4], False)
-        self.assertEqual(len(result[5]), 3)
-        self.assertEqual(result[6], 'amps')
-        self.assertEqual(result[7], '')
+        self.assert_settings(result, DEFAULT_SETTINGS)
+        self.assertEqual(len(result[10]), 3)
+        self.assertEqual(result[11], 'amps')
+        self.assertEqual(result[12], '')
+        self.assertEqual(result[13], NO_EVENTS)
 
         self.assertMockOnce(app.plot, [])
+
+    def test_load_nxs_keeps_settings_for_same_file(self):
+        app = MainAppPresenter(dummy_open)
+        app.plot = mock.Mock(return_value='plot')
+        app.plot_amps = mock.Mock(return_value='amps')
+        _ = app.load_nxs(FILE, [], [], DEBUG)
+
+        self.change_settings(app)
+
+        # the same file keeps the same data object
+        result = app.load_nxs(FILE, [], [], DEBUG)
+        self.assert_settings(result, [2.7, 'Exclude', 0.5, 15.22, 1024])
+        # the data has not changed, so neither has the number of events
+        self.assertEqual(result[13], no_update)
+
+    def test_load_nxs_resets_settings_for_new_file(self):
+        app = MainAppPresenter(dummy_open)
+        app.plot = mock.Mock(return_value='plot')
+        app.plot_amps = mock.Mock(return_value='amps')
+        _ = app.load_nxs(FILE, [], [], DEBUG)
+
+        self.change_settings(app)
+
+        # a new file means a new data object, which uses its
+        # own settings, so the GUI has to be updated to match
+        result = app.load_nxs(OTHER_FILE, [], [], DEBUG)
+        self.assert_settings(result, DEFAULT_SETTINGS)
+        # the old number of events was for the old data
+        self.assertEqual(result[13], NO_EVENTS)
 
     def test_load_nxs_fails(self):
 
@@ -168,9 +226,12 @@ class MainAppPresenterTest(TestHelper):
         self.assertEqual(result[2], True)
         self.assertEqual(result[3], [])
         self.assertEqual(result[4], True)
-        self.assertEqual(len(result[5]), 3)
-        self.assertEqual(result[6], {})
-        self.assertEqual(result[7], '')
+        # there is no data to read the settings from
+        self.assert_settings(result, [no_update]*5)
+        self.assertEqual(len(result[10]), 3)
+        self.assertEqual(result[11], {})
+        self.assertEqual(result[12], '')
+        self.assertEqual(result[13], NO_EVENTS)
 
         self.assertMockOnce(app.plot, [])
 
@@ -196,9 +257,11 @@ class MainAppPresenterTest(TestHelper):
         self.assertEqual(result[2], False)
         self.assertEqual(result[3], [])
         self.assertEqual(result[4], False)
-        self.assertEqual(len(result[5]), 3)
-        self.assertEqual(result[6], 'amps')
-        self.assertEqual(result[7], '')
+        self.assert_settings(result, DEFAULT_SETTINGS)
+        self.assertEqual(len(result[10]), 3)
+        self.assertEqual(result[11], 'amps')
+        self.assertEqual(result[12], '')
+        self.assertEqual(result[13], NO_EVENTS)
 
         self.assertMockOnce(app.plot, [])
 
@@ -208,7 +271,7 @@ class MainAppPresenterTest(TestHelper):
 
         result = app.load_nxs(FILE, [], [], DEBUG)
         plot = result[0]
-        amps = result[6]
+        amps = result[11]
 
         # add some filters after load
         filters = [{'Name' + TT: 'test', 'Start' + TT: 0, 'End' + TT: 1}]
@@ -224,14 +287,16 @@ class MainAppPresenterTest(TestHelper):
         # load the same data again
         result = app.load_nxs(FILE, filters, logs, DEBUG)
         self.assertEqual(result[0], plot)
-        # should clear the filters
+        # should keep the filters
         self.assertEqual(result[1], filters)
         self.assertEqual(result[2], False)
         self.assertEqual(result[3], logs)
         self.assertEqual(result[4], False)
-        self.assertEqual(len(result[5]), 3)
-        self.assertEqual(result[6], amps)
-        self.assertEqual(result[7], '')
+        self.assert_settings(result, DEFAULT_SETTINGS)
+        self.assertEqual(len(result[10]), 3)
+        self.assertEqual(result[11], amps)
+        self.assertEqual(result[12], '')
+        self.assertEqual(result[13], no_update)
 
     def test_load_nxs_none_with_filters(self):
         app = MainAppPresenter(dummy_open)
@@ -256,9 +321,12 @@ class MainAppPresenterTest(TestHelper):
         self.assertEqual(result[2], True)
         self.assertEqual(result[3], [])
         self.assertEqual(result[4], True)
-        self.assertEqual(len(result[5]), 3)
-        self.assertEqual(result[6], {})
-        self.assertEqual(result[7], '')
+        # there is no data to read the settings from
+        self.assert_settings(result, [no_update]*5)
+        self.assertEqual(len(result[10]), 3)
+        self.assertEqual(result[11], {})
+        self.assertEqual(result[12], '')
+        self.assertEqual(result[13], NO_EVENTS)
 
         self.assertMockOnce(app.plot, [])
 
@@ -285,7 +353,11 @@ class MainAppPresenterTest(TestHelper):
 
         self.assertEqual(result[2], 3.14)
         self.assertEqual(result[3], 'Include')
-        self.assertEqual(len(result[4]), 3)
+        # the filter file does not store the histogram settings
+        self.assertEqual(result[4], 0.)
+        self.assertEqual(result[5], 32.768)
+        self.assertEqual(result[6], 2048)
+        self.assertEqual(len(result[7]), 3)
 
     def test_load_filter_fail(self):
         bad_file = 'nonexistent_filters.json'

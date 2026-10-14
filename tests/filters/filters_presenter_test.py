@@ -204,10 +204,12 @@ class FilterPresenterTest(TestHelper):
         data.add_time_filter(0, 'test', 3., 4.)
         data.add_log_filter(0, 'log_default_1', 'Temp', 36., 37.)
         data.set_amps_baseline(0, 1.2)
+        data.set_histogram_settings(0, 0.5, 15.22, 1024)
         self.presenter.set_data(data)
 
-        (times, logs, amps,
-         state, headers) = self.presenter.load(data._dict(0))
+        (times, logs, amps, state,
+         min_time, max_time,
+         num_bins, headers) = self.presenter.load(data._dict(0))
         self.assertEqual(state, 'Include')
         # the data does not preserve the order the filters were added
         self.assertCountEqual(times, [{'Name' + TT: 'unit',
@@ -226,6 +228,10 @@ class FilterPresenterTest(TestHelper):
                                  'y_min_log-table': 35.0}
                                 ])
         self.assertEqual(amps, 1.2)
+        # the data stores times in ns, the GUI uses microseconds
+        self.assertEqual(min_time, 0.5)
+        self.assertEqual(max_time, 15.22)
+        self.assertEqual(num_bins, 1024)
         self.assertEqual(len(headers), 3)
         self.assertEqual(headers[2]['headerName'], 'Include Filter details')
 
@@ -237,8 +243,9 @@ class FilterPresenterTest(TestHelper):
         data.set_amps_baseline(0, 1.2)
         self.presenter.set_data(data)
 
-        (times, logs, amps,
-         state, headers) = self.presenter.load(data._dict(0))
+        (times, logs, amps, state,
+         min_time, max_time,
+         num_bins, headers) = self.presenter.load(data._dict(0))
         self.assertEqual(state, 'Exclude')
         # the data does not preserve the order the filters were added
         self.assertCountEqual(times, [{'Name' + TT: 'more',
@@ -249,6 +256,10 @@ class FilterPresenterTest(TestHelper):
                                      'End' + TT: 8}])
         self.assertEqual(logs, [])
         self.assertEqual(amps, 1.2)
+        # the defaults from the data
+        self.assertEqual(min_time, 0.)
+        self.assertEqual(max_time, 32.768)
+        self.assertEqual(num_bins, 2048)
         self.assertEqual(len(headers), 3)
         self.assertEqual(headers[2]['headerName'], 'Exclude Filter details')
 

@@ -34,7 +34,7 @@ class TimePresenter(TablePresenter):
         cols = TableColumns([TableGroup([name]),
                              TableGroup([start,
                                          end],
-                                        'Exclude Filter details')],
+                                        'Include Filter details')],
                             inc_delete_row=True,
                             btn_ID=TIME_TABLE)
 
@@ -122,10 +122,25 @@ class TimePresenter(TablePresenter):
         :param value: the updated part of the table name
         (expect either Include or Exclude)
         """
+        self.cols.set_title(2, f'{value} Filter details')
         if self.data is None:
             return
         self.data.set_time_type(0, value)
-        self.cols.set_title(2, f'{value} Filter details')
+
+    def update_state(self, value, changed):
+        """
+        Updates the filter type and everything
+        that depends on it.
+        :param value: the new filter type
+        (expect either Include or Exclude)
+        :param changed: the current value of the
+        "state changed" signal
+        :returns: the column headers and the new
+        value for the "state changed" signal
+        """
+        self.set_state(value)
+        # flipping the signal means it always reports a change
+        return self.cols.get_column_dict, not changed
 
     def add(self) -> dict:
         """

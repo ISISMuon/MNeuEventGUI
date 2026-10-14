@@ -80,4 +80,8 @@ class HistSettingsPresenter(PresenterTemplate):
         :param settings: The dictionary to get the settings from.
         :returns: The histogram settings.
         """
+        # the data stores times in ns, the GUI uses microseconds
+        return (settings["min_time"] / 1e3,
+                settings["max_time"] / 1e3,
+                settings["n_bins"])
 

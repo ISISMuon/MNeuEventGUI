@@ -7,5 +7,8 @@ data_dir = Path(pwd.parent, "data_files")
 # test nexus data file
 FILE = str(data_dir / "HIFI00195790.nxs")
 
+# a second test nexus data file, for loading a new data set
+OTHER_FILE = str(data_dir / "simple_test.nxs")
+
 # test filter file generated from `data_files/filters.py`
 FILTER = str(data_dir / "load_filter.json")

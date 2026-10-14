@@ -109,19 +109,30 @@ class MainApp(Dash):
                   Output('log-table', 'rowData', allow_duplicate=True),
                   Output('Amp', 'value', allow_duplicate=True),
                   Output('dropdown-time', 'value', allow_duplicate=True),
+                  Output('min-time', 'value', allow_duplicate=True),
+                  Output('max-time', 'value', allow_duplicate=True),
+                  Output('num-bins', 'value', allow_duplicate=True),
                   Output('time-table', 'columnDefs', allow_duplicate=True),],
                  Input('title_test', 'children'),
                  prevent_initial_call=True)(self.presenter.load_filter)
 
-        # Plots the data after it is loaded.
+        # Plots the data after it is loaded. A new file means a new
+        # data object, so the filters and settings are read back
+        # from it, to keep the GUI and the data in step.
         callback([Output('main_plot', 'figure'),
                   Output('time-table', 'rowData', allow_duplicate=True),
                   Output('time-table_add', 'disabled'),
                   Output('log-table', 'rowData', allow_duplicate=True),
                   Output('log-table_add', 'disabled'),
+                  Output('Amp', 'value', allow_duplicate=True),
+                  Output('dropdown-time', 'value', allow_duplicate=True),
+                  Output('min-time', 'value', allow_duplicate=True),
+                  Output('max-time', 'value', allow_duplicate=True),
+                  Output('num-bins', 'value', allow_duplicate=True),
                   Output('time-table', 'columnDefs', allow_duplicate=True),
                   Output('amp_plot', 'figure'),
-                  Output('error_msg', 'children', allow_duplicate=True)],
+                  Output('error_msg', 'children', allow_duplicate=True),
+                  Output('N_events', 'children', allow_duplicate=True)],
                  Input('file_name', 'children'),
                  [State('time-table', 'rowData'),
                   State('log-table', 'rowDara'),

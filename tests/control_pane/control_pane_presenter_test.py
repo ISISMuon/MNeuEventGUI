@@ -55,7 +55,7 @@ class ControlPanePresenterTest(TestHelper):
                            'y_min' + LT: 0.4,
                            'y_max' + LT: 1}]
 
-        self.presenter.make_plot([], self.log_table, 'Exclude', 0)
+        self.presenter.make_plot([], self.log_table, False, 0)
 
     @property
     def get_fig(self):
@@ -134,7 +134,7 @@ class ControlPanePresenterTest(TestHelper):
         self.presenter.add_filter_shading = mock.Mock()
         self.presenter.clear()
 
-        self.presenter.make_plot([], [], 'Exclude', 0)
+        self.presenter.make_plot([], [], False, 0)
         self.presenter.add_filter_shading.assert_not_called()
 
         self.assertMockOnce(self.presenter._plot.plot,
@@ -146,7 +146,7 @@ class ControlPanePresenterTest(TestHelper):
         self.presenter._plot.new_plot = mock.Mock()
         self.presenter.add_filter_shading = mock.Mock()
 
-        self.presenter.make_plot([], [], 'Exclude', 0)
+        self.presenter.make_plot([], [], False, 0)
 
         self.assert_new_plot(['Temp'])
         self.assert_shading([], [], [])
@@ -155,7 +155,7 @@ class ControlPanePresenterTest(TestHelper):
         self.presenter._plot.new_plot = mock.Mock()
         self.presenter.add_filter_shading = mock.Mock()
 
-        self.presenter.make_plot([], [self.log_table[0]], 'Exclude', 0)
+        self.presenter.make_plot([], [self.log_table[0]], False, 0)
 
         self.assert_new_plot(['Temp'])
         self.assert_shading([], [], [self.log_table[0]])
@@ -164,7 +164,7 @@ class ControlPanePresenterTest(TestHelper):
         self.presenter._plot.new_plot = mock.Mock()
         self.presenter.add_filter_shading = mock.Mock()
 
-        self.presenter.make_plot([], self.log_table, 'Exclude', 0)
+        self.presenter.make_plot([], self.log_table, False, 0)
 
         self.assert_new_plot(['Temp', 'B'])
         self.assert_shading([], [], self.log_table)
@@ -181,7 +181,7 @@ class ControlPanePresenterTest(TestHelper):
 
         self.presenter.make_plot(time_data,
                                  self.log_table,
-                                 'Exclude',
+                                 False,
                                  0)
 
         self.assert_new_plot(['Temp', 'B'])
@@ -355,7 +355,9 @@ class ControlPanePresenterTest(TestHelper):
         self.check_hover_text(result[2], expect)
 
     def test_read_filter(self):
-        (data, log_data, amp, state, cols) = self.presenter.read_filter(FILTER)
+        (data, log_data, amp, state,
+         min_time, max_time,
+         num_bins, cols) = self.presenter.read_filter(FILTER)
         self.assertEqual(state, 'Include')
         self.assertEqual(len(data), 2)
         self.assertCountEqual(data, [{'Name' + TT: 'first',
@@ -375,8 +377,34 @@ class ControlPanePresenterTest(TestHelper):
                            'y_max' + LT: 39.0}])
 
         self.assertEqual(amp, 3.14)
+        # the filter file does not store the histogram settings,
+        # so these are the data's values
+        self.assertEqual(min_time, 0.)
+        self.assertEqual(max_time, 32.768)
+        self.assertEqual(num_bins, 2048)
         # this is the only bit that can change
         self.assertEqual(cols[2]['headerName'], 'Include Filter details')
+
+    def test_refresh(self):
+        self.data.set_time_type(0, 'exclude')
+        self.data.add_time_filter(0, 'first', 0.01, 0.02)
+        self.data.set_amps_baseline(0, 2.7)
+        self.data.set_histogram_settings(0, 0.5, 15.22, 1024)
+
+        (data, log_data, amp, state,
+         min_time, max_time,
+         num_bins, cols) = self.presenter.refresh()
+
+        self.assertEqual(data, [{'Name' + TT: 'first',
+                                 'Start' + TT: 0.01,
+                                 'End' + TT: 0.02}])
+        self.assertEqual(log_data, [])
+        self.assertEqual(amp, 2.7)
+        self.assertEqual(state, 'Exclude')
+        self.assertEqual(min_time, 0.5)
+        self.assertEqual(max_time, 15.22)
+        self.assertEqual(num_bins, 1024)
+        self.assertEqual(cols[2]['headerName'], 'Exclude Filter details')
 
     def test_loop_over_filters(self):
         func = mock.Mock()

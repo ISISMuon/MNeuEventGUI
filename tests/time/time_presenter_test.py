@@ -157,7 +157,7 @@ class TimePresenterTest(TestHelper):
     def test_set_state(self):
         cols = self.presenter.cols.get_column_dict
         self.assertEqual(cols[2]['headerName'],
-                         'Exclude Filter details')
+                         'Include Filter details')
 
         for state in ['Exclude', 'Include']:
             with self.subTest(state=state):
@@ -167,6 +167,17 @@ class TimePresenterTest(TestHelper):
                                  f'{state} Filter details')
                 self.assertEqual(self.data._dict(0)['time_filter_type'],
                                  state)
+
+    def test_update_state(self):
+        for state, changed in [('Exclude', False), ('Include', True)]:
+            with self.subTest(state=state):
+                cols, signal = self.presenter.update_state(state, changed)
+                self.assertEqual(cols[2]['headerName'],
+                                 f'{state} Filter details')
+                self.assertEqual(self.data._dict(0)['time_filter_type'],
+                                 state)
+                # the signal is flipped, so that it always reports a change
+                self.assertEqual(signal, not changed)
 
     def test_load(self):
         filters = {'default_1': {'start': 200, 'end': 400},
