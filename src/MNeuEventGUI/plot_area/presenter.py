@@ -116,10 +116,14 @@ class PlotAreaPresenter(PresenterTemplate):
         """
         x_list = []
         y_list = []
-        for log in logs:
+        y_titles = []
+        for name, log in zip(names, logs):
             x_list.append(log['time'])
             y_list.append(log['value'])
-        return self.plot(names, x_list, y_list)
+            # some sample logs do not have a unit
+            unit = log['unit'].strip()
+            y_titles.append(f'{name} ({unit})' if unit else name)
+        return self.plot(names, x_list, y_list, y_titles=y_titles)
 
     def add_trace(self, x, y, name, row, col):
         """
@@ -139,7 +143,7 @@ class PlotAreaPresenter(PresenterTemplate):
                     ),
                           row, col)
 
-    def plot(self, labels, x_list, y_list, x_title='time'):
+    def plot(self, labels, x_list, y_list, x_title='time', y_titles=None):
         """
         A method to plot a list of data as a vertically
         stacked figure. All of the list must match
@@ -147,9 +151,15 @@ class PlotAreaPresenter(PresenterTemplate):
         :param labels: the list of labels for the data
         :param x_list: a list of x values (list of lists)
         :param y_list: a list of y values (list of lists)
+        :param x_title: the title for the shared x axis
+        :param y_titles: the titles for the y axes, if
+        none are given the labels are used
         :returns: the figure object
         """
         N = len(labels)
+
+        if y_titles is None:
+            y_titles = labels
 
         if N == 0:
             return self.fig
@@ -177,7 +187,7 @@ class PlotAreaPresenter(PresenterTemplate):
 
             self._max = max(self._max, np.max(x))
             self.fig.update_traces(hoverinfo='none')
-            self.fig.update_yaxes(title_text=name, row=i+1, col=1)
+            self.fig.update_yaxes(title_text=y_titles[i], row=i+1, col=1)
             # manually set y limits for subplots
             y_min = np.min(y_list[i])
             y_max = np.max(y_list[i])

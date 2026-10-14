@@ -79,7 +79,8 @@ class PlotAreaPresenterTest(TestHelper):
 
     def test_new_plot_1(self):
         x_data = np.linspace(0, 4, 5)
-        logs = [{'name': 'Temp', 'time': x_data, 'value': x_data*.1 - 2}]
+        logs = [{'name': 'Temp', 'time': x_data,
+                 'value': x_data*.1 - 2, 'unit': 'K'}]
         self.presenter.plot = mock.Mock()
 
         _ = self.presenter.new_plot(['Temp'], logs)
@@ -87,11 +88,15 @@ class PlotAreaPresenterTest(TestHelper):
                             [['Temp'],
                              [x_data],
                              [x_data*.1 - 2]])
+        self.assertEqual(self.presenter.plot.call_args[1],
+                         {'y_titles': ['Temp (K)']})
 
     def test_new_plot_2(self):
         x_data = np.linspace(0, 4, 5)
-        logs = [{'name': 'Temp', 'time': x_data, 'value': x_data*.1 - 2},
-                {'name': 'I', 'time': x_data, 'value': x_data}]
+        logs = [{'name': 'Temp', 'time': x_data,
+                 'value': x_data*.1 - 2, 'unit': 'K'},
+                {'name': 'I', 'time': x_data,
+                 'value': x_data, 'unit': 'A'}]
         self.presenter.plot = mock.Mock()
 
         _ = self.presenter.new_plot(['Temp', 'I'], logs)
@@ -99,6 +104,43 @@ class PlotAreaPresenterTest(TestHelper):
                             [['Temp', 'I'],
                              [x_data, x_data],
                              [x_data*.1 - 2, x_data]])
+        self.assertEqual(self.presenter.plot.call_args[1],
+                         {'y_titles': ['Temp (K)', 'I (A)']})
+
+    def test_new_plot_no_units(self):
+        """
+        Some sample logs do not record a unit,
+        so the name is used on its own.
+        """
+        x_data = np.linspace(0, 4, 5)
+        logs = [{'name': 'Temp', 'time': x_data,
+                 'value': x_data*.1 - 2, 'unit': ''}]
+        self.presenter.plot = mock.Mock()
+
+        _ = self.presenter.new_plot(['Temp'], logs)
+        self.assertEqual(self.presenter.plot.call_args[1],
+                         {'y_titles': ['Temp']})
+
+    def test_plot_y_axis_titles(self):
+        self.presenter.plot(['Temp', 'B'],
+                            [[0, 2], [0, 2]],
+                            [[4, 5], [2, 4]],
+                            y_titles=['Temp (K)', 'B (G)'])
+
+        self.assertEqual(self.presenter.fig.layout.yaxis.title.text,
+                         'Temp (K)')
+        self.assertEqual(self.presenter.fig.layout.yaxis2.title.text,
+                         'B (G)')
+
+    def test_plot_y_axis_titles_default_to_labels(self):
+        self.presenter.plot(['Temp', 'B'],
+                            [[0, 2], [0, 2]],
+                            [[4, 5], [2, 4]])
+
+        self.assertEqual(self.presenter.fig.layout.yaxis.title.text,
+                         'Temp')
+        self.assertEqual(self.presenter.fig.layout.yaxis2.title.text,
+                         'B')
 
     def assertAddTrace(self, expected_args, call):
         """
