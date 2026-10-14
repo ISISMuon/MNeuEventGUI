@@ -185,6 +185,7 @@ class MainAppPresenter:
                     headers,
                     self.control._filter._amp._plot.fig,
                     no_update)
+        previous = self.load.file
         self.load.set_file(name)
 
         # any previous number of events was for the old data
@@ -207,8 +208,12 @@ class MainAppPresenter:
             data = self.load.get_data
             self.control.set_data(data)
         except Exception as error:
+            # the load bar names the file that is loaded, so a file
+            # that failed has to be taken back off of it
+            self.load.set_file(previous)
             raise GUIError(f'The file {name} '
-                           f'could not be loaded.') from error
+                           f'could not be loaded.',
+                           {'file_name': {'children': previous}}) from error
 
         (times, logs, amp, state,
          min_time, max_time,

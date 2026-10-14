@@ -138,7 +138,7 @@ class MainApp(Dash):
                   Output('N_events', 'children', allow_duplicate=True)],
                  Input('file_name', 'children'),
                  [State('time-table', 'rowData'),
-                  State('log-table', 'rowDara'),
+                  State('log-table', 'rowData'),
                   State('debug', 'on')],
                  prevent_initial_call=True)(self.presenter.load_nxs)
 

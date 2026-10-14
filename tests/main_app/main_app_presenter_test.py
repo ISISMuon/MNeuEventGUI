@@ -219,6 +219,21 @@ class MainAppPresenterTest(TestHelper):
         # the original error is kept, so the user can see it
         self.assertTrue(isinstance(error.value.__cause__, RuntimeError))
 
+    def test_load_nxs_fails_keeps_the_loaded_file(self):
+        """
+        A file that fails to load is not the loaded file,
+        so its name should not be left in the load bar.
+        """
+        app = MainAppPresenter(dummy_open)
+        app.load_nxs(FILE, [], [], DEBUG)
+
+        with pytest.raises(GUIError) as error:
+            app.load_nxs('HIFI0.nxs', [], [], DEBUG)
+
+        self.assertEqual(error.value.revert,
+                         {'file_name': {'children': FILE}})
+        self.assertEqual(app.load.file, FILE)
+
     def test_load_nxs_none(self):
         app = MainAppPresenter(dummy_open)
         app.plot = mock.Mock(return_value='plot')
