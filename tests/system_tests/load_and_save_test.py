@@ -5,8 +5,13 @@ import time
 import h5py
 import numpy as np
 
+from MNeuEventGUI.filters.view import NUM
 from MNeuEventGUI.main_app.view import MainApp
-from MNeuEventGUI.test_helpers.gui import check_no_alert, wait_and_press_btn
+from MNeuEventGUI.test_helpers.gui import (
+    check_no_error_popup,
+    wait_and_press_btn,
+)
+from MNeuEventGUI.utils.errors import ERROR_PREFIX
 
 current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
@@ -56,10 +61,21 @@ def test_load_nxs_error(dash_duo):
     dash_duo.find_element('#Load').click()
 
     time.sleep(.1)
-    # check that the error alert has appeared with correct msg
+    # check that the error pop up has appeared with correct msg
     assert (dash_duo.find_element('#error').is_enabled)
-    msg = "An error occurred: The file bad_file.txt cannot be read"
-    assert (dash_duo.find_element('#error_msg').text == msg)
+    msg = dash_duo.find_element('#error_msg').text
+    assert (msg.startswith(ERROR_PREFIX))
+    assert ('bad_file.txt' in msg)
+
+    # the full error is hidden until the user asks for it
+    details = dash_duo.find_element('#error_details')
+    assert (not details.is_displayed())
+
+    dash_duo.find_element('#error_details_btn').click()
+    time.sleep(.5)
+
+    assert (details.is_displayed())
+    assert ('Traceback' in details.text)
 
 
 def test_load_nxs(dash_duo):
@@ -71,12 +87,18 @@ def test_load_nxs(dash_duo):
 
     dash_duo.find_element('#Load').click()
 
-    check_no_alert(dash_duo)
-    assert (dash_duo.find_element('#file_name').text == FILE)
+    # the load bar names the file once the load has finished
+    dash_duo.wait_for_text_to_equal('#file_name', FILE)
+    check_no_error_popup(dash_duo)
+
+    # the events have to be counted before the data can be saved
+    wait_and_press_btn(dash_duo, 'calc_btn')
+    dash_duo.wait_for_text_to_equal('#N_events', NUM + '64,147')
+    check_no_error_popup(dash_duo)
 
     wait_and_press_btn(dash_duo, 'Save')
 
-    check_no_alert(dash_duo)
+    check_no_error_popup(dash_duo)
     with h5py.File(mock_save_nxs(0, 0)[1:], 'r') as file:
         tmp = file['raw_data_1']['instrument']['detector_1']
         hist = tmp['counts']
