@@ -254,6 +254,48 @@ class MainAppPresenterTest(TestHelper):
 
         self.assertMockOnce(app.plot, [])
 
+    def test_load_nxs_none_twice(self):
+        """
+        Cancelling the file browser leaves 'None' as the file,
+        so a second cancel must not be treated as reloading it.
+        """
+        app = MainAppPresenter(dummy_open)
+        app.plot = mock.Mock(return_value='plot')
+        bad_file = 'None'
+        _ = app.load_nxs(bad_file, [], [], DEBUG)
+
+        result = app.load_nxs(bad_file, [], [], DEBUG)
+        self.assertEqual(result[1], [])
+        self.assertEqual(result[2], True)
+        self.assertEqual(result[3], [])
+        self.assertEqual(result[4], True)
+        # there is still no data to read the settings from
+        self.assert_settings(result, [no_update]*5)
+        self.assertEqual(result[12], NO_EVENTS)
+
+    def test_load_nxs_fails_for_first_file(self):
+        """
+        The file name is an input of this callback, so putting it
+        back after a failed load calls this method again. The first
+        file to fail puts it back to there being no file, which has
+        no data and so must not try to read any settings.
+        """
+        app = MainAppPresenter(dummy_open)
+        app.plot = mock.Mock(return_value='plot')
+
+        with pytest.raises(GUIError):
+            app.load_nxs('HIFI0.nxs', [], [], DEBUG)
+
+        # the name the pop up puts back into the load bar
+        result = app.load_nxs(app.load.file, [], [], DEBUG)
+        self.assertEqual(result[1], [])
+        self.assertEqual(result[2], True)
+        self.assertEqual(result[3], [])
+        self.assertEqual(result[4], True)
+        # the file never loaded, so there are no settings to read
+        self.assert_settings(result, [no_update]*5)
+        self.assertEqual(result[12], NO_EVENTS)
+
     def test_load_nxs_with_filters(self):
 
         app = MainAppPresenter(dummy_open)

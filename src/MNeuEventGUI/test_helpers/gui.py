@@ -1,20 +1,21 @@
 import time
 
+from MNeuEventGUI.utils.errors import MODAL, MSG
+
 
 def check_no_error_popup(dash_duo):
     """
-    Want to check that the error pop up has
-    not opened if everything works.
-    This means that the 'error' element
-    is not findable. So we use a try
-    :input dash_duo:
+    Checks that the error pop up has not opened,
+    which is what should happen when everything works.
+    :param dash_duo: the dash test browser
+    :raises AssertionError: if the pop up is on screen
     """
-    try:
-        assert (dash_duo.find_element('#error').is_enabled)
-        # should not have a pop up, so above should throw
-        assert (False)
-    except Exception:
-        return
+    # the pop up is only added to the page when it is open,
+    # so there is usually nothing to find
+    popups = [popup for popup in dash_duo.find_elements('#' + MODAL)
+              if popup.is_displayed()]
+    assert not popups, ('the error pop up has opened: '
+                        + dash_duo.find_element('#' + MSG).text)
 
 def wait_and_press_btn(dash_duo, name):
     """

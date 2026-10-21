@@ -5,6 +5,7 @@ import time
 import h5py
 import numpy as np
 
+from MNeuEventGUI.filters.view import NUM
 from MNeuEventGUI.main_app.view import MainApp
 from MNeuEventGUI.test_helpers.gui import (
     check_no_error_popup,
@@ -86,8 +87,14 @@ def test_load_nxs(dash_duo):
 
     dash_duo.find_element('#Load').click()
 
+    # the load bar names the file once the load has finished
+    dash_duo.wait_for_text_to_equal('#file_name', FILE)
     check_no_error_popup(dash_duo)
-    assert (dash_duo.find_element('#file_name').text == FILE)
+
+    # the events have to be counted before the data can be saved
+    wait_and_press_btn(dash_duo, 'calc_btn')
+    dash_duo.wait_for_text_to_equal('#N_events', NUM + '64,147')
+    check_no_error_popup(dash_duo)
 
     wait_and_press_btn(dash_duo, 'Save')
 

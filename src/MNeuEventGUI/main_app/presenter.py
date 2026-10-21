@@ -84,6 +84,8 @@ class MainAppPresenter:
           - table headers.
         :raises GUIError: if the filter file cannot be read
         """
+        if name == 'None':
+             return (no_update,) * 8
         try:
             return self.control.read_filter(name)
         except Exception as error:
@@ -155,7 +157,7 @@ class MainAppPresenter:
         :param time_data: the time filter table data
         :param log_data: the log filter table data
         :param debug_state: if debug mode is on or off.
-        :returns: yields:
+        :returns: a tuple containing:
         - the updated figure
         - the time filter table data
         - if the time filter table is disabled
@@ -171,6 +173,22 @@ class MainAppPresenter:
         - the number of events string
         :raises GUIError: if the file cannot be read
         """
+        if not name or 'None' in name:
+            # there is no file, because the file browser was cancelled
+            # or because a failed load has put the name back to there
+            # being no file (see the except below). The same file check
+            # cannot be used, as there is no data to read settings from.
+            self.load.set_file(name)
+            return (self.plot(),
+                    [],
+                    True,
+                    [],
+                    True,
+                    no_update, no_update, no_update, no_update, no_update,
+                    self.control.headers,
+                    {},
+                    self.control.no_events_str)
+
         if name == self.load.file:
             # same file, so the data (and the number of
             # events) is unchanged and only the settings
@@ -190,18 +208,6 @@ class MainAppPresenter:
 
         # any previous number of events was for the old data
         no_events = self.control.no_events_str
-
-        if 'None' in name:
-            # there is no data to read the settings from
-            return (self.plot(),
-                    [],
-                    True,
-                    [],
-                    True,
-                    no_update, no_update, no_update, no_update, no_update,
-                    self.control.headers,
-                    {},
-                    no_events)
 
         try:
             self.load.load_nxs(name)
