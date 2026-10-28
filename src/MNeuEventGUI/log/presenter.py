@@ -293,10 +293,20 @@ class LogPresenter(TablePresenter):
         if self._ok_clicks < ok:
             # ok pressed
             self._ok_clicks += 1
+
+            # the filter keeps all of the data in the log
+            log_data = self.data.dataset.get_sample_log(log)
+            min_value = np.min(log_data['value'])
+            max_value = np.max(log_data['value'])
+
             if self._replace is not None:
                 # replace/update row (i.e. graph button pressed)
                 name = data[self._replace][self.name_col]
-                self.data.remove_log_filter(0, name)
+                self.data.edit_log_filter(0,
+                                          name,
+                                          log,
+                                          min_value,
+                                          max_value)
             else:
                 # new row (i.e. from add button)
                 existing_filters = self.data._dict(0)["sample_log_filters"]
@@ -305,16 +315,11 @@ class LogPresenter(TablePresenter):
                 while name in existing_filters:
                     name = f"filter {next(self.count)}"
 
-            # the filter keeps all of the data in the log
-            log_data = self.data.dataset.get_sample_log(log)
-            min_value = np.min(log_data['value'])
-            max_value = np.max(log_data['value'])
-
-            self.data.add_log_filter(0,
-                                     name,
-                                     log,
-                                     min_value,
-                                     max_value)
+                self.data.add_log_filter(0,
+                                         name,
+                                         log,
+                                         min_value,
+                                         max_value)
         return False, self.load(self.data._dict(0)["sample_log_filters"])
 
     def add(self, n, data):
@@ -347,18 +352,25 @@ class LogPresenter(TablePresenter):
         :param data: the table data (list of rows)
         :returns: Updated table values
         """
-        # todo: use edit methods when added
         row = info[0]["rowIndex"]
         row_name = data[row]["Name_" + self.ID]
 
         # contrary to the Dash docs, the new value is "value" not "newValue"
         new_data = info[0]["data"]
+        new_name = new_data["Name_" + self.ID]
 
-        self.data.remove_log_filter(0, row_name)
-        self.data.add_log_filter(0, new_data["Name_" + self.ID],
-                                 new_data["sample_" + self.ID],
-                                  new_data["y0_" + self.ID],
-                                  new_data["yN_" + self.ID])
+        if new_name == row_name:
+            self.data.edit_log_filter(0, row_name,
+                                      new_data["sample_" + self.ID],
+                                      new_data["y0_" + self.ID],
+                                      new_data["yN_" + self.ID])
+        else:
+            # filters cannot be renamed, so replace it
+            self.data.remove_log_filter(0, row_name)
+            self.data.add_log_filter(0, new_name,
+                                     new_data["sample_" + self.ID],
+                                     new_data["y0_" + self.ID],
+                                     new_data["yN_" + self.ID])
 
         return self.load(self.data._dict(0)["sample_log_filters"])
 
@@ -375,8 +387,13 @@ class LogPresenter(TablePresenter):
         data = []
         for name, values in filters.items():
             log = values["log"]
-            start = values["lower"]
-            end = values["upper"]
+            predicate = values["predicate"]
+            if "Range" not in predicate:
+                raise ValueError(f"Log filter '{name}' has an unsupported "
+                                 f"predicate {predicate}; only Range "
+                                 "predicates are supported.")
+            start = predicate["Range"]["lower"]
+            end = predicate["Range"]["upper"]
 
             log_data = self.data.dataset.get_sample_log(log)
             y = log_data["value"]
