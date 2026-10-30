@@ -2,6 +2,7 @@ from MNeuEventLib import BatchData
 
 from MNeuEventGUI.load_bar.view import LoadBarView
 from MNeuEventGUI.presenter_template import PresenterTemplate
+from MNeuEventGUI.utils.batch import NUM_BATCHES
 
 
 class LoadBarPresenter(PresenterTemplate):
@@ -40,7 +41,7 @@ class LoadBarPresenter(PresenterTemplate):
         Reads a muon event nexus file
         and creates a BatchData object
         """
-        self._data = BatchData(name, 64, 1)
+        self._data = BatchData(name, 64, NUM_BATCHES)
 
     @property
     def get_data(self):

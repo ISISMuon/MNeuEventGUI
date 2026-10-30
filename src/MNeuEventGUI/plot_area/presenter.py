@@ -4,6 +4,9 @@ from plotly.subplots import make_subplots
 
 from MNeuEventGUI.plot_area.view import PlotAreaView
 from MNeuEventGUI.presenter_template import PresenterTemplate
+from MNeuEventGUI.utils.batch import batch_id
+
+DEFAULT_COLOUR = 'PaleGreen'
 
 
 class PlotAreaPresenter(PresenterTemplate):
@@ -12,7 +15,7 @@ class PlotAreaPresenter(PresenterTemplate):
     This follows the MVP pattern.
     """
 
-    def __init__(self, ID):
+    def __init__(self, ID, batch=None):
         """
         Creates a Plot Area Presenter.
         This widget deals with plotly.
@@ -20,11 +23,37 @@ class PlotAreaPresenter(PresenterTemplate):
         way to tell them apart.
         :param ID: the ID (unique name) for
         the plot presenter.
+        :param batch: the index of the batch the
+        plot is for (None if shared by all batches)
         """
         self.ID = ID
+        self.batch = batch
         self._view = PlotAreaView(self)
         self.reset_plot_range()
         self.fig = None
+
+    def component_id(self, suffix):
+        """
+        Gets the ID of a component of the plot.
+        If the plot is for a batch, the ID is
+        unique to the batch.
+        :param suffix: the suffix for the component
+        :returns: the ID for the component
+        """
+        if self.batch is None:
+            return self.ID + suffix
+        return batch_id(self.ID + suffix, self.batch)
+
+    @staticmethod
+    def _outline(outline):
+        """
+        Gets the outline for a shaded region.
+        :param outline: if to draw the outline
+        :returns: the line properties
+        """
+        if outline:
+            return {'color': 'black', 'width': 4}
+        return {'width': 0}
 
     def reset_plot_range(self):
         """
@@ -36,17 +65,21 @@ class PlotAreaPresenter(PresenterTemplate):
         self._min = 1000
         self._max = -1000
 
-    def add_hline(self, value):
+    def add_hline(self, value, row='all', colour='gray'):
         """
         Adds a horizontal line at
         value.
         :param value: the y value to
         place the line at
+        :param row: the subplot row to add the
+        line to (default is all of them)
+        :param colour: the colour of the line
         """
         self.fig.add_hline(y=value,
+                           row=row,
                            line_width=2,
                            line_dash='dash',
-                           line_color='gray')
+                           line_color=colour)
 
     def add_vline(self, value):
         """
@@ -60,7 +93,8 @@ class PlotAreaPresenter(PresenterTemplate):
                            line_dash='dash',
                            line_color='gray')
 
-    def add_rect(self, x0, y0, x1, y1, axis):
+    def add_rect(self, x0, y0, x1, y1, axis,
+                 colour=DEFAULT_COLOUR, outline=True):
         """
         Adds a rectangle to a specific subplot.
         :param x0: the x value for the bottom left corner
@@ -68,6 +102,8 @@ class PlotAreaPresenter(PresenterTemplate):
         :param x1: the x value for the top right corner
         :param y1: the y value for the top right corner
         :param axis: the subplot to add the rectanlge to
+        :param colour: the fill colour
+        :param outline: if to draw the outline
         """
         self.fig.add_shape(type='rect',
                            xref=f'x{axis}',
@@ -76,26 +112,50 @@ class PlotAreaPresenter(PresenterTemplate):
                            y0=y0,
                            x1=x1,
                            y1=y1,
-                           fillcolor='PaleGreen',
+                           fillcolor=colour,
                            opacity=0.3,
                            layer='above',
-                           line={'color': 'black',
-                                 'width': 4})
+                           line=self._outline(outline))
 
-    def add_shaded_region(self, start, stop):
+    def add_band(self, x0, x1, axis,
+                 colour=DEFAULT_COLOUR, outline=True):
+        """
+        Adds a shaded region over the full height
+        of a specific subplot.
+        :param x0: the start x value
+        :param x1: the end x value
+        :param axis: the subplot to add the band to
+        :param colour: the fill colour
+        :param outline: if to draw the outline
+        """
+        self.fig.add_shape(type='rect',
+                           xref=f'x{axis}',
+                           yref=f'y{axis} domain',
+                           x0=x0,
+                           y0=0,
+                           x1=x1,
+                           y1=1,
+                           fillcolor=colour,
+                           opacity=0.3,
+                           layer='above',
+                           line=self._outline(outline))
+
+    def add_shaded_region(self, start, stop,
+                          colour=DEFAULT_COLOUR, outline=True):
         """
         Adds a shaded region to the plot.
         :param start: when to start the shaded
         region
         :param stop: when to stop the shaded region
+        :param colour: the fill colour
+        :param outline: if to draw the outline
         """
         self.fig.add_vrect(x0=start,
                            x1=stop,
                            opacity=0.3,
-                           fillcolor='PaleGreen',
+                           fillcolor=colour,
                            layer='above',
-                           line={'color': 'black',
-                                 'width': 4})
+                           line=self._outline(outline))
 
     def shade_all(self):
         """

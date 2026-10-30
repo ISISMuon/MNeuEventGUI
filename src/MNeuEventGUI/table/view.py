@@ -19,17 +19,17 @@ class TableView(ViewTemplate):
         GUI.
         """
         return html.Div([
-            dbc.Button(id=presenter.ID + '_add',
+            dbc.Button(id=presenter.component_id('_add'),
                        class_name='bi-plus-lg',
                        disabled=True),
-            dcc.Store(data=False, id=presenter.ID + '_changed_state'),
-            dag.AgGrid(id=presenter.ID,
+            dcc.Store(data=False, id=presenter.component_id('_changed_state')),
+            dag.AgGrid(id=presenter.component_id(),
                        columnDefs=presenter.cols.get_column_dict,
                        rowData=[],
                        defaultColDef={'editable': True,
                                       'suppressMovable': True},
                        ),
-            html.Div(id=presenter.ID + '-dropdown-container')
+            html.Div(id=presenter.component_id('-dropdown-container'))
             ])
 
     def set_callbacks(self, presenter):
@@ -37,14 +37,15 @@ class TableView(ViewTemplate):
         Set the callbacks for the GUI.
         :param presenter: the presenter for the GUI
         """
-        callback(Output(presenter.ID, 'rowData', allow_duplicate=True),
-                 Input(presenter.ID, 'cellValueChanged'),
-                 State(presenter.ID, 'virtualRowData'),
+        table = presenter.component_id()
+        callback(Output(table, 'rowData', allow_duplicate=True),
+                 Input(table, 'cellValueChanged'),
+                 State(table, 'virtualRowData'),
                  prevent_initial_call=True)(presenter.validate)
 
-        callback(Output(presenter.ID, 'rowData', allow_duplicate=True),
-                 Input(presenter.ID, 'cellValueChanged'),
-                 State(presenter.ID, 'virtualRowData'),
+        callback(Output(table, 'rowData', allow_duplicate=True),
+                 Input(table, 'cellValueChanged'),
+                 State(table, 'virtualRowData'),
                  prevent_initial_call=True)(presenter.edit_row)
 
         self.set_btn_callback(presenter)
@@ -58,9 +59,10 @@ class TableView(ViewTemplate):
         distinguish between the signals.
         :param presenter: the presenter object
         """
-        callback(Output(presenter.ID, "rowData", allow_duplicate=True),
-                 Input(presenter.ID, "cellRendererData"),
-                 State(presenter.ID, 'virtualRowData'),
+        table = presenter.component_id()
+        callback(Output(table, "rowData", allow_duplicate=True),
+                 Input(table, "cellRendererData"),
+                 State(table, 'virtualRowData'),
                  prevent_initial_call=True)(presenter.delete_row)
 
     def set_add_callback(self, presenter):
@@ -69,6 +71,7 @@ class TableView(ViewTemplate):
         can overwrite it if we need to.
         :param presenter: the presenter object
         """
-        callback(Output(presenter.ID, 'rowData', allow_duplicate=True),
-                 Input(presenter.ID + '_add', 'n_clicks'),
+        callback(Output(presenter.component_id(), 'rowData',
+                        allow_duplicate=True),
+                 Input(presenter.component_id('_add'), 'n_clicks'),
                  prevent_initial_call=True)(lambda _: presenter.add())

@@ -12,14 +12,16 @@ class AmpPresenter(PresenterTemplate):
     filter widget. This follows the MVP
     pattern.
     """
-    def __init__(self):
+    def __init__(self, batch=0):
         """
         This creates the presenter object for the
         widget.
+        :param batch: the index of the batch the
+        filter is for
         """
-
+        self.batch = batch
         # create a plot area
-        self._plot = PlotAreaPresenter('amp')
+        self._plot = PlotAreaPresenter('amp', batch)
         self._view = AmplitudeView(self)
         self.data = None
 
@@ -45,7 +47,7 @@ class AmpPresenter(PresenterTemplate):
         if self.data is None or value is None:
             return
 
-        self.data.set_amps_baseline(0, float(value))
+        self.data.set_amps_baseline(self.batch, float(value))
 
     def plot(self, data):
         """

@@ -21,10 +21,12 @@ class LogPresenter(TablePresenter):
     widget. This follows the MVP
     pattern.
     """
-    def __init__(self):
+    def __init__(self, batch=0):
         """
         This creates the presenter object for the
         widget.
+        :param batch: the index of the batch the
+        filters are for
         """
 
         # a handle to the data object
@@ -38,7 +40,7 @@ class LogPresenter(TablePresenter):
         # the current name for the pop up
         self._selected_name = self._defaults[0]
         # create a plot area for pop up
-        self._plot = PlotAreaPresenter('log')
+        self._plot = PlotAreaPresenter('log', batch)
 
         # create table
         name = TextColumn('Name_' + LOG_TABLE, 'Name')
@@ -93,7 +95,8 @@ class LogPresenter(TablePresenter):
 
         super().__init__(LOG_TABLE,
                          cols,
-                         name.ID)
+                         name.ID,
+                         batch)
 
     def _set_view(self):
         """
@@ -108,6 +111,14 @@ class LogPresenter(TablePresenter):
         :param logs: the data object
         """
         self.data = data
+
+    @property
+    def batch_filters(self):
+        """
+        Gets the filters for this batch from the data.
+        :returns: the filters (a dict keyed by name)
+        """
+        return self.data._dict(self.batch)["sample_log_filters"]
 
     def validate_row(self, change, data):
         """
@@ -295,29 +306,34 @@ class LogPresenter(TablePresenter):
         if self._ok_clicks < ok:
             # ok pressed
             self._ok_clicks += 1
-            if self._replace is not None:
-                # replace/update row (i.e. graph button pressed)
-                name = data[self._replace][self.name_col]
-                self.data.remove_log_filter(0, name)
-            else:
-                # new row (i.e. from add button)
-                existing_filters = self.data._dict(0)["sample_log_filters"]
-                name = f"filter {next(self.count)}"
-                # if filters already exist, avoid overwriting
-                while name in existing_filters:
-                    name = f"filter {next(self.count)}"
 
             # the filter keeps all of the data in the log
             log_data = self.data.dataset.get_sample_log(log)
             min_value = np.min(log_data['value'])
             max_value = np.max(log_data['value'])
 
-            self.data.add_log_filter(0,
-                                     name,
-                                     log,
-                                     min_value,
-                                     max_value)
-        return False, self.load(self.data._dict(0)["sample_log_filters"])
+            if self._replace is not None:
+                # replace/update row (i.e. graph button pressed)
+                name = data[self._replace][self.name_col]
+                self.data.edit_log_filter(self.batch,
+                                          name,
+                                          log,
+                                          min_value,
+                                          max_value)
+            else:
+                # new row (i.e. from add button)
+                existing_filters = self.batch_filters
+                name = f"filter {next(self.count)}"
+                # if filters already exist, avoid overwriting
+                while name in existing_filters:
+                    name = f"filter {next(self.count)}"
+
+                self.data.add_log_filter(self.batch,
+                                         name,
+                                         log,
+                                         min_value,
+                                         max_value)
+        return False, self.load(self.batch_filters)
 
     def add(self, n, data):
         """
@@ -339,8 +355,8 @@ class LogPresenter(TablePresenter):
         """
         row = info["rowIndex"]
         name = data[row]['Name_' + LOG_TABLE]
-        self.data.remove_log_filter(0, name)
-        return self.load(self.data._dict(0)["sample_log_filters"])
+        self.data.remove_log_filter(self.batch, name)
+        return self.load(self.batch_filters)
 
     def edit_row(self, info, data):
         """
@@ -357,19 +373,19 @@ class LogPresenter(TablePresenter):
         new_name = new_data["Name_" + self.ID]
 
         if new_name == row_name:
-            self.data.edit_log_filter(0, row_name,
+            self.data.edit_log_filter(self.batch, row_name,
                                       new_data["sample_" + self.ID],
                                       new_data["y0_" + self.ID],
                                       new_data["yN_" + self.ID])
         else:
             # filters cannot be renamed, so replace it
-            self.data.remove_log_filter(0, row_name)
-            self.data.add_log_filter(0, new_name,
+            self.data.remove_log_filter(self.batch, row_name)
+            self.data.add_log_filter(self.batch, new_name,
                                      new_data["sample_" + self.ID],
                                      new_data["y0_" + self.ID],
                                      new_data["yN_" + self.ID])
 
-        return self.load(self.data._dict(0)["sample_log_filters"])
+        return self.load(self.batch_filters)
 
     def load(self, filters: list[dict]):
         """

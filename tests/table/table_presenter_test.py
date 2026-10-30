@@ -88,16 +88,48 @@ class TablePresenterTest(TestHelper):
             self.presenter.validate(row, data)
 
         self.assertEqual(str(context.exception),
-                         'Repeated name default_1')
+                         'Batch 0: Repeated name default_1')
 
         # the corrected data is carried on the error, so the
         # error handler can put it back into the table
-        data = context.exception.revert[self.presenter.ID]['rowData']
+        [(component_id, props)] = context.exception.revert
+        self.assertEqual(component_id, self.presenter.component_id())
+        data = props['rowData']
         self.assertEqual(len(data), 2)
 
         # the name is reverted
         self.assert_data(data[0], 'default_1', 42)
         self.assert_data(data[1], 'default_2', 42)
+
+    def test_batch_default(self):
+        self.assertEqual(self.presenter.batch, 0)
+
+    @mock.patch("MNeuEventGUI.table.presenter.TableView")
+    def test_validate_fails_batch(self, view):
+        cols = TableColumns([TableGroup([TextColumn(NAME, 'name')])],
+                            False)
+        presenter = TablePresenter('table_test', cols, NAME, batch=2)
+        row = [{'rowIndex': 1, 'rowId': '1',
+                'data': make_row('default_1', 42),
+                'oldValue': 'default_2',
+                'value': 'default_1',
+                'colId': NAME,
+                'timestamp': 19}]
+        data = [make_row('default_1', 42),
+                make_row('default_1', 42)]
+
+        with self.assertRaises(GUIError) as context:
+            presenter.validate(row, data)
+        self.assertEqual(str(context.exception),
+                         'Batch 2: Repeated name default_1')
+        [(component_id, _)] = context.exception.revert
+        self.assertEqual(component_id, presenter.component_id())
+
+    def test_component_id(self):
+        self.assertEqual(self.presenter.component_id(),
+                         {'type': 'table_test', 'batch': 0})
+        self.assertEqual(self.presenter.component_id('_add'),
+                         {'type': 'table_test_add', 'batch': 0})
 
     def test_validate_row(self):
         """

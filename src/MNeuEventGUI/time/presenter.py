@@ -16,11 +16,12 @@ class TimePresenter(TablePresenter):
     widget. This follows the MVP
     pattern.
     """
-    def __init__(self):
+    def __init__(self, batch=0):
         """
         This creates the presenter object for the
         widget.
-        :param data: The underlying data object.
+        :param batch: the index of the batch the
+        filters are for
         """
         self._previous = 'Include'
         self.data = None
@@ -40,7 +41,8 @@ class TimePresenter(TablePresenter):
 
         super().__init__(TIME_TABLE,
                          cols,
-                         name.ID)
+                         name.ID,
+                         batch)
         self.start = 0
         self.end = 1000
 
@@ -59,6 +61,14 @@ class TimePresenter(TablePresenter):
         times = self.data.dataset.get_frame_times() * 1e-9
         frame_length = 32.e-6
         self.set_time_range(times[0], times[-1] + frame_length)
+
+    @property
+    def batch_filters(self):
+        """
+        Gets the filters for this batch from the data.
+        :returns: the filters (a dict keyed by name)
+        """
+        return self.data._dict(self.batch)["time_filters"]
 
     def set_time_range(self, start, end):
         """
@@ -129,7 +139,7 @@ class TimePresenter(TablePresenter):
         self.cols.set_title(2, f'{value} Filter details')
         if self.data is None:
             return
-        self.data.set_time_type(0, value)
+        self.data.set_time_type(self.batch, value)
 
     def update_state(self, value, changed):
         """
@@ -152,17 +162,17 @@ class TimePresenter(TablePresenter):
         :returns: The new time filter data.
         """
         # new row (i.e. from add button)
-        existing_filters = self.data._dict(0)["time_filters"]
+        existing_filters = self.batch_filters
         name = f"filter {next(self.count)}"
         # if filters already exist, avoid overwriting
         while name in existing_filters:
             name = f"filter {next(self.count)}"
 
-        self.data.add_time_filter(0,
+        self.data.add_time_filter(self.batch,
                                   name,
                                   0.33 * self.end,
                                   0.66 * self.end)
-        return self.load(self.data._dict(0)["time_filters"])
+        return self.load(self.batch_filters)
 
     def delete_row(self, info, data):
         """
@@ -173,8 +183,8 @@ class TimePresenter(TablePresenter):
         """
         row = info["rowIndex"]
         name = data[row]['Name_' + TIME_TABLE]
-        self.data.remove_time_filter(0, name)
-        return self.load(self.data._dict(0)["time_filters"])
+        self.data.remove_time_filter(self.batch, name)
+        return self.load(self.batch_filters)
 
     def edit_row(self, info, data):
         """
@@ -191,17 +201,17 @@ class TimePresenter(TablePresenter):
         new_name = new_data["Name_" + self.ID]
 
         if new_name == row_name:
-            self.data.edit_time_filter(0, row_name,
+            self.data.edit_time_filter(self.batch, row_name,
                                        new_data["Start_" + self.ID],
                                        new_data["End_" + self.ID])
         else:
             # filters cannot be renamed, so replace it
-            self.data.remove_time_filter(0, row_name)
-            self.data.add_time_filter(0, new_name,
+            self.data.remove_time_filter(self.batch, row_name)
+            self.data.add_time_filter(self.batch, new_name,
                                       new_data["Start_" + self.ID],
                                       new_data["End_" + self.ID])
 
-        return self.load(self.data._dict(0)["time_filters"])
+        return self.load(self.batch_filters)
 
 
     def load(self, filters: list[dict]):
