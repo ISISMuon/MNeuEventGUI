@@ -1,9 +1,14 @@
 import dash
 import dash_bootstrap_components as dbc
-from dash import ALL, Dash, Input, Output, State, callback, dcc, html
+from dash import Dash, Input, Output, State, callback, dcc, html
 
+from MNeuEventGUI.log.presenter import LOG_TABLE
 from MNeuEventGUI.main_app.presenter import MainAppPresenter
-from MNeuEventGUI.utils.batch import batch_id
+from MNeuEventGUI.plot_area.view import PLOT
+from MNeuEventGUI.table.view import ADD
+from MNeuEventGUI.time.presenter import TIME_TABLE
+from MNeuEventGUI.time.view import DROPDOWN
+from MNeuEventGUI.utils.batch import active_batch_only, all_batches
 
 
 class MainApp(Dash):
@@ -108,31 +113,31 @@ class MainApp(Dash):
         # from it, to keep the GUI and the data in step.
         # This updates every batch.
         callback([Output('main_plot', 'figure'),
-                  Output(batch_id('time-table', ALL), 'rowData',
+                  Output(all_batches(TIME_TABLE), 'rowData',
                          allow_duplicate=True),
-                  Output(batch_id('time-table_add', ALL), 'disabled'),
-                  Output(batch_id('log-table', ALL), 'rowData',
+                  Output(all_batches(TIME_TABLE + ADD), 'disabled'),
+                  Output(all_batches(LOG_TABLE), 'rowData',
                          allow_duplicate=True),
-                  Output(batch_id('log-table_add', ALL), 'disabled'),
-                  Output(batch_id('Amp', ALL), 'value',
+                  Output(all_batches(LOG_TABLE + ADD), 'disabled'),
+                  Output(all_batches('Amp'), 'value',
                          allow_duplicate=True),
-                  Output(batch_id('time-table_dropdown', ALL), 'value',
+                  Output(all_batches(TIME_TABLE + DROPDOWN), 'value',
                          allow_duplicate=True),
-                  Output(batch_id('min-time', ALL), 'value',
+                  Output(all_batches('min-time'), 'value',
                          allow_duplicate=True),
-                  Output(batch_id('max-time', ALL), 'value',
+                  Output(all_batches('max-time'), 'value',
                          allow_duplicate=True),
-                  Output(batch_id('num-bins', ALL), 'value',
+                  Output(all_batches('num-bins'), 'value',
                          allow_duplicate=True),
-                  Output(batch_id('time-table', ALL), 'columnDefs',
+                  Output(all_batches(TIME_TABLE), 'columnDefs',
                          allow_duplicate=True),
-                  Output(batch_id('amp_plot', ALL), 'figure'),
+                  Output(all_batches('amp' + PLOT), 'figure'),
                   Output('error_msg', 'children', allow_duplicate=True),
-                  Output(batch_id('N_events', ALL), 'children',
+                  Output(all_batches('N_events'), 'children',
                          allow_duplicate=True)],
                  Input('file_name', 'children'),
-                 [State(batch_id('time-table', ALL), 'rowData'),
-                  State(batch_id('log-table', ALL), 'rowData'),
+                 [State(all_batches(TIME_TABLE), 'rowData'),
+                  State(all_batches(LOG_TABLE), 'rowData'),
                   State('debug', 'on')],
                  prevent_initial_call=True)(self.presenter.load_nxs)
 
@@ -151,8 +156,8 @@ class MainApp(Dash):
         callback([Output('load_confirm', 'displayed'),
                   Output('load_confirm', 'submit_n_clicks')],
                  Input('Load', 'n_clicks'),
-                 [State(batch_id('time-table', ALL), 'rowData'),
-                  State(batch_id('log-table', ALL), 'rowData'),
+                 [State(all_batches(TIME_TABLE), 'rowData'),
+                  State(all_batches(LOG_TABLE), 'rowData'),
                   State('load_confirm', 'submit_n_clicks')],
                  prevent_initial_call=True)(self.presenter.confirm_load)
 
@@ -168,11 +173,10 @@ class MainApp(Dash):
 
         # open a json filter file, for the active batch
         def open_filters(n_clicks, active_tab):
-            return self.presenter.active_batch_only(open_json(n_clicks),
-                                                    active_tab)
+            return active_batch_only(open_json(n_clicks), active_tab)
 
         callback(
-                 Output(batch_id('title_test', ALL), 'children'),
+                 Output(all_batches('title_test'), 'children'),
                  Input('load_filters', 'n_clicks'),
                  State('batch-tabs', 'active_tab'),
                  prevent_initial_call=True)(open_filters)

@@ -1,7 +1,8 @@
 import dash_bootstrap_components as dbc
 from dash import Input, Output, State, callback, html
 
-from MNeuEventGUI.utils.batch import batch_id
+from MNeuEventGUI.table.view import ADD, CHANGED_STATE
+from MNeuEventGUI.time.view import DROPDOWN
 from MNeuEventGUI.view_template import ViewTemplate
 
 NUM = 'Number of events: '
@@ -24,7 +25,7 @@ class FilterView(ViewTemplate):
         """
         return html.Div([
             html.P("Title: testing",
-                   id=batch_id('title_test', presenter.batch),
+                   id=presenter.component_id('title_test'),
                    hidden=True),
             dbc.Accordion([
                 dbc.AccordionItem(
@@ -42,11 +43,11 @@ class FilterView(ViewTemplate):
                 ],
                          start_collapsed=True),
             dbc.Button('Calculate',
-                       id=batch_id('calc_btn', presenter.batch),
+                       id=presenter.component_id('calc_btn'),
                        color='primary',
                        className='me-md-2'),
             html.P(self.no_events_str,
-                   id=batch_id('N_events', presenter.batch)),
+                   id=presenter.component_id('N_events')),
             ])
 
     def set_callbacks(self, presenter):
@@ -54,21 +55,20 @@ class FilterView(ViewTemplate):
         Sets the callbacks for the widget
         :param presenter: the presenter for the widget
         """
-        batch = presenter.batch
-        title = batch_id('title_test', batch)
-        n_events = batch_id('N_events', batch)
+        title = presenter.component_id('title_test')
+        n_events = presenter.component_id('N_events')
         time_table = presenter._time.component_id()
         log_table = presenter._log.component_id()
-        amp = batch_id('Amp', batch)
-        min_time = batch_id('min-time', batch)
-        max_time = batch_id('max-time', batch)
-        num_bins = batch_id('num-bins', batch)
+        amp = presenter.component_id('Amp')
+        min_time = presenter.component_id('min-time')
+        max_time = presenter.component_id('max-time')
+        num_bins = presenter.component_id('num-bins')
 
         # load a filter file into this batch
         callback([Output(time_table, 'rowData', allow_duplicate=True),
                   Output(log_table, 'rowData', allow_duplicate=True),
                   Output(amp, 'value', allow_duplicate=True),
-                  Output(presenter._time.component_id('_dropdown'), 'value',
+                  Output(presenter._time.component_id(DROPDOWN), 'value',
                          allow_duplicate=True),
                   Output(min_time, 'value', allow_duplicate=True),
                   Output(max_time, 'value', allow_duplicate=True),
@@ -91,11 +91,11 @@ class FilterView(ViewTemplate):
 
         # clear events string if event data is made invalid
         callback(Output(n_events, 'children', allow_duplicate=True),
-                 [Input(presenter._time.component_id('_changed_state'),
+                 [Input(presenter._time.component_id(CHANGED_STATE),
                         'data'),
                   Input(amp, 'value'),
-                  Input(presenter._time.component_id('_add'), 'n_clicks'),
-                  Input(presenter._log.component_id('_add'), 'n_clicks'),
+                  Input(presenter._time.component_id(ADD), 'n_clicks'),
+                  Input(presenter._log.component_id(ADD), 'n_clicks'),
                   Input(time_table, 'cellRendererData'),
                   Input(log_table, 'cellRendererData'),
                   Input(min_time, 'value'),

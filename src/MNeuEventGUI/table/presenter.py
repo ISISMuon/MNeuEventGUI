@@ -3,7 +3,6 @@ from itertools import count
 
 from MNeuEventGUI.presenter_template import PresenterTemplate
 from MNeuEventGUI.table.view import TableView
-from MNeuEventGUI.utils.batch import batch_id
 
 
 class TablePresenter(PresenterTemplate):
@@ -12,7 +11,10 @@ class TablePresenter(PresenterTemplate):
     table. This follows the MVP
     pattern.
     """
-    def __init__(self, ID, columns, name_col, batch=0):
+    # the key for the table's filters in the data's dict
+    FILTER_KEY = None
+
+    def __init__(self, ID, columns, name_col, batch):
         """
         This creates the view object for the
         widget. The responses to the callbacks
@@ -39,14 +41,25 @@ class TablePresenter(PresenterTemplate):
         """
         return TableView(self)
 
-    def component_id(self, suffix=''):
+    @property
+    def batch_filters(self):
         """
-        Gets the ID of a component of the table,
-        which is unique to the batch.
-        :param suffix: the suffix for the component
-        :returns: the ID for the component
+        Gets the filters for this batch from the data.
+        :returns: the filters (a dict keyed by name)
         """
-        return batch_id(self.ID + suffix, self.batch)
+        return self.data._dict(self.batch)[self.FILTER_KEY]
+
+    def new_filter_name(self):
+        """
+        Gets a name for a new filter, which does not
+        overwrite any of the batch's existing filters.
+        :returns: the name
+        """
+        existing_filters = self.batch_filters
+        name = f"filter {next(self.count)}"
+        while name in existing_filters:
+            name = f"filter {next(self.count)}"
+        return name
 
     def batch_msg(self, msg):
         """
@@ -79,9 +92,9 @@ class TablePresenter(PresenterTemplate):
         repeat, num = Counter(names).most_common(1)[0]
         if num > 1:
             data[row[0]['rowIndex']]['Name_'+self.ID] = row[0]['oldValue']
-            return data, self.batch_msg(f'Repeated name {repeat}')
-
-        data, msg = self.validate_row(row, data)
+            msg = f'Repeated name {repeat}'
+        else:
+            data, msg = self.validate_row(row, data)
         return data, self.batch_msg(msg)
 
     def validate_row(self, change, data):

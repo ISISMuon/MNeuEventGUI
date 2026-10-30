@@ -67,7 +67,7 @@ class TimePresenterTest(TestHelper):
     @mock.patch("MNeuEventGUI.time.presenter.TimeView")
     def setUp(self, view):
         self.view = view
-        self.presenter = TimePresenter()
+        self.presenter = TimePresenter(0)
         self.data = BatchData(FILE, 64, 1)
         self.presenter.set_data(self.data)
         self.presenter.set_time_range(0, 1000)

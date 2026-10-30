@@ -1,7 +1,12 @@
 import dash_bootstrap_components as dbc
-from dash import ALL, Input, Output, State, callback, html
+from dash import Input, Output, State, callback, html
 
-from MNeuEventGUI.utils.batch import batch_colour, batch_id, tab_id
+from MNeuEventGUI.log.presenter import LOG_TABLE
+from MNeuEventGUI.plot_area.view import PLOT, TOOLTIP
+from MNeuEventGUI.table.view import CHANGED_STATE
+from MNeuEventGUI.time.presenter import TIME_TABLE
+from MNeuEventGUI.time.view import DROPDOWN
+from MNeuEventGUI.utils.batch import all_batches, batch_colour, tab_id
 from MNeuEventGUI.view_template import ViewTemplate
 
 
@@ -44,29 +49,32 @@ class ControlPaneView(ViewTemplate):
         Set the callbacks for the widget
         :param pressenter: the presenter for the widget
         """
+        plot = presenter._plot.component_id(PLOT)
+        tooltip = presenter._plot.component_id(TOOLTIP)
+
         # the filter type is picked up from the model, so we trigger
         # off the time table's changed state signal. Using the dropdown
         # directly would race with the callback that updates the model.
-        callback(Output('main_plot', 'figure', allow_duplicate=True),
-                 [Input(batch_id('time-table', ALL), 'rowData'),
-                  Input(batch_id('log-table', ALL), 'rowData'),
-                  Input(batch_id('time-table_changed_state', ALL), 'data'),
+        callback(Output(plot, 'figure', allow_duplicate=True),
+                 [Input(all_batches(TIME_TABLE), 'rowData'),
+                  Input(all_batches(LOG_TABLE), 'rowData'),
+                  Input(all_batches(TIME_TABLE + CHANGED_STATE), 'data'),
                   Input('batch-tabs', 'active_tab')],
                  prevent_initial_call=True)(presenter.make_plot)
 
-        callback([Output('main_tooltip', 'show', allow_duplicate=True),
-                  Output('main_tooltip', 'bbox', allow_duplicate=True),
-                  Output('main_tooltip', 'children', allow_duplicate=True)],
-                 Input('main_plot', 'hoverData'),
-                 [State(batch_id('time-table', ALL), 'rowData'),
-                  State(batch_id('time-table_dropdown', ALL), 'value')],
+        callback([Output(tooltip, 'show', allow_duplicate=True),
+                  Output(tooltip, 'bbox', allow_duplicate=True),
+                  Output(tooltip, 'children', allow_duplicate=True)],
+                 Input(plot, 'hoverData'),
+                 [State(all_batches(TIME_TABLE), 'rowData'),
+                  State(all_batches(TIME_TABLE + DROPDOWN), 'value')],
                  prevent_initial_call=True)(presenter.display_hover)
 
         # calculating updates the number of events for every batch
-        callback([Output(batch_id('N_events', ALL), 'children',
+        callback([Output(all_batches('N_events'), 'children',
                          allow_duplicate=True),
                   Output('error_msg', 'children', allow_duplicate=True)],
-                 Input(batch_id('calc_btn', ALL), 'n_clicks'),
+                 Input(all_batches('calc_btn'), 'n_clicks'),
                  prevent_initial_call=True)(presenter.calculate)
 
     def hover_text(self, pt, lines):

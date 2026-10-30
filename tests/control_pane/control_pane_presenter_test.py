@@ -102,7 +102,10 @@ class ControlPanePresenterTest(TestHelper):
         self.assertEqual(self.presenter._data, None)
         for filter_presenter in self.presenter._filters:
             self.assertEqual(filter_presenter._data, None)
+            self.assertEqual(filter_presenter._time.data, None)
             self.assertEqual(filter_presenter._log.data, None)
+            self.assertEqual(filter_presenter._amp.data, None)
+            self.assertEqual(filter_presenter._hist_settings.data, None)
 
     def test_empty(self):
         self.presenter._plot.plot = mock.Mock()
@@ -269,11 +272,12 @@ class ControlPanePresenterTest(TestHelper):
         self.data.set_histogram_settings(1, 0.5, 15.22, 1024)
 
         values = self.presenter.refresh()
-        self.assertEqual(len(values), NUM_BATCHES)
+        for column in values:
+            self.assertEqual(len(column), NUM_BATCHES)
 
         (data, log_data, amp, state,
          min_time, max_time,
-         num_bins, cols) = values[1]
+         num_bins, cols) = [column[1] for column in values]
 
         self.assertEqual(data, [{'Name' + TT: 'first',
                                  'Start' + TT: 0.01,
@@ -288,7 +292,7 @@ class ControlPanePresenterTest(TestHelper):
 
         # the other batches are unchanged
         self.assertEqual(values[0][0], [])
-        self.assertEqual(values[0][3], 'Include')
+        self.assertEqual(values[3][0], 'Include')
 
 
 class AddFilterShadingTest(TestHelper):
@@ -336,10 +340,11 @@ class AddFilterShadingTest(TestHelper):
         # so the first is shaded for the full height
         self.presenter.add_filter_shading(1, [1], [2], [B_ROW],
                                           ['Temp', 'B'], False)
-        self.plot.add_band.assert_called_once_with(
-            1, 2, '', batch_colour(1), False)
-        self.plot.add_rect.assert_called_once_with(
-            1, 0.6, 2, 1., '2', batch_colour(1), False)
+        self.assertEqual(self.plot.add_rect.call_args_list,
+                         [mock.call(1, 0, 2, 1, '', batch_colour(1),
+                                    False, domain=True),
+                          mock.call(1, 0.6, 2, 1., '2', batch_colour(1),
+                                    False)])
         self.assertEqual(self.plot.add_hline.call_args_list,
                          [mock.call(0.6, row=2, colour=batch_colour(1)),
                           mock.call(1., row=2, colour=batch_colour(1))])
@@ -402,11 +407,11 @@ class DisplayHoverTest(TestHelper):
             ['Include', 'Exclude', 'Exclude'])
         self.check_hover_text(result[2], 0.5,
                               ['Batch 0: Keep data: True. '
-                               'Added by: unit, test, ',
+                               'Added by: unit, test',
                                'Batch 1: Keep data: False. '
-                               'Removed by: test, ',
+                               'Removed by: test',
                                'Batch 2: Keep data: False. '
-                               'Removed by: unit, '])
+                               'Removed by: unit'])
 
     def test_not_over_filters(self):
         unit = {'Name' + TT: 'unit',

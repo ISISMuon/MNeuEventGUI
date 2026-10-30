@@ -70,7 +70,7 @@ class LogPresenterTest(TestHelper):
     def setUp(self, view):
         self.view = view
         self.view.return_value = mock.Mock()
-        self.presenter = LogPresenter()
+        self.presenter = LogPresenter(0)
         self.data = BatchData(FILE, 64, 1)
         self.presenter.set_data(self.data)
 

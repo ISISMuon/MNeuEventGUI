@@ -4,7 +4,6 @@ from plotly.subplots import make_subplots
 
 from MNeuEventGUI.plot_area.view import PlotAreaView
 from MNeuEventGUI.presenter_template import PresenterTemplate
-from MNeuEventGUI.utils.batch import batch_id
 
 DEFAULT_COLOUR = 'PaleGreen'
 
@@ -32,28 +31,19 @@ class PlotAreaPresenter(PresenterTemplate):
         self.reset_plot_range()
         self.fig = None
 
-    def component_id(self, suffix):
-        """
-        Gets the ID of a component of the plot.
-        If the plot is for a batch, the ID is
-        unique to the batch.
-        :param suffix: the suffix for the component
-        :returns: the ID for the component
-        """
-        if self.batch is None:
-            return self.ID + suffix
-        return batch_id(self.ID + suffix, self.batch)
-
     @staticmethod
-    def _outline(outline):
+    def _style(colour, outline):
         """
-        Gets the outline for a shaded region.
+        Gets the style for a shaded region.
+        :param colour: the fill colour
         :param outline: if to draw the outline
-        :returns: the line properties
+        :returns: the shape properties
         """
-        if outline:
-            return {'color': 'black', 'width': 4}
-        return {'width': 0}
+        line = {'color': 'black', 'width': 4} if outline else {'width': 0}
+        return {'fillcolor': colour,
+                'opacity': 0.3,
+                'layer': 'above',
+                'line': line}
 
     def reset_plot_range(self):
         """
@@ -94,7 +84,7 @@ class PlotAreaPresenter(PresenterTemplate):
                            line_color='gray')
 
     def add_rect(self, x0, y0, x1, y1, axis,
-                 colour=DEFAULT_COLOUR, outline=True):
+                 colour=DEFAULT_COLOUR, outline=True, domain=False):
         """
         Adds a rectangle to a specific subplot.
         :param x0: the x value for the bottom left corner
@@ -104,41 +94,17 @@ class PlotAreaPresenter(PresenterTemplate):
         :param axis: the subplot to add the rectanlge to
         :param colour: the fill colour
         :param outline: if to draw the outline
+        :param domain: if the y values are a fraction of the
+        subplot's height, rather than data values
         """
         self.fig.add_shape(type='rect',
                            xref=f'x{axis}',
-                           yref=f'y{axis}',
+                           yref=f'y{axis} domain' if domain else f'y{axis}',
                            x0=x0,
                            y0=y0,
                            x1=x1,
                            y1=y1,
-                           fillcolor=colour,
-                           opacity=0.3,
-                           layer='above',
-                           line=self._outline(outline))
-
-    def add_band(self, x0, x1, axis,
-                 colour=DEFAULT_COLOUR, outline=True):
-        """
-        Adds a shaded region over the full height
-        of a specific subplot.
-        :param x0: the start x value
-        :param x1: the end x value
-        :param axis: the subplot to add the band to
-        :param colour: the fill colour
-        :param outline: if to draw the outline
-        """
-        self.fig.add_shape(type='rect',
-                           xref=f'x{axis}',
-                           yref=f'y{axis} domain',
-                           x0=x0,
-                           y0=0,
-                           x1=x1,
-                           y1=1,
-                           fillcolor=colour,
-                           opacity=0.3,
-                           layer='above',
-                           line=self._outline(outline))
+                           **self._style(colour, outline))
 
     def add_shaded_region(self, start, stop,
                           colour=DEFAULT_COLOUR, outline=True):
@@ -152,10 +118,7 @@ class PlotAreaPresenter(PresenterTemplate):
         """
         self.fig.add_vrect(x0=start,
                            x1=stop,
-                           opacity=0.3,
-                           fillcolor=colour,
-                           layer='above',
-                           line=self._outline(outline))
+                           **self._style(colour, outline))
 
     def shade_all(self):
         """

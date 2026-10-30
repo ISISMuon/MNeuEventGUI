@@ -30,7 +30,7 @@ def load_data():
 class FilterPresenterTest(TestHelper):
 
     def setUp(self):
-        self.presenter = FilterPresenter()
+        self.presenter = FilterPresenter(0)
 
     def set_file_data(self):
         """

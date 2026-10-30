@@ -13,7 +13,7 @@ class FilterPresenter(PresenterTemplate):
     This code follows the MVP template,
     note that the model is MNeuEventLib's BatchData class.
     """
-    def __init__(self, batch=0):
+    def __init__(self, batch):
         """
         Create the presenter.
         Hold a copy of:
@@ -93,6 +93,17 @@ class FilterPresenter(PresenterTemplate):
         self._log.set_data(data)
         self._amp.set_data(data)
         self._hist_settings.set_data(data)
+
+    def clear(self):
+        """
+        Clears the stored data when a bad file is
+        loaded.
+        """
+        self._data = None
+        self._time.data = None
+        self._log.data = None
+        self._amp.data = None
+        self._hist_settings.data = None
 
     def read_filters(self) -> tuple:
         """

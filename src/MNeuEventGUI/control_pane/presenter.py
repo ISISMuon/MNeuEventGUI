@@ -7,7 +7,7 @@ from MNeuEventGUI.filters.presenter import FilterPresenter
 from MNeuEventGUI.log.presenter import LOG_TABLE
 from MNeuEventGUI.plot_area.presenter import PlotAreaPresenter
 from MNeuEventGUI.presenter_template import PresenterTemplate
-from MNeuEventGUI.time.presenter import TIME_TABLE
+from MNeuEventGUI.time.presenter import TIME_TABLE, TimePresenter
 from MNeuEventGUI.utils.batch import NUM_BATCHES, active_batch, batch_colour
 
 
@@ -39,8 +39,7 @@ class ControlPanePresenter(PresenterTemplate):
         """
         self._data = None
         for filter_presenter in self._filters:
-            filter_presenter._data = None
-            filter_presenter._log.data = None
+            filter_presenter.clear()
 
     def empty(self):
         """
@@ -143,18 +142,13 @@ class ControlPanePresenter(PresenterTemplate):
         :param outline: if to outline the shaded regions
         """
         colour = batch_colour(batch)
-
-        if len(start) == 0:
-            # no filters
-            self._plot.add_shaded_region(self._plot._min,
-                                         self._plot._max,
-                                         colour,
-                                         outline)
-            return
+        # with no filters, all of the data is kept
+        intervals = (list(zip(start, stop))
+                     or [(self._plot._min, self._plot._max)])
 
         if len(log_data) == 0:
             # If only have time filters
-            for x0, x1 in zip(start, stop):
+            for x0, x1 in intervals:
                 self._plot.add_shaded_region(x0, x1, colour, outline)
             return
 
@@ -167,14 +161,15 @@ class ControlPanePresenter(PresenterTemplate):
 
             if len(rows) == 0:
                 # the batch does not filter on this sample log
-                for x0, x1 in zip(start, stop):
-                    self._plot.add_band(x0, x1, ax, colour, outline)
+                for x0, x1 in intervals:
+                    self._plot.add_rect(x0, 0, x1, 1, ax,
+                                        colour, outline, domain=True)
 
             for row in rows:
                 y_min, y_max = self._filters[batch].get_log_y_range(row)
                 self._plot.add_hline(y_min, row=k + 1, colour=colour)
                 self._plot.add_hline(y_max, row=k + 1, colour=colour)
-                for x0, x1 in zip(start, stop):
+                for x0, x1 in intervals:
                     self._plot.add_rect(x0, y_min, x1, y_max, ax,
                                         colour, outline)
 
@@ -225,7 +220,8 @@ class ControlPanePresenter(PresenterTemplate):
                  for filter_presenter in self._filters],
                 '')
 
-    def _keep_text(self, x, filters, state):
+    @staticmethod
+    def _keep_text(x, filters, state):
         """
         Gets the text for if a batch keeps the data
         at a point, and which filters add/remove it.
@@ -236,28 +232,16 @@ class ControlPanePresenter(PresenterTemplate):
         """
         names = []
         for filter_details in filters:
-            start, end = self._filters[0]._time.get_range(filter_details)
+            start, end = TimePresenter.get_range(filter_details)
             if start <= x and end >= x:
                 names.append(filter_details['Name_' + TIME_TABLE])
 
-        txt = 'Keep data: '
-        if state == 'Include':
-            if len(names) > 0:
-                txt += 'True. '
-                txt += 'Added by: '
-                for name in names:
-                    txt += name + ', '
-            else:
-                txt += 'False'
-
-        else:
-            if len(names) > 0:
-                txt += 'False. '
-                txt += 'Removed by: '
-                for name in names:
-                    txt += name + ', '
-            else:
-                txt += 'True'
+        include = state == 'Include'
+        # included data is kept iff a filter covers it
+        txt = f'Keep data: {bool(names) == include}'
+        if names:
+            txt += f". {'Added' if include else 'Removed'} by: "
+            txt += ', '.join(names)
         return txt
 
     def display_hover(self, hover_info, filters, states):
@@ -290,8 +274,10 @@ class ControlPanePresenter(PresenterTemplate):
         """
         A method to get the filters and settings
         from the data.
-        :returns: the values for the filters and settings,
-        for each batch
+        :returns: the values for the filters and settings
+        (see FilterPresenter.read_values), each as a list
+        with a value for each batch
         """
-        return [filter_presenter.refresh()
-                for filter_presenter in self._filters]
+        return [list(values) for values in
+                zip(*[filter_presenter.refresh()
+                      for filter_presenter in self._filters])]

@@ -1,12 +1,16 @@
 import unittest
 
+from dash import ALL, no_update
 from plotly.colors import sample_colorscale
 
 from MNeuEventGUI.utils.batch import (
     NUM_BATCHES,
     active_batch,
+    active_batch_only,
+    all_batches,
     batch_colour,
     batch_id,
+    per_batch,
     tab_id,
 )
 
@@ -19,6 +23,17 @@ class BatchUtilsTest(unittest.TestCase):
     def test_batch_id(self):
         self.assertEqual(batch_id('time-table', 2),
                          {'type': 'time-table', 'batch': 2})
+
+    def test_all_batches(self):
+        self.assertEqual(all_batches('time-table'),
+                         {'type': 'time-table', 'batch': ALL})
+
+    def test_per_batch(self):
+        self.assertEqual(per_batch(1), [1] * NUM_BATCHES)
+
+    def test_active_batch_only(self):
+        result = active_batch_only('filters.json', tab_id(1))
+        self.assertEqual(result, [no_update, 'filters.json', no_update])
 
     def test_batch_colour(self):
         # colours are sampled from the middle of
