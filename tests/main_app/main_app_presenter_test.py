@@ -12,7 +12,7 @@ from dash import no_update
 
 from MNeuEventGUI.main_app.presenter import MainAppPresenter
 from MNeuEventGUI.test_helpers.unit_test import TestHelper
-from MNeuEventGUI.utils.batch import NUM_BATCHES, tab_id
+from MNeuEventGUI.utils.batch import NUM_BATCHES, per_batch, tab_id
 from MNeuEventGUI.utils.errors import GUIError
 
 current = os.path.dirname(os.path.realpath(__file__))
@@ -33,14 +33,6 @@ DEFAULT_SETTINGS = [0, 'Include', 0., 32.768, 2048]
 NO_EVENTS = 'Number of events: Not Calculated'
 DUMMY_SETTINGS = ([], 0, 0, 32.768, 2048, DEBUG)
 EMPTY = [[]] * NUM_BATCHES
-
-
-def per_batch(value):
-    """
-    :param value: the value for a single batch
-    :returns: the value for every batch
-    """
-    return [value] * NUM_BATCHES
 
 
 def dummy_open(N_clicks):
@@ -156,11 +148,6 @@ class MainAppPresenterTest(TestHelper):
         state, clicks = app.confirm_load(2, EMPTY, EMPTY, 1)
         self.assertFalse(state)
         self.assertEqual(clicks, 2)
-
-    def test_active_batch_only(self):
-        app = MainAppPresenter(dummy_open)
-        result = app.active_batch_only('filters.json', tab_id(1))
-        self.assertEqual(result, [no_update, 'filters.json', no_update])
 
     def change_settings(self, app):
         """

@@ -4,6 +4,10 @@ from dash import Input, Output, State, callback, dcc, html
 
 from MNeuEventGUI.view_template import ViewTemplate
 
+# suffixes for the IDs of the table's components
+ADD = '_add'
+CHANGED_STATE = '_changed_state'
+
 
 class TableView(ViewTemplate):
     """
@@ -19,10 +23,10 @@ class TableView(ViewTemplate):
         GUI.
         """
         return html.Div([
-            dbc.Button(id=presenter.component_id('_add'),
+            dbc.Button(id=presenter.component_id(ADD),
                        class_name='bi-plus-lg',
                        disabled=True),
-            dcc.Store(data=False, id=presenter.component_id('_changed_state')),
+            dcc.Store(data=False, id=presenter.component_id(CHANGED_STATE)),
             dag.AgGrid(id=presenter.component_id(),
                        columnDefs=presenter.cols.get_column_dict,
                        rowData=[],
@@ -73,5 +77,5 @@ class TableView(ViewTemplate):
         """
         callback(Output(presenter.component_id(), 'rowData',
                         allow_duplicate=True),
-                 Input(presenter.component_id('_add'), 'n_clicks'),
+                 Input(presenter.component_id(ADD), 'n_clicks'),
                  prevent_initial_call=True)(lambda _: presenter.add())

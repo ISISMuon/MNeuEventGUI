@@ -1,7 +1,6 @@
 import dash_bootstrap_components as dbc
 from dash import Input, Output, callback, html
 
-from MNeuEventGUI.utils.batch import batch_id
 from MNeuEventGUI.view_template import ViewTemplate
 
 
@@ -16,16 +15,15 @@ class HistSettingsView(ViewTemplate):
         :param presenter: The presenter for the widget.
         :returns: The layout for the GUI widget.
         """
-        batch = presenter.batch
         return html.Div([
             "Minimum and maximum time:",
             dbc.Row([
-                dbc.Col(dbc.Input(id=batch_id('min-time', batch),
+                dbc.Col(dbc.Input(id=presenter.component_id('min-time'),
                                   value=0.,
                                   type='number',
                                   debounce=True,
                                   placeholder=0.)),
-                dbc.Col(dbc.Input(id=batch_id('max-time', batch),
+                dbc.Col(dbc.Input(id=presenter.component_id('max-time'),
                                   value=32.768,
                                   type='number',
                                   debounce=True,
@@ -33,13 +31,13 @@ class HistSettingsView(ViewTemplate):
                 ]),
             dbc.Row(
                 dbc.Col(["Number of bins:",
-                     dbc.Input(id=batch_id('num-bins', batch),
+                     dbc.Input(id=presenter.component_id('num-bins'),
                                value=2048,
                                type='number',
                                step=1,
                                placeholder=2048),
                 ])),
-            dbc.Row([html.Div(id=batch_id('display-width', batch)),
+            dbc.Row([html.Div(id=presenter.component_id('display-width')),
                 ]),
             ])
 
@@ -47,10 +45,10 @@ class HistSettingsView(ViewTemplate):
         """
         Set callbacks required by the GUI.
         """
-        min_time = batch_id('min-time', presenter.batch)
-        max_time = batch_id('max-time', presenter.batch)
-        num_bins = batch_id('num-bins', presenter.batch)
-        display_width = batch_id('display-width', presenter.batch)
+        min_time = presenter.component_id('min-time')
+        max_time = presenter.component_id('max-time')
+        num_bins = presenter.component_id('num-bins')
+        display_width = presenter.component_id('display-width')
 
         # callback to update resolution display
         callback(Output(display_width, 'children'),

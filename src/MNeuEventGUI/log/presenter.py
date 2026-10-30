@@ -21,7 +21,9 @@ class LogPresenter(TablePresenter):
     widget. This follows the MVP
     pattern.
     """
-    def __init__(self, batch=0):
+    FILTER_KEY = 'sample_log_filters'
+
+    def __init__(self, batch):
         """
         This creates the presenter object for the
         widget.
@@ -111,14 +113,6 @@ class LogPresenter(TablePresenter):
         :param logs: the data object
         """
         self.data = data
-
-    @property
-    def batch_filters(self):
-        """
-        Gets the filters for this batch from the data.
-        :returns: the filters (a dict keyed by name)
-        """
-        return self.data._dict(self.batch)["sample_log_filters"]
 
     def validate_row(self, change, data):
         """
@@ -322,14 +316,8 @@ class LogPresenter(TablePresenter):
                                           max_value)
             else:
                 # new row (i.e. from add button)
-                existing_filters = self.batch_filters
-                name = f"filter {next(self.count)}"
-                # if filters already exist, avoid overwriting
-                while name in existing_filters:
-                    name = f"filter {next(self.count)}"
-
                 self.data.add_log_filter(self.batch,
-                                         name,
+                                         self.new_filter_name(),
                                          log,
                                          min_value,
                                          max_value)

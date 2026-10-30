@@ -12,7 +12,7 @@ class AmpPresenter(PresenterTemplate):
     filter widget. This follows the MVP
     pattern.
     """
-    def __init__(self, batch=0):
+    def __init__(self, batch):
         """
         This creates the presenter object for the
         widget.

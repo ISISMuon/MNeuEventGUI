@@ -9,7 +9,7 @@ from tests.data_paths import FILE
 class HistogramSettingsPresenterTest(TestHelper):
 
     def setUp(self):
-        self.presenter = HistSettingsPresenter()
+        self.presenter = HistSettingsPresenter(0)
 
     def test_display_width(self):
         """

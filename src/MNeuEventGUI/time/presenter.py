@@ -16,7 +16,9 @@ class TimePresenter(TablePresenter):
     widget. This follows the MVP
     pattern.
     """
-    def __init__(self, batch=0):
+    FILTER_KEY = 'time_filters'
+
+    def __init__(self, batch):
         """
         This creates the presenter object for the
         widget.
@@ -61,14 +63,6 @@ class TimePresenter(TablePresenter):
         times = self.data.dataset.get_frame_times() * 1e-9
         frame_length = 32.e-6
         self.set_time_range(times[0], times[-1] + frame_length)
-
-    @property
-    def batch_filters(self):
-        """
-        Gets the filters for this batch from the data.
-        :returns: the filters (a dict keyed by name)
-        """
-        return self.data._dict(self.batch)["time_filters"]
 
     def set_time_range(self, start, end):
         """
@@ -121,7 +115,8 @@ class TimePresenter(TablePresenter):
             self.reject(data, msg)
         return data
 
-    def get_range(self, data):
+    @staticmethod
+    def get_range(data):
         """
         Gets the x range from the time table data.
         Used for creating shaded region for the row
@@ -162,14 +157,8 @@ class TimePresenter(TablePresenter):
         :returns: The new time filter data.
         """
         # new row (i.e. from add button)
-        existing_filters = self.batch_filters
-        name = f"filter {next(self.count)}"
-        # if filters already exist, avoid overwriting
-        while name in existing_filters:
-            name = f"filter {next(self.count)}"
-
         self.data.add_time_filter(self.batch,
-                                  name,
+                                  self.new_filter_name(),
                                   0.33 * self.end,
                                   0.66 * self.end)
         return self.load(self.batch_filters)

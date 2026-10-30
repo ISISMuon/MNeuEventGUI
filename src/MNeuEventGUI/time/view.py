@@ -1,6 +1,9 @@
 from dash import Input, Output, State, callback, dcc, html
 
-from MNeuEventGUI.table.view import TableView
+from MNeuEventGUI.table.view import CHANGED_STATE, TableView
+
+# suffix for the ID of the filter type dropdown
+DROPDOWN = '_dropdown'
 
 
 class TimeView(TableView):
@@ -22,7 +25,7 @@ class TimeView(TableView):
                                   'Include',
                                   style={'width': 105,
                                          'margin-left': '10px'},
-                                  id=presenter.component_id('_dropdown'),
+                                  id=presenter.component_id(DROPDOWN),
                                   clearable=False),
                       ],
                      className="d-grid gap-2 d-md-flex "
@@ -44,7 +47,7 @@ class TimeView(TableView):
         # before it has been updated.
         callback([Output(presenter.component_id(), 'columnDefs',
                          allow_duplicate=True),
-                  Output(presenter.component_id('_changed_state'), 'data')],
-                 Input(presenter.component_id('_dropdown'), 'value'),
-                 State(presenter.component_id('_changed_state'), 'data'),
+                  Output(presenter.component_id(CHANGED_STATE), 'data')],
+                 Input(presenter.component_id(DROPDOWN), 'value'),
+                 State(presenter.component_id(CHANGED_STATE), 'data'),
                  prevent_initial_call=True)(presenter.update_state)

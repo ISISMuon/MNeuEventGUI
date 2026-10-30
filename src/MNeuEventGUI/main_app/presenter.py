@@ -3,17 +3,8 @@ from dash import no_update
 from MNeuEventGUI.control_pane.presenter import ControlPanePresenter
 from MNeuEventGUI.load_bar.presenter import LoadBarPresenter
 from MNeuEventGUI.save_bar.presenter import SaveBarPresenter
-from MNeuEventGUI.utils.batch import NUM_BATCHES, active_batch
+from MNeuEventGUI.utils.batch import active_batch, per_batch
 from MNeuEventGUI.utils.errors import GUIError
-
-
-def per_batch(value):
-    """
-    Repeats a value for every batch.
-    :param value: the value for a single batch
-    :returns: a list of the value for every batch
-    """
-    return [value] * NUM_BATCHES
 
 
 class MainAppPresenter:
@@ -80,18 +71,6 @@ class MainAppPresenter:
 
         print("debug mode " + tmp)
 
-    def active_batch_only(self, value, active_tab):
-        """
-        Gets the values to send to a component that is
-        repeated for each batch, such that only the
-        active batch is updated.
-        :param value: the value for the active batch
-        :param active_tab: the ID of the active batch tab
-        :returns: the value for each batch
-        """
-        values = per_batch(no_update)
-        values[active_batch(active_tab)] = value
-        return values
 
     def save_data(self, name, active_tab):
         """
@@ -189,7 +168,7 @@ class MainAppPresenter:
             # are read back
             (_, _, amp, state,
              min_time, max_time,
-             num_bins, headers) = map(list, zip(*self.control.refresh()))
+             num_bins, headers) = self.control.refresh()
             return (self.control._plot.fig,
                     time_data, per_batch(False),
                     log_data, per_batch(False),
@@ -218,7 +197,7 @@ class MainAppPresenter:
 
         (times, logs, amp, state,
          min_time, max_time,
-         num_bins, headers) = map(list, zip(*self.control.refresh()))
+         num_bins, headers) = self.control.refresh()
 
         return (self.plot(), times, per_batch(False), logs, per_batch(False),
                 amp, state, min_time, max_time, num_bins,

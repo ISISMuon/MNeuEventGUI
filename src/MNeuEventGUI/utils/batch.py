@@ -1,9 +1,8 @@
+from dash import ALL, no_update
 from plotly.colors import sample_colorscale
 
 # the number of batches (filter sets) the GUI provides
 NUM_BATCHES = 3
-
-TAB_PREFIX = 'batch-'
 
 
 def batch_id(name, batch):
@@ -15,6 +14,25 @@ def batch_id(name, batch):
     :returns: the ID for the component
     """
     return {'type': name, 'batch': batch}
+
+
+def all_batches(name):
+    """
+    Gets a pattern matching ID that matches a
+    component in every batch.
+    :param name: the name of the component
+    :returns: the ID for the components
+    """
+    return batch_id(name, ALL)
+
+
+def per_batch(value):
+    """
+    Repeats a value for every batch.
+    :param value: the value for a single batch
+    :returns: a list of the value for every batch
+    """
+    return [value] * NUM_BATCHES
 
 
 def batch_colour(batch, num_batches=NUM_BATCHES):
@@ -36,7 +54,7 @@ def tab_id(batch):
     :param batch: the index of the batch
     :returns: the tab ID
     """
-    return f'{TAB_PREFIX}{batch}'
+    return str(batch)
 
 
 def active_batch(active_tab):
@@ -47,4 +65,18 @@ def active_batch(active_tab):
     """
     if active_tab is None:
         return 0
-    return int(active_tab[len(TAB_PREFIX):])
+    return int(active_tab)
+
+
+def active_batch_only(value, active_tab):
+    """
+    Gets the values to send to a component that is
+    repeated for each batch, such that only the
+    active batch is updated.
+    :param value: the value for the active batch
+    :param active_tab: the ID of the active batch tab
+    :returns: the value for each batch
+    """
+    values = per_batch(no_update)
+    values[active_batch(active_tab)] = value
+    return values

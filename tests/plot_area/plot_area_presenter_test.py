@@ -60,9 +60,10 @@ class PlotAreaPresenterTest(TestHelper):
         self.assert_style(shape, 'red', False)
         self.assertEqual(shape.yref, 'y2')
 
-    def test_add_band(self):
+    def test_add_rect_domain(self):
         # full height of a single subplot
-        self.presenter.add_band(0.2, 0.5, '2', 'red', True)
+        self.presenter.add_rect(0.2, 0, 0.5, 1, '2', 'red', True,
+                                domain=True)
         shapes = self.presenter.fig.layout.shapes
         self.assertEqual(len(shapes), 1)
         self.check_line(shapes[0], 0, 0.2, 0.5, 0, 1)

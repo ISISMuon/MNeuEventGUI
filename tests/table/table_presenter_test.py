@@ -31,7 +31,8 @@ class TablePresenterTest(TestHelper):
                             False)
         self.presenter = TablePresenter('table_test',
                                         cols,
-                                        NAME)
+                                        NAME,
+                                        0)
 
     def assert_data(self, result, name, value):
         self.assertEqual(result, make_row(name, value))
@@ -100,9 +101,6 @@ class TablePresenterTest(TestHelper):
         # the name is reverted
         self.assert_data(data[0], 'default_1', 42)
         self.assert_data(data[1], 'default_2', 42)
-
-    def test_batch_default(self):
-        self.assertEqual(self.presenter.batch, 0)
 
     @mock.patch("MNeuEventGUI.table.presenter.TableView")
     def test_validate_fails_batch(self, view):
