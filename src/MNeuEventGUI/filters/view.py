@@ -1,6 +1,7 @@
 import dash_bootstrap_components as dbc
 from dash import Input, Output, State, callback, html
 
+from MNeuEventGUI.utils.batch import batch_id
 from MNeuEventGUI.view_template import ViewTemplate
 
 NUM = 'Number of events: '
@@ -22,7 +23,8 @@ class FilterView(ViewTemplate):
         GUI.
         """
         return html.Div([
-            html.P("Title: testing", id='title_test',
+            html.P("Title: testing",
+                   id=batch_id('title_test', presenter.batch),
                    hidden=True),
             dbc.Accordion([
                 dbc.AccordionItem(
@@ -40,10 +42,11 @@ class FilterView(ViewTemplate):
                 ],
                          start_collapsed=True),
             dbc.Button('Calculate',
-                       id='calc_btn',
+                       id=batch_id('calc_btn', presenter.batch),
                        color='primary',
                        className='me-md-2'),
-            html.P(self.no_events_str, id='N_events'),
+            html.P(self.no_events_str,
+                   id=batch_id('N_events', presenter.batch)),
             ])
 
     def set_callbacks(self, presenter):
@@ -51,47 +54,65 @@ class FilterView(ViewTemplate):
         Sets the callbacks for the widget
         :param presenter: the presenter for the widget
         """
-        # calculate events when Calculate button is pressed
-        callback([Output('N_events', 'children'),
-                  Output('error_msg', 'children', allow_duplicate=True)],
-                 Input('calc_btn', 'n_clicks'),
-                 prevent_initial_call=True)(presenter.calculate)
+        batch = presenter.batch
+        title = batch_id('title_test', batch)
+        n_events = batch_id('N_events', batch)
+        time_table = presenter._time.component_id()
+        log_table = presenter._log.component_id()
+        amp = batch_id('Amp', batch)
+        min_time = batch_id('min-time', batch)
+        max_time = batch_id('max-time', batch)
+        num_bins = batch_id('num-bins', batch)
+
+        # load a filter file into this batch
+        callback([Output(time_table, 'rowData', allow_duplicate=True),
+                  Output(log_table, 'rowData', allow_duplicate=True),
+                  Output(amp, 'value', allow_duplicate=True),
+                  Output(presenter._time.component_id('_dropdown'), 'value',
+                         allow_duplicate=True),
+                  Output(min_time, 'value', allow_duplicate=True),
+                  Output(max_time, 'value', allow_duplicate=True),
+                  Output(num_bins, 'value', allow_duplicate=True),
+                  Output(time_table, 'columnDefs', allow_duplicate=True)],
+                 Input(title, 'children'),
+                 prevent_initial_call=True)(presenter.load_filter_file)
 
         # show filename if filter data is equal to that in the file
-        callback(Output('title_test', 'hidden'),
-                 [Input('title_test', 'children'),
-                  Input('time-table', 'rowData'),
-                  Input('log-table', 'rowData'),
-                  Input('Amp', 'value'),
-                  Input('min-time', 'value'),
-                  Input('max-time', 'value'),
-                  Input('num-bins', 'value'),
+        callback(Output(title, 'hidden'),
+                 [Input(title, 'children'),
+                  Input(time_table, 'rowData'),
+                  Input(log_table, 'rowData'),
+                  Input(amp, 'value'),
+                  Input(min_time, 'value'),
+                  Input(max_time, 'value'),
+                  Input(num_bins, 'value'),
                   ],
                  prevent_initial_call=True)(presenter.show_file)
 
         # clear events string if event data is made invalid
-        callback(Output('N_events', 'children', allow_duplicate=True),
-                 [Input('time-table_changed_state', 'data'),
-                  Input('Amp', 'value'),
-                  Input('time-table_add', 'n_clicks'),
-                  Input('log-table_add', 'n_clicks'),
-                  Input('time-table', 'cellRendererData'),
-                  Input('log-table', 'cellRendererData'),
-                  Input('min-time', 'value'),
-                  Input('max-time', 'value'),
-                  Input('num-bins', 'value')],
+        callback(Output(n_events, 'children', allow_duplicate=True),
+                 [Input(presenter._time.component_id('_changed_state'),
+                        'data'),
+                  Input(amp, 'value'),
+                  Input(presenter._time.component_id('_add'), 'n_clicks'),
+                  Input(presenter._log.component_id('_add'), 'n_clicks'),
+                  Input(time_table, 'cellRendererData'),
+                  Input(log_table, 'cellRendererData'),
+                  Input(min_time, 'value'),
+                  Input(max_time, 'value'),
+                  Input(num_bins, 'value')],
                  prevent_initial_call=True)(lambda *_: self.no_events_str)
 
         # clear events string if time filter parameters change
-        callback(Output('N_events', 'children', allow_duplicate=True),
-                 Input('time-table', 'cellValueChanged'),
-                 State('N_events', 'children'),
+        callback(Output(n_events, 'children', allow_duplicate=True),
+                 Input(time_table, 'cellValueChanged'),
+                 State(n_events, 'children'),
                  prevent_initial_call=True)(presenter.update_N_events)
 
         # clear events string if log filter parameters change
-        callback(Output('N_events', 'children', allow_duplicate=True),
-                 Input('log-table', 'cellValueChanged'),
-                 State('N_events', 'children'),
+        callback(Output(n_events, 'children', allow_duplicate=True),
+                 Input(log_table, 'cellValueChanged'),
+                 State(n_events, 'children'),
                  prevent_initial_call=True)(presenter.update_N_events)
 
     @property

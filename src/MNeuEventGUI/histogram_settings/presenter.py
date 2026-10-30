@@ -7,7 +7,13 @@ class HistSettingsPresenter(PresenterTemplate):
     A class for the presenter of the histogram settings widget.
     """
 
-    def __init__(self):
+    def __init__(self, batch=0):
+        """
+        Create the presenter.
+        :param batch: the index of the batch the
+        settings are for
+        """
+        self.batch = batch
         self._view = HistSettingsView(self)
         self.data = None
 
@@ -51,7 +57,10 @@ class HistSettingsPresenter(PresenterTemplate):
         """
         if self.data is None:
             return
-        self.data.set_histogram_settings(0, min_time, max_time, num_bins)
+        self.data.set_histogram_settings(self.batch,
+                                         min_time,
+                                         max_time,
+                                         num_bins)
 
     def check_num_bins_invalid(self, num_bins: int) -> bool:
         """

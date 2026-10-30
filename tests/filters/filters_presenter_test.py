@@ -13,7 +13,7 @@ current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
 sys.path.append(parent)
 
-from data_paths import FILE  # noqa: E402
+from data_paths import FILE, FILTER  # noqa: E402
 
 TT = '_time-table'
 LT = '_log-table'
@@ -143,59 +143,50 @@ class FilterPresenterTest(TestHelper):
         self.assertEqual(low, 36)
         self.assertEqual(high, 39)
 
-    def test_calculate_no_filters(self):
+    def test_n_events_no_filters(self):
         self.presenter._data = load_data()
-        N_str, err_msg = self.presenter.calculate(1)
-        self.assertEqual(err_msg, '')
+        self.presenter._data.calculate()
+        N_str = self.presenter.n_events
         self.assertEqual(N_str.children,
                          'Number of events: 64,147')
 
-    def test_calculate_amp_filter(self):
+    def test_n_events_amp_filter(self):
         data = load_data()
         data.set_amps_baseline(0, 2500.)
         self.presenter._data = data
-        N_str, err_msg = self.presenter.calculate(1)
-        self.assertEqual(err_msg, '')
+        self.presenter._data.calculate()
+        N_str = self.presenter.n_events
         self.assertEqual(N_str.children,
                          'Number of events: 7,944')
 
-    def test_calculate_with_exclude_filter(self):
+    def test_n_events_with_exclude_filter(self):
         data = load_data()
         data.set_time_type(0, 'exclude')
         data.add_time_filter(0, 'unit', 0.1, 1.2)
         self.presenter._data = data
-        N_str, err_msg = self.presenter.calculate(1)
-        self.assertEqual(err_msg, '')
+        self.presenter._data.calculate()
+        N_str = self.presenter.n_events
         self.assertEqual(N_str.children,
                          'Number of events: 57,653')
 
-    def test_calculate_with_include_filter(self):
+    def test_n_events_with_include_filter(self):
         data = load_data()
         data.set_time_type(0, 'include')
         data.add_time_filter(0, 'unit', 0.1, 1.2)
         self.presenter._data = data
-        N_str, err_msg = self.presenter.calculate(1)
-        self.assertEqual(err_msg, '')
+        self.presenter._data.calculate()
+        N_str = self.presenter.n_events
         self.assertEqual(N_str.children,
                          'Number of events: 6,494')
 
-    def test_calculate_with_log_filter(self):
+    def test_n_events_with_log_filter(self):
         data = load_data()
         data.add_log_filter_above(0, 'log', 'Temp', 35.5)
         self.presenter._data = data
-        N_str, err_msg = self.presenter.calculate(1)
-        self.assertEqual(err_msg, '')
+        self.presenter._data.calculate()
+        N_str = self.presenter.n_events
         self.assertEqual(N_str.children,
                          'Number of events: 58,972')
-
-    def test_calculate_with_error(self):
-        data = mock.Mock()
-        data.calculate.side_effect = RuntimeError("mock throw")
-        self.presenter._data = data
-        N_str, err_msg = self.presenter.calculate(1)
-        self.assertEqual(err_msg, 'mock throw')
-        self.assertEqual(N_str.children,
-                         'Number of events: 0')
 
     def test_load_include(self):
         data = load_data()
@@ -278,6 +269,66 @@ class FilterPresenterTest(TestHelper):
         result = self.presenter.update_N_events([{'colId': 'unit test'}],
                                                 'old')
         self.assertEqual(result, 'old')
+
+
+class FilterPresenterBatchTest(TestHelper):
+    """
+    Check that the presenter only uses the
+    filters for its own batch.
+    """
+
+    def setUp(self):
+        self.presenter = FilterPresenter(batch=1)
+        self.data = BatchData(FILE, 64, 2)
+        self.presenter.set_data(self.data)
+
+    def test_batch(self):
+        self.assertEqual(self.presenter.batch, 1)
+        self.assertEqual(self.presenter._time.batch, 1)
+        self.assertEqual(self.presenter._log.batch, 1)
+        self.assertEqual(self.presenter._amp.batch, 1)
+        self.assertEqual(self.presenter._hist_settings.batch, 1)
+
+    def test_show_file(self):
+        self.data.set_histogram_settings(1, 0., 1., 2)
+        self.assertFalse(self.presenter.show_file('test.json', [], [],
+                                                  0, 0., 1., 2))
+
+    def test_refresh(self):
+        self.data.add_time_filter(1, 'first', 0.01, 0.02)
+        self.data.set_amps_baseline(1, 2.7)
+        time_data, _, amp, *_ = self.presenter.refresh()
+        self.assertEqual(time_data, [{'Name' + TT: 'first',
+                                      'Start' + TT: 0.01,
+                                      'End' + TT: 0.02}])
+        self.assertEqual(amp, 2.7)
+
+    def test_load_filter_file(self):
+        (time_data, log_data, amp, state,
+         *_) = self.presenter.load_filter_file(FILTER)
+        self.assertEqual(len(time_data), 2)
+        self.assertEqual(len(log_data), 1)
+        self.assertEqual(amp, 3.14)
+        self.assertEqual(state, 'Include')
+        self.assertEqual(sorted(self.data._dict(1)['time_filters']),
+                         ['first', 'second'])
+        self.assertEqual(self.data._dict(0)['time_filters'], {})
+        # matches the file, so the file name is shown
+        self.assertFalse(self.presenter.show_file(FILTER,
+                                                  time_data,
+                                                  log_data,
+                                                  amp,
+                                                  *_[:3]))
+
+    def test_load_filter_file_fail(self):
+        with self.assertRaises(RuntimeError):
+            self.presenter.load_filter_file('nonexistent_filters.json')
+
+    def test_n_events(self):
+        self.data.set_amps_baseline(1, 2500.)
+        self.data.calculate()
+        self.assertEqual(self.presenter.n_events.children,
+                         'Number of events: 7,944')
 
 
 if __name__ == '__main__':

@@ -451,5 +451,70 @@ class LogPresenterTest(TestHelper):
                                      case[1])
 
 
+class LogPresenterBatchTest(TestHelper):
+    """
+    Check that the presenter only changes the
+    filters for its own batch.
+    """
+
+    @mock.patch("MNeuEventGUI.log.presenter.LogView")
+    def setUp(self, view):
+        self.presenter = LogPresenter(batch=1)
+        self.data = BatchData(FILE, 64, 2)
+        self.presenter.set_data(self.data)
+
+    def assert_batch_0_unchanged(self):
+        self.assertEqual(self.data._dict(0)['sample_log_filters'], {})
+
+    def add_filter(self):
+        self.data.add_log_filter(1, 'mag_field', 'B', 0.7, 0.9)
+        return self.presenter.load(self.data._dict(1)['sample_log_filters'])
+
+    def test_batch(self):
+        self.assertEqual(self.presenter.batch, 1)
+
+    def test_plot_has_batch(self):
+        self.assertEqual(self.presenter._plot.batch, 1)
+
+    def test_close_modal_ok_new_row(self):
+        self.presenter.close_modal(1, 0, 'Temp', [])
+        self.assertEqual(list(self.data._dict(1)['sample_log_filters']),
+                         ['filter 1'])
+        self.assert_batch_0_unchanged()
+
+    def test_close_modal_ok_replace_row(self):
+        table = self.add_filter()
+        self.presenter._replace = 0
+        self.presenter.close_modal(1, 0, 'Temp', table)
+        log_filter = self.data._dict(1)['sample_log_filters']['mag_field']
+        self.assertEqual(log_filter['log'], 'Temp')
+        self.assert_batch_0_unchanged()
+
+    def test_delete_row(self):
+        table = self.add_filter()
+        result = self.presenter.delete_row({'rowIndex': 0}, table)
+        self.assertEqual(result, [])
+        self.assertEqual(self.data._dict(1)['sample_log_filters'], {})
+
+    def test_edit_row(self):
+        table = self.add_filter()
+        info = [{'rowIndex': 0,
+                 'data': {**table[0], 'yN_log-table': 0.8}}]
+        self.presenter.edit_row(info, table)
+        log_filter = self.data._dict(1)['sample_log_filters']['mag_field']
+        self.assertAlmostEqual(log_filter['predicate']['Range']['upper'],
+                               0.8)
+        self.assert_batch_0_unchanged()
+
+    def test_edit_row_rename(self):
+        table = self.add_filter()
+        info = [{'rowIndex': 0,
+                 'data': {**table[0], 'Name_log-table': 'renamed'}}]
+        self.presenter.edit_row(info, table)
+        self.assertEqual(list(self.data._dict(1)['sample_log_filters']),
+                         ['renamed'])
+        self.assert_batch_0_unchanged()
+
+
 if __name__ == '__main__':
     unittest.main()

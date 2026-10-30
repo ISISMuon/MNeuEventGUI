@@ -1,8 +1,9 @@
 import dash
 import dash_bootstrap_components as dbc
-from dash import Dash, Input, Output, State, callback, dcc, html
+from dash import ALL, Dash, Input, Output, State, callback, dcc, html
 
 from MNeuEventGUI.main_app.presenter import MainAppPresenter
+from MNeuEventGUI.utils.batch import batch_id
 
 
 class MainApp(Dash):
@@ -102,40 +103,36 @@ class MainApp(Dash):
                  Input('error_msg', 'children'),
                  prevent_initial_call=True)(self.presenter.alert)
 
-        # Updates the information on the loaded filter. With error
-        # catching.
-        callback([
-                  Output('time-table', 'rowData', allow_duplicate=True),
-                  Output('log-table', 'rowData', allow_duplicate=True),
-                  Output('Amp', 'value', allow_duplicate=True),
-                  Output('dropdown-time', 'value', allow_duplicate=True),
-                  Output('min-time', 'value', allow_duplicate=True),
-                  Output('max-time', 'value', allow_duplicate=True),
-                  Output('num-bins', 'value', allow_duplicate=True),
-                  Output('time-table', 'columnDefs', allow_duplicate=True),],
-                 Input('title_test', 'children'),
-                 prevent_initial_call=True)(self.presenter.load_filter)
-
         # Plots the data after it is loaded. A new file means a new
         # data object, so the filters and settings are read back
         # from it, to keep the GUI and the data in step.
+        # This updates every batch.
         callback([Output('main_plot', 'figure'),
-                  Output('time-table', 'rowData', allow_duplicate=True),
-                  Output('time-table_add', 'disabled'),
-                  Output('log-table', 'rowData', allow_duplicate=True),
-                  Output('log-table_add', 'disabled'),
-                  Output('Amp', 'value', allow_duplicate=True),
-                  Output('dropdown-time', 'value', allow_duplicate=True),
-                  Output('min-time', 'value', allow_duplicate=True),
-                  Output('max-time', 'value', allow_duplicate=True),
-                  Output('num-bins', 'value', allow_duplicate=True),
-                  Output('time-table', 'columnDefs', allow_duplicate=True),
-                  Output('amp_plot', 'figure'),
+                  Output(batch_id('time-table', ALL), 'rowData',
+                         allow_duplicate=True),
+                  Output(batch_id('time-table_add', ALL), 'disabled'),
+                  Output(batch_id('log-table', ALL), 'rowData',
+                         allow_duplicate=True),
+                  Output(batch_id('log-table_add', ALL), 'disabled'),
+                  Output(batch_id('Amp', ALL), 'value',
+                         allow_duplicate=True),
+                  Output(batch_id('time-table_dropdown', ALL), 'value',
+                         allow_duplicate=True),
+                  Output(batch_id('min-time', ALL), 'value',
+                         allow_duplicate=True),
+                  Output(batch_id('max-time', ALL), 'value',
+                         allow_duplicate=True),
+                  Output(batch_id('num-bins', ALL), 'value',
+                         allow_duplicate=True),
+                  Output(batch_id('time-table', ALL), 'columnDefs',
+                         allow_duplicate=True),
+                  Output(batch_id('amp_plot', ALL), 'figure'),
                   Output('error_msg', 'children', allow_duplicate=True),
-                  Output('N_events', 'children', allow_duplicate=True)],
+                  Output(batch_id('N_events', ALL), 'children',
+                         allow_duplicate=True)],
                  Input('file_name', 'children'),
-                 [State('time-table', 'rowData'),
-                  State('log-table', 'rowDara'),
+                 [State(batch_id('time-table', ALL), 'rowData'),
+                  State(batch_id('log-table', ALL), 'rowData'),
                   State('debug', 'on')],
                  prevent_initial_call=True)(self.presenter.load_nxs)
 
@@ -143,16 +140,19 @@ class MainApp(Dash):
         callback(dash.dependencies.Input('debug', 'on'),
                  prevent_initial_call=True)(self.presenter.debug)
 
-        # Saves the data (both histogram and filter file).
+        # Saves the data (histograms for every batch, or the
+        # filter file for the active batch).
         callback([Output('save_exe_dummy', 'children'),
                   Output('error_msg', 'children', allow_duplicate=True)],
                  Input('save_btn_dummy', 'children'),
+                 State('batch-tabs', 'active_tab'),
                  prevent_initial_call=True)(self.presenter.save_data)
 
         callback([Output('load_confirm', 'displayed'),
                   Output('load_confirm', 'submit_n_clicks')],
                  Input('Load', 'n_clicks'),
-                 [State('time-table', 'rowData'),
+                 [State(batch_id('time-table', ALL), 'rowData'),
+                  State(batch_id('log-table', ALL), 'rowData'),
                   State('load_confirm', 'submit_n_clicks')],
                  prevent_initial_call=True)(self.presenter.confirm_load)
 
@@ -166,11 +166,16 @@ class MainApp(Dash):
                  State('file_name', 'children'),
                  prevent_initial_call=True)(self.presenter.open_nxs)
 
-        # open a json filter file
+        # open a json filter file, for the active batch
+        def open_filters(n_clicks, active_tab):
+            return self.presenter.active_batch_only(open_json(n_clicks),
+                                                    active_tab)
+
         callback(
-                 Output('title_test', 'children'),
+                 Output(batch_id('title_test', ALL), 'children'),
                  Input('load_filters', 'n_clicks'),
-                 prevent_initial_call=True)(open_json)
+                 State('batch-tabs', 'active_tab'),
+                 prevent_initial_call=True)(open_filters)
 
         # open file browser on save (nxs and json)
         callback(

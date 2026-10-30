@@ -86,12 +86,38 @@ class TablePresenterTest(TestHelper):
 
         data, err = self.presenter.validate(row, data)
 
-        self.assertEqual(err, 'Repeated name default_1')
+        self.assertEqual(err, 'Batch 0: Repeated name default_1')
         self.assertEqual(len(data), 2)
 
         # the name is reverted
         self.assert_data(data[0], 'default_1', 42)
         self.assert_data(data[1], 'default_2', 42)
+
+    def test_batch_default(self):
+        self.assertEqual(self.presenter.batch, 0)
+
+    @mock.patch("MNeuEventGUI.table.presenter.TableView")
+    def test_validate_fails_batch(self, view):
+        cols = TableColumns([TableGroup([TextColumn(NAME, 'name')])],
+                            False)
+        presenter = TablePresenter('table_test', cols, NAME, batch=2)
+        row = [{'rowIndex': 1, 'rowId': '1',
+                'data': make_row('default_1', 42),
+                'oldValue': 'default_2',
+                'value': 'default_1',
+                'colId': NAME,
+                'timestamp': 19}]
+        data = [make_row('default_1', 42),
+                make_row('default_1', 42)]
+
+        _, err = presenter.validate(row, data)
+        self.assertEqual(err, 'Batch 2: Repeated name default_1')
+
+    def test_component_id(self):
+        self.assertEqual(self.presenter.component_id(),
+                         {'type': 'table_test', 'batch': 0})
+        self.assertEqual(self.presenter.component_id('_add'),
+                         {'type': 'table_test_add', 'batch': 0})
 
     def test_validate_row(self):
         """

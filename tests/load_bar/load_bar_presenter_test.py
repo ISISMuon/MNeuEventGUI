@@ -7,6 +7,7 @@ from MNeuEventLib import BatchData
 
 from MNeuEventGUI.load_bar.presenter import LoadBarPresenter
 from MNeuEventGUI.test_helpers.unit_test import TestHelper
+from MNeuEventGUI.utils.batch import NUM_BATCHES
 
 current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
@@ -43,7 +44,7 @@ class LoadBarPresenterTest(TestHelper):
     def test_get_data(self, data_mock):
         data_mock.return_value = mock.Mock()
         self.load.load_nxs(FILE)
-        data_mock.assert_called_once_with(FILE, 64, 1)
+        data_mock.assert_called_once_with(FILE, 64, NUM_BATCHES)
         self.assertEqual(self.load._data, data_mock())
         self.assertEqual(self.load.get_data, data_mock())
 

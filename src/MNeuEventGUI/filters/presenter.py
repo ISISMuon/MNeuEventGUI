@@ -13,16 +13,19 @@ class FilterPresenter(PresenterTemplate):
     This code follows the MVP template,
     note that the model is MNeuEventLib's BatchData class.
     """
-    def __init__(self):
+    def __init__(self, batch=0):
         """
         Create the presenter.
         Hold a copy of:
         - time filter table
+        :param batch: the index of the batch the
+        filters are for
         """
-        self._time = TimePresenter()
-        self._log = LogPresenter()
-        self._amp = AmpPresenter()
-        self._hist_settings = HistSettingsPresenter()
+        self.batch = batch
+        self._time = TimePresenter(batch)
+        self._log = LogPresenter(batch)
+        self._amp = AmpPresenter(batch)
+        self._hist_settings = HistSettingsPresenter(batch)
         self._view = FilterView(self)
         self._data = None
         self._time_file_data = []
@@ -54,7 +57,7 @@ class FilterPresenter(PresenterTemplate):
         if self._data is None:
             return True
 
-        hist_settings = self._data._dict(0)["hist_settings"]
+        hist_settings = self._data._dict(self.batch)["hist_settings"]
         # the data stores times in ns, the GUI uses microseconds
         return not (self._time_file_data == time_data
             and self._log_file_data == log_data
@@ -95,8 +98,7 @@ class FilterPresenter(PresenterTemplate):
         """
         Read the filter tables with the data from the Data object.
         """
-        # todo: expand for batch processing
-        data = self._data._dict(0)
+        data = self._data._dict(self.batch)
 
         # note we convert min_time and max_time to microseconds
         return self.load(data)
@@ -108,8 +110,7 @@ class FilterPresenter(PresenterTemplate):
         :returns: the values for the filters and settings
         (see read_values)
         """
-        # todo: expand for batch processing
-        return self.read_values(self._data._dict(0))
+        return self.read_values(self._data._dict(self.batch))
 
     def read_values(self, filters: dict) -> tuple:
         """
@@ -160,32 +161,27 @@ class FilterPresenter(PresenterTemplate):
 
         return row_log['y_min_log-table'], row_log['y_max_log-table']
 
-    def calculate(self, n_clicks):
+    @property
+    def n_events(self):
         """
-        A method to calculate the number of
-        events that would be used to make
-        the histogram.
-        :param n_clicks: the number of button
-        presses for the calculate button
-        :param time_filters: the list of time
-        filters
-        :param state: If to include or exclude the
-        data.
-        :param log_filters: the data from the
-        sample log filter table
-        :param amp_filter: the amplitude filter
-        :returns: The string to display the number
-        of events, the error message (if there is one)
-        :param min_time: the minimum time for the histogram
-        :param max_time: the maximum time for the histogram
-        :param num_bins: the number of bins for the histogram
+        Gets the GUI component for the number of
+        events in the calculated histogram for
+        this batch.
+        :returns: the number of events component
         """
-        try:
-            _ = self._data.calculate()
-        except RuntimeError as msg:
-            return self._view.get_N(0), str(msg)
-        N = f"{self._data.get_n_events(0)[0]:,}"
-        return self._view.get_N(N), ''
+        N = f"{self._data.get_n_events(self.batch)[0]:,}"
+        return self._view.get_N(N)
+
+    def load_filter_file(self, name):
+        """
+        Loads the filters from a file into
+        this batch.
+        :param name: the name of the json file
+        :returns: the values for the filters and settings
+        (see read_values)
+        """
+        self._data.load_filters(self.batch, name)
+        return self.read_filters()
 
     def load(self, filters: dict):
         """

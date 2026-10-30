@@ -3,6 +3,7 @@ from itertools import count
 
 from MNeuEventGUI.presenter_template import PresenterTemplate
 from MNeuEventGUI.table.view import TableView
+from MNeuEventGUI.utils.batch import batch_id
 
 
 class TablePresenter(PresenterTemplate):
@@ -11,7 +12,7 @@ class TablePresenter(PresenterTemplate):
     table. This follows the MVP
     pattern.
     """
-    def __init__(self, ID, columns, name_col):
+    def __init__(self, ID, columns, name_col, batch=0):
         """
         This creates the view object for the
         widget. The responses to the callbacks
@@ -21,8 +22,10 @@ class TablePresenter(PresenterTemplate):
         table (see column.py)
         :param name_col: the string used to identify the name
         column for the specific table
+        :param batch: the index of the batch the table is for
         """
         self.ID = ID
+        self.batch = batch
         self.name_col = name_col
         self.count = count(start=1)
 
@@ -35,6 +38,26 @@ class TablePresenter(PresenterTemplate):
         :returns: the view for the widget
         """
         return TableView(self)
+
+    def component_id(self, suffix=''):
+        """
+        Gets the ID of a component of the table,
+        which is unique to the batch.
+        :param suffix: the suffix for the component
+        :returns: the ID for the component
+        """
+        return batch_id(self.ID + suffix, self.batch)
+
+    def batch_msg(self, msg):
+        """
+        Adds the batch to an error message, so the
+        user knows which batch it came from.
+        :param msg: the error message
+        :returns: the error message with the batch
+        """
+        if msg == '':
+            return msg
+        return f'Batch {self.batch}: {msg}'
 
     def add(self) -> dict:
         """
@@ -56,9 +79,10 @@ class TablePresenter(PresenterTemplate):
         repeat, num = Counter(names).most_common(1)[0]
         if num > 1:
             data[row[0]['rowIndex']]['Name_'+self.ID] = row[0]['oldValue']
-            return data, f'Repeated name {repeat}'
+            return data, self.batch_msg(f'Repeated name {repeat}')
 
-        return self.validate_row(row, data)
+        data, msg = self.validate_row(row, data)
+        return data, self.batch_msg(msg)
 
     def validate_row(self, change, data):
         """

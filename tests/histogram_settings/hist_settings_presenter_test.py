@@ -1,6 +1,9 @@
 """Tests for the histogram settings presenter."""
+from MNeuEventLib import BatchData
+
 from MNeuEventGUI.histogram_settings.presenter import HistSettingsPresenter
 from MNeuEventGUI.test_helpers.unit_test import TestHelper
+from tests.data_paths import FILE
 
 
 class HistogramSettingsPresenterTest(TestHelper):
@@ -56,3 +59,25 @@ class HistogramSettingsPresenterTest(TestHelper):
                                                   2048)
             self.assertEqual(output,
                              "Resolution: N/A (invalid time range)")
+
+
+class HistogramSettingsPresenterBatchTest(TestHelper):
+    """
+    Check that the presenter only changes the
+    settings for its own batch.
+    """
+
+    def setUp(self):
+        self.presenter = HistSettingsPresenter(batch=1)
+        self.data = BatchData(FILE, 64, 2)
+        self.presenter.set_data(self.data)
+
+    def test_batch(self):
+        self.assertEqual(self.presenter.batch, 1)
+
+    def test_set_values(self):
+        default = self.data._dict(0)['hist_settings']
+        self.presenter.set_values(0.5, 15.22, 1024)
+        self.assertEqual(self.data._dict(1)['hist_settings']['n_bins'],
+                         1024)
+        self.assertEqual(self.data._dict(0)['hist_settings'], default)

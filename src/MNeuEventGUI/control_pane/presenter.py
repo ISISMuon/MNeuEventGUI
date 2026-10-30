@@ -4,8 +4,11 @@ from MNeuEventLib import _get_filter_times
 
 from MNeuEventGUI.control_pane.view import ControlPaneView
 from MNeuEventGUI.filters.presenter import FilterPresenter
+from MNeuEventGUI.log.presenter import LOG_TABLE
 from MNeuEventGUI.plot_area.presenter import PlotAreaPresenter
 from MNeuEventGUI.presenter_template import PresenterTemplate
+from MNeuEventGUI.time.presenter import TIME_TABLE
+from MNeuEventGUI.utils.batch import NUM_BATCHES, active_batch, batch_colour
 
 
 class ControlPanePresenter(PresenterTemplate):
@@ -23,7 +26,9 @@ class ControlPanePresenter(PresenterTemplate):
         """
         self._data = None
 
-        self._filter = FilterPresenter()
+        # one set of filters per batch
+        self._filters = [FilterPresenter(batch)
+                         for batch in range(NUM_BATCHES)]
         self._plot = PlotAreaPresenter('main')
         self._view = ControlPaneView(self)
 
@@ -33,8 +38,9 @@ class ControlPanePresenter(PresenterTemplate):
         loaded.
         """
         self._data = None
-        self._filter._data = None
-        self._filter._log._data = None
+        for filter_presenter in self._filters:
+            filter_presenter._data = None
+            filter_presenter._log.data = None
 
     def empty(self):
         """
@@ -51,124 +57,126 @@ class ControlPanePresenter(PresenterTemplate):
         get the default sample log.
         :returns: the figure object
         """
-        if self._filter._data is None:
+        if self._data is None:
             return self.empty()
 
-        name = self._filter._log.get_new_log_name([])
+        name = self._filters[0]._log.get_new_log_name([])
         log = self._data.dataset.get_sample_log(name)
         return self._plot.new_plot([name], [log])
 
-    def make_plot(self, time_data, log_data, state_changed, amp_data):
+    def plot_log_names(self, log_data):
+        """
+        Gets the names of the sample logs to plot.
+        This is every sample log that is filtered on
+        by at least one batch, in order of first
+        appearance. If there are none, it is the
+        default sample log.
+        :param log_data: the sample log table data
+        for each batch
+        :returns: the names of the sample logs
+        """
+        names = []
+        for table in log_data:
+            for row in table:
+                name = row['sample_' + LOG_TABLE]
+                if name not in names:
+                    names.append(name)
+        if len(names) == 0:
+            names = [self._filters[0]._log.get_new_log_name([])]
+        return names
+
+    def make_plot(self, time_data, log_data, state_changed, active_tab):
         """
         This method creates a plot.
         If no sample logs are selected, it will just plot a
         default. The plot will include shaded regions
-        for the data that is kept.
-        :param time_data: the data from the time filter table
-        :param log_data: the data from the sample log filter table.
+        for the data that is kept by each batch.
+        :param time_data: the data from the time filter table,
+        for each batch
+        :param log_data: the data from the sample log filter table,
+        for each batch. Its also used to get which plots to make.
         :param state_changed: the signal for the state of the time
-        filters (inc/exc) having changed
-        :param amp_data: the amplitudes from the sample log filter table.
-        Its also used to get which plots to make.
+        filters (inc/exc) having changed, for each batch
+        :param active_tab: the ID of the active batch tab
         :returns: an updated figure
         """
-        if self._filter._data is None:
+        if self._data is None:
             return self.empty()
 
-        names = [row['sample_log-table'] for row in log_data]
-        if len(names) == 0:
-            names = [self._filter._log.get_new_log_name([])]
+        names = self.plot_log_names(log_data)
         logs = [self._data.dataset.get_sample_log(n) for n in names]
         self._plot.new_plot(names, logs)
-        start, stop = _get_filter_times(0, self._data)
 
-        filters = self._data._dict(0)
-        if start or not (filters["time_filters"]
-                         or filters["sample_log_filters"]):
-            start = [x * 1e-9 for x in start]
-            stop = [x * 1e-9 for x in stop]
-            self.add_filter_shading(start, stop, log_data)
+        # draw the active batch last, so it is on top
+        active = active_batch(active_tab)
+        order = [batch for batch in range(len(self._filters))
+                 if batch != active] + [active]
+
+        for batch in order:
+            start, stop = _get_filter_times(batch, self._data)
+
+            filters = self._data._dict(batch)
+            if start or not (filters["time_filters"]
+                             or filters["sample_log_filters"]):
+                start = [x * 1e-9 for x in start]
+                stop = [x * 1e-9 for x in stop]
+                self.add_filter_shading(batch, start, stop,
+                                        log_data[batch], names,
+                                        batch == active)
 
         return self._plot.fig
 
-    def _loop_over_filters(self, func, f_start, f_stop, *kwargs):
+    def add_filter_shading(self, batch, start, stop,
+                           log_data, names, outline):
         """
-        This loops over the exclude filter start and end times
-        and creates the plot. Including shaded regions for
-        the data that is kept.
-        :param func: The plotting function to be used
-        :param f_start: the start times for the exclude filter
-        :param f_end: the end times for the exclude filter
-        :param kwargs: additional arguments for func
-        """
-        for k in range(len(f_start)):
-            func(f_start[k], f_stop[k], *kwargs)
-
-    def wrap_add_shaded_region(self, x0, xN, *kargs):
-        """
-        A wrapper for adding a shaded region (only
-        time filters).
-        :param x0: the start x value
-        :param xN: the end x value
-        :param kwargs: extra arguments, not used
-        """
-        self._plot.add_shaded_region(x0, xN)
-
-    def wrap_add_rect(self, x0, xN, y0, yN, ax):
-        """
-        A wrapper for adding a shaded recrangle (if
-        using at least one log filter).
-        :param x0: the start x value
-        :param xN: the end x value
-        :param y0: the start y value
-        :param yN: the end y value
-        :param ax: the axis to add the rectangle to
-        """
-        self._plot.add_rect(x0, y0, xN, yN, ax)
-
-    def add_filter_shading(self, start, stop, log_data):
-        """
-        This gets the filters for that data,
-        as defined by the tables, and plots
-        shaded regions corresponding to the
-        kept data.
+        This plots shaded regions corresponding
+        to the data kept by a batch, as defined by
+        its tables.
+        :param batch: the index of the batch
         :param start: the start times for the filters
         (both time and log)
-        :param end: the end times for the filters
+        :param stop: the end times for the filters
         (both time and log)
         :param log_data: the log values from
-        the sample log table.
+        the batch's sample log table.
+        :param names: the names of the plotted sample logs
+        :param outline: if to outline the shaded regions
         """
+        colour = batch_colour(batch)
+
         if len(start) == 0:
             # no filters
-            self.wrap_add_shaded_region(self._plot._min,
-                                        self._plot._max)
+            self._plot.add_shaded_region(self._plot._min,
+                                         self._plot._max,
+                                         colour,
+                                         outline)
             return
-
-        N = len(log_data) if len(log_data) > 0 else 1
-        axis = [str(k + 1) for k in range(N)]
-
-        #  first axis has no number, second is number 2
-        axis[0] = ''
 
         if len(log_data) == 0:
             # If only have time filters
-            self._loop_over_filters(self.wrap_add_shaded_region,
-                                    start,
-                                    stop)
+            for x0, x1 in zip(start, stop):
+                self._plot.add_shaded_region(x0, x1, colour, outline)
             return
 
         # loop over plots (sample logs)
-        for k, ax in enumerate(axis):
-            y_min, y_max = self._filter.get_log_y_range(log_data[k])
-            self._plot.add_hline(y_min)
-            self._plot.add_hline(y_max)
-            self._loop_over_filters(self.wrap_add_rect,
-                                    start,
-                                    stop,
-                                    y_min,
-                                    y_max,
-                                    ax)
+        for k, name in enumerate(names):
+            #  first axis has no number, second is number 2
+            ax = str(k + 1) if k > 0 else ''
+            rows = [row for row in log_data
+                    if row['sample_' + LOG_TABLE] == name]
+
+            if len(rows) == 0:
+                # the batch does not filter on this sample log
+                for x0, x1 in zip(start, stop):
+                    self._plot.add_band(x0, x1, ax, colour, outline)
+
+            for row in rows:
+                y_min, y_max = self._filters[batch].get_log_y_range(row)
+                self._plot.add_hline(y_min, row=k + 1, colour=colour)
+                self._plot.add_hline(y_max, row=k + 1, colour=colour)
+                for x0, x1 in zip(start, stop):
+                    self._plot.add_rect(x0, y_min, x1, y_max, ax,
+                                        colour, outline)
 
     def set_data(self, data):
         """
@@ -178,14 +186,16 @@ class ControlPanePresenter(PresenterTemplate):
         """
         self._plot.reset_plot_range()
         self._data = data
-        self._filter.set_data(data)
+        for filter_presenter in self._filters:
+            filter_presenter.set_data(data)
 
     @property
     def headers(self):
         """
-        :returns: the column headers
+        :returns: the column headers for each batch
         """
-        return self._filter.headers
+        return [filter_presenter.headers
+                for filter_presenter in self._filters]
 
     @property
     def no_events_str(self):
@@ -193,17 +203,73 @@ class ControlPanePresenter(PresenterTemplate):
         :returns: the string for when the number of
         events has not been calculated
         """
-        return self._filter.no_events_str
+        return self._filters[0].no_events_str
 
-    def display_hover(self, hover_info, filters, state):
+    def calculate(self, n_clicks):
+        """
+        A method to calculate the number of
+        events that would be used to make
+        the histogram for each batch.
+        :param n_clicks: the number of button
+        presses for each calculate button
+        :returns: The number of events to display
+        for each batch, the error message (if there is one)
+        """
+        try:
+            _ = self._data.calculate()
+        except RuntimeError as msg:
+            return ([filter_presenter._view.get_N(0)
+                     for filter_presenter in self._filters],
+                    str(msg))
+        return ([filter_presenter.n_events
+                 for filter_presenter in self._filters],
+                '')
+
+    def _keep_text(self, x, filters, state):
+        """
+        Gets the text for if a batch keeps the data
+        at a point, and which filters add/remove it.
+        :param x: the x value of the point
+        :param filters: the batch's time filters
+        :param state: if the filter is an exclude or include
+        :returns: the text
+        """
+        names = []
+        for filter_details in filters:
+            start, end = self._filters[0]._time.get_range(filter_details)
+            if start <= x and end >= x:
+                names.append(filter_details['Name_' + TIME_TABLE])
+
+        txt = 'Keep data: '
+        if state == 'Include':
+            if len(names) > 0:
+                txt += 'True. '
+                txt += 'Added by: '
+                for name in names:
+                    txt += name + ', '
+            else:
+                txt += 'False'
+
+        else:
+            if len(names) > 0:
+                txt += 'False. '
+                txt += 'Removed by: '
+                for name in names:
+                    txt += name + ', '
+            else:
+                txt += 'True'
+        return txt
+
+    def display_hover(self, hover_info, filters, states):
         """
         A method for getting the hover text
         for the plot. This will say if data is
         being used in the analysis or not and
-        which filters add/remove it.
+        which filters add/remove it, for each batch.
         :param hover_info: the hover data
-        :param filters: the time filters
-        :param state: if the filter is an exclude or include
+        :param filters: the time filters for each batch
+        :param states: if the filter is an exclude or include,
+        for each batch
         :returns: if to show tooltip text, the bounding box for the tooltip
         and the text for the tooltip
         """
@@ -211,52 +277,21 @@ class ControlPanePresenter(PresenterTemplate):
             return False, no_update, no_update
         pt = hover_info['points'][0]
         bbox = pt['bbox']
-        added = []
-        removed = []
-        txt = 'Keep data: '
 
-        if state == 'Include':
-            for filter_details in filters:
-                start, end = self._filter._time.get_range(filter_details)
-                if start <= pt['x'] and end >= pt['x']:
-                    added.append(filter_details['Name_time-table'])
-            if len(added) > 0:
-                txt += 'True. '
-                txt += 'Added by: '
-                for name in added:
-                    txt += name + ', '
-            else:
-                txt += 'False'
+        lines = [f'Batch {batch}: '
+                 + self._keep_text(pt['x'], batch_filters, state)
+                 for batch, (batch_filters, state)
+                 in enumerate(zip(filters, states))]
 
-        else:
-            for filter_details in filters:
-                start, end = self._filter._time.get_range(filter_details)
-                if (start <= pt['x'] and end >= pt['x']):
-                    removed.append(filter_details['Name_time-table'])
-            if len(removed) > 0:
-                txt += 'False. '
-                txt += 'Removed by: '
-                for name in removed:
-                    txt += name + ', '
-            else:
-                txt += 'True'
-
-        children = self._view.hover_text(pt, txt)
+        children = self._view.hover_text(pt, lines)
         return True, bbox, children
 
     def refresh(self):
         """
         A method to get the filters and settings
         from the data.
-        :returns: the values for the filters and settings
+        :returns: the values for the filters and settings,
+        for each batch
         """
-        return self._filter.refresh()
-
-    def read_filter(self, name):
-        """
-        A method to get the filters from a file
-        and populate the GUI.
-        :param name: the name of the json file
-        """
-        self._data.load_filters(0, name)
-        return self._filter.read_filters()
+        return [filter_presenter.refresh()
+                for filter_presenter in self._filters]

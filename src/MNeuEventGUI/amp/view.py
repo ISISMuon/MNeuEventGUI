@@ -1,5 +1,6 @@
 from dash import Input, callback, dcc, html
 
+from MNeuEventGUI.utils.batch import batch_id
 from MNeuEventGUI.view_template import ViewTemplate
 
 
@@ -18,7 +19,7 @@ class AmplitudeView(ViewTemplate):
         return html.Div([
             presenter._plot.layout,
             html.Div(['Amplitude threshold',
-                      dcc.Input(id='Amp',
+                      dcc.Input(id=batch_id('Amp', presenter.batch),
                                 value=0,
                                 type='numeric')])
             ])
@@ -29,5 +30,5 @@ class AmplitudeView(ViewTemplate):
         """
         super().set_callbacks(presenter)
 
-        callback(Input('Amp', 'value'),
+        callback(Input(batch_id('Amp', presenter.batch), 'value'),
                  prevent_initial_call=True)(presenter.edit_baseline)

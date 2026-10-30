@@ -22,7 +22,7 @@ class TimeView(TableView):
                                   'Include',
                                   style={'width': 105,
                                          'margin-left': '10px'},
-                                  id='dropdown-time',
+                                  id=presenter.component_id('_dropdown'),
                                   clearable=False),
                       ],
                      className="d-grid gap-2 d-md-flex "
@@ -42,8 +42,9 @@ class TimeView(TableView):
         # Anything that depends on the filter type should use the
         # changed state signal, so that it cannot read the model
         # before it has been updated.
-        callback([Output(presenter.ID, 'columnDefs', allow_duplicate=True),
-                  Output(presenter.ID + '_changed_state', 'data')],
-                 Input('dropdown-time', 'value'),
-                 State(presenter.ID + '_changed_state', 'data'),
+        callback([Output(presenter.component_id(), 'columnDefs',
+                         allow_duplicate=True),
+                  Output(presenter.component_id('_changed_state'), 'data')],
+                 Input(presenter.component_id('_dropdown'), 'value'),
+                 State(presenter.component_id('_changed_state'), 'data'),
                  prevent_initial_call=True)(presenter.update_state)
