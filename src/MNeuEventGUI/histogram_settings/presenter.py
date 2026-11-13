@@ -48,6 +48,9 @@ class HistSettingsPresenter(PresenterTemplate):
     def set_values(self, min_time, max_time, num_bins):
         """
         Set the histogram settings in the data to some values.
+        :param min_time: the start time for the histogram
+        :param max_time: the end time for the histogram
+        :param num_bins: the number of bins in the histogram
         """
         if self.data is None:
             return

@@ -123,7 +123,6 @@ class MainAppPresenter:
 
         print("saving to ", file)
         if dtype == "n":
-            print(file)
             data.save(0, file)
         elif dtype == 'j':
             data.save_filters(0, file)

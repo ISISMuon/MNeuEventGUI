@@ -57,7 +57,8 @@ class TimePresenter(TablePresenter):
         self.data = data
         # set allowed time range for filters
         times = self.data.dataset.get_frame_times() * 1e-9
-        self.set_time_range(times[0], times[-1] + 32e-6)
+        frame_length = 32.e-6
+        self.set_time_range(times[0], times[-1] + frame_length)
 
     def set_time_range(self, start, end):
         """
