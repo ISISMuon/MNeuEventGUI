@@ -32,12 +32,6 @@ class TableView(ViewTemplate):
             html.Div(id=presenter.ID + '-dropdown-container')
             ])
 
-    @property
-    def model(self):
-        """
-        The part of the Data object that this is a view of.
-        """
-
     def set_callbacks(self, presenter):
         """
         Set the callbacks for the GUI.
