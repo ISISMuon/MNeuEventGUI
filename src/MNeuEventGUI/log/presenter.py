@@ -349,7 +349,6 @@ class LogPresenter(TablePresenter):
         :param data: the table data (list of rows)
         :returns: Updated table values
         """
-        # todo: use edit methods when added
         row = info[0]["rowIndex"]
         row_name = data[row]["Name_" + self.ID]
 
