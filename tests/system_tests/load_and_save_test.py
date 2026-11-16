@@ -58,7 +58,11 @@ def test_load_nxs_error(dash_duo):
     time.sleep(.1)
     # check that the error alert has appeared with correct msg
     assert (dash_duo.find_element('#error').is_enabled)
-    msg = "An error occurred: The file bad_file.txt cannot be read"
+    msg = (
+        "An error occurred: H5Fopen(): unable to synchronously open file: "
+        "unable to open file: name = 'bad_file.txt', errno = 2, "
+        "error message = 'No such file or directory', flags = 0, o_flags = 0"
+    )
     assert (dash_duo.find_element('#error_msg').text == msg)
 
 

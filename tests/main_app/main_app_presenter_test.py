@@ -211,8 +211,24 @@ class MainAppPresenterTest(TestHelper):
         app.gen_fake_data = mock.Mock(return_value=(np.array([1., 2., 3.]),
                                                     np.array([-1., 0., 1.])))
         bad_file = 'HIFI0.nxs'
-        with pytest.raises(RuntimeError):
-            app.load_nxs(bad_file, [], [], DEBUG)
+        app.plot = mock.Mock(return_value='plot')
+        result = app.load_nxs(bad_file, [], [], DEBUG)
+        self.assertEqual(result[0], 'plot')
+        self.assertEqual(result[1], [])
+        self.assertEqual(result[2], True)
+        self.assertEqual(result[3], [])
+        self.assertEqual(result[4], True)
+        self.assert_settings(result, [no_update]*5)
+        self.assertEqual(len(result[10]), 3)
+        self.assertEqual(result[11], {})
+        self.assertEqual(result[12],
+                         "An error occurred: H5Fopen(): unable to "
+                         "synchronously open file: unable to open file: "
+                         "name = 'HIFI0.nxs', errno = 2, error message = "
+                         "'No such file or directory', flags = 0, o_flags = 0")
+        self.assertEqual(result[13], NO_EVENTS)
+
+        self.assertMockOnce(app.plot, [])
 
     def test_load_nxs_none(self):
         app = MainAppPresenter(dummy_open)

@@ -203,7 +203,24 @@ class MainAppPresenter:
                     '',
                     no_events)
 
-        self.load.load_nxs(name)
+        try:
+            if debug_state:
+                raise RuntimeError("Loading error")
+
+            self.load.load_nxs(name)
+
+        except Exception as err:
+            self.control.clear()
+            return (self.plot(),
+                    [],
+                    True,
+                    [],
+                    True,
+                    no_update, no_update, no_update, no_update, no_update,
+                    self.control.headers,
+                    {},
+                    f'An error occurred: {err}',
+                    no_events)
 
         data = self.load.get_data
         self.control.set_data(data)
