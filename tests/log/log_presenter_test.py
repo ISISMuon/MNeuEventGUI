@@ -122,6 +122,70 @@ class LogPresenterTest(TestHelper):
         self.assertEqual(self.presenter.data,
                          'data')
 
+    def edit_info(self, table, name, **new_values):
+        """
+        Create the Dash edit info for a row in the table.
+        :param table: the log table data
+        :param name: the name of the row to edit
+        :param new_values: the new values for the row,
+        keyed by column ID
+        :returns: the edit info
+        """
+        row = row_index(table, name)
+        new_row = {**table[row], **new_values}
+        return [{'rowIndex': row,
+                 'rowId': str(row),
+                 'data': new_row,
+                 'colId': next(iter(new_values)),
+                 'timestamp': 1}]
+
+    def test_edit_row_values(self):
+        table = self.add_filters()
+        info = self.edit_info(table, 'log_default_1',
+                              **{'y0_log-table': 35.5,
+                                 'yN_log-table': 38.})
+        result = self.presenter.edit_row(info, table)
+
+        self.assertEqual(len(result), 2)
+        self.assertData(result[row_index(result, 'mag_field')],
+                        'mag_field', 'B', 'between',
+                        B_MIN, B_MAX, 0.7, 0.9)
+        self.assertData(result[row_index(result, 'log_default_1')],
+                        'log_default_1', 'Temp', 'between',
+                        TEMP_MIN, TEMP_MAX, 35.5, 38.)
+
+    def test_edit_row_log(self):
+        table = self.add_filters()
+        info = self.edit_info(table, 'mag_field',
+                              **{'sample_log-table': 'I',
+                                 'y0_log-table': 0.5,
+                                 'yN_log-table': 0.8})
+        result = self.presenter.edit_row(info, table)
+
+        self.assertEqual(len(result), 2)
+        self.assertData(result[row_index(result, 'mag_field')],
+                        'mag_field', 'I', 'between',
+                        I_MIN, I_MAX, 0.5, 0.8)
+
+    def test_edit_row_rename(self):
+        table = self.add_filters()
+        info = self.edit_info(table, 'log_default_1',
+                              **{'Name_log-table': 'temperature'})
+        result = self.presenter.edit_row(info, table)
+
+        self.assertEqual(len(result), 2)
+        self.assertEqual(sorted(self.data._dict(0)['sample_log_filters']),
+                         ['mag_field', 'temperature'])
+        self.assertData(result[row_index(result, 'temperature')],
+                        'temperature', 'Temp', 'between',
+                        TEMP_MIN, TEMP_MAX, 36., 37.)
+
+    def test_load_non_range_predicate(self):
+        filters = {'text': {'log': 'Temp',
+                            'predicate': {'String': {'value': 'on'}}}}
+        with self.assertRaises(ValueError):
+            self.presenter.load(filters)
+
     def test_delete_btn_pressed(self):
         table = self.add_filters()
         info = {'colId': 'Delete_log-table',

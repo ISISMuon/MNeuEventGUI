@@ -355,12 +355,20 @@ class LogPresenter(TablePresenter):
 
         # contrary to the Dash docs, the new value is "value" not "newValue"
         new_data = info[0]["data"]
+        new_name = new_data["Name_" + self.ID]
 
-        self.data.remove_log_filter(0, row_name)
-        self.data.add_log_filter(0, new_data["Name_" + self.ID],
-                                 new_data["sample_" + self.ID],
-                                  new_data["y0_" + self.ID],
-                                  new_data["yN_" + self.ID])
+        if new_name == row_name:
+            self.data.edit_log_filter(0, row_name,
+                                      new_data["sample_" + self.ID],
+                                      new_data["y0_" + self.ID],
+                                      new_data["yN_" + self.ID])
+        else:
+            # filters cannot be renamed, so replace it
+            self.data.remove_log_filter(0, row_name)
+            self.data.add_log_filter(0, new_name,
+                                     new_data["sample_" + self.ID],
+                                     new_data["y0_" + self.ID],
+                                     new_data["yN_" + self.ID])
 
         return self.load(self.data._dict(0)["sample_log_filters"])
 
@@ -377,8 +385,13 @@ class LogPresenter(TablePresenter):
         data = []
         for name, values in filters.items():
             log = values["log"]
-            start = values["lower"]
-            end = values["upper"]
+            predicate = values["predicate"]
+            if "Range" not in predicate:
+                raise ValueError(f"Log filter '{name}' has an unsupported "
+                                 f"predicate {predicate}; only Range "
+                                 "predicates are supported.")
+            start = predicate["Range"]["lower"]
+            end = predicate["Range"]["upper"]
 
             log_data = self.data.dataset.get_sample_log(log)
             y = log_data["value"]

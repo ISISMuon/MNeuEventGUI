@@ -57,7 +57,8 @@ class TimePresenter(TablePresenter):
         self.data = data
         # set allowed time range for filters
         times = self.data.dataset.get_frame_times() * 1e-9
-        self.set_time_range(times[0], times[-1] + 32e-6)
+        frame_length = 32.e-6
+        self.set_time_range(times[0], times[-1] + frame_length)
 
     def set_time_range(self, start, end):
         """
@@ -182,17 +183,23 @@ class TimePresenter(TablePresenter):
         :param data: the table data (list of rows)
         :returns: Updated table values
         """
-        # todo: use edit methods when added
         row = info[0]["rowIndex"]
         row_name = data[row]["Name_" + self.ID]
 
         # contrary to the Dash docs, the new value is "value" not "newValue"
         new_data = info[0]["data"]
+        new_name = new_data["Name_" + self.ID]
 
-        self.data.remove_time_filter(0, row_name)
-        self.data.add_time_filter(0, new_data["Name_" + self.ID],
-                                  new_data["Start_" + self.ID],
-                                  new_data["End_" + self.ID])
+        if new_name == row_name:
+            self.data.edit_time_filter(0, row_name,
+                                       new_data["Start_" + self.ID],
+                                       new_data["End_" + self.ID])
+        else:
+            # filters cannot be renamed, so replace it
+            self.data.remove_time_filter(0, row_name)
+            self.data.add_time_filter(0, new_name,
+                                      new_data["Start_" + self.ID],
+                                      new_data["End_" + self.ID])
 
         return self.load(self.data._dict(0)["time_filters"])
 

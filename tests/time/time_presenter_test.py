@@ -147,6 +147,60 @@ class TimePresenterTest(TestHelper):
                            'Start_time-table': 66,
                            'End_time-table': 132}])
 
+    def add_filters(self):
+        """
+        Add two time filters to the data.
+        :returns: the time table data for the filters
+        """
+        self.data.add_time_filter(0, 'default_1', 200, 400)
+        self.data.add_time_filter(0, 'default_2', 800, 1000)
+        return self.presenter.load(self.data._dict(0)['time_filters'])
+
+    def edit_info(self, table, name, **new_values):
+        """
+        Create the Dash edit info for a row in the table.
+        :param table: the time table data
+        :param name: the name of the row to edit
+        :param new_values: the new values for the row,
+        keyed by column ID
+        :returns: the edit info
+        """
+        row = [r['Name_time-table'] for r in table].index(name)
+        return [{'rowIndex': row,
+                 'rowId': str(row),
+                 'data': {**table[row], **new_values},
+                 'colId': next(iter(new_values)),
+                 'timestamp': 1}]
+
+    def test_edit_row_values(self):
+        table = self.add_filters()
+        info = self.edit_info(table, 'default_2',
+                              **{'Start_time-table': 700,
+                                 'End_time-table': 900})
+        result = self.presenter.edit_row(info, table)
+
+        self.assertCountEqual(result, [{'Name_time-table': 'default_1',
+                                        'Start_time-table': 200,
+                                        'End_time-table': 400},
+                                       {'Name_time-table': 'default_2',
+                                        'Start_time-table': 700,
+                                        'End_time-table': 900}])
+
+    def test_edit_row_rename(self):
+        table = self.add_filters()
+        info = self.edit_info(table, 'default_1',
+                              **{'Name_time-table': 'renamed'})
+        result = self.presenter.edit_row(info, table)
+
+        self.assertCountEqual(result, [{'Name_time-table': 'renamed',
+                                        'Start_time-table': 200,
+                                        'End_time-table': 400},
+                                       {'Name_time-table': 'default_2',
+                                        'Start_time-table': 800,
+                                        'End_time-table': 1000}])
+        self.assertEqual(sorted(self.data._dict(0)['time_filters']),
+                         ['default_2', 'renamed'])
+
     def test_get_range(self):
         row = {'Delete_time-table': '',
                'Name_time-table': 'default_1',
