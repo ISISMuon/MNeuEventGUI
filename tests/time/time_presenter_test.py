@@ -6,7 +6,8 @@ from unittest import mock
 from MNeuEventLib import BatchData
 
 from MNeuEventGUI.test_helpers.unit_test import TestHelper
-from MNeuEventGUI.time.presenter import TimePresenter
+from MNeuEventGUI.time.presenter import TIME_TABLE, TimePresenter
+from MNeuEventGUI.utils.errors import GUIError
 
 current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
@@ -104,31 +105,31 @@ class TimePresenterTest(TestHelper):
         for val in [None, 1200, 1100]:
             with self.subTest(val=val):
                 change, data = get_validation_data_start(val)
-                result, err = self.presenter.validate_row(change,
-                                                          data)
-                self.assert_data_start(result, 800)
-                assert (len(err) > 1)
+                with self.assertRaises(GUIError) as context:
+                    self.presenter.validate_row(change, data)
+                self.assert_data_start(
+                    context.exception.revert[TIME_TABLE]['rowData'], 800)
+                assert (len(str(context.exception)) > 1)
 
     def test_validate_row_bad_end(self):
         # if outside data range get None
         for val in [None, 200, 800]:
             with self.subTest(val=val):
                 change, data = get_validation_data_end(val)
-                result, err = self.presenter.validate_row(change,
-                                                          data)
-                self.assert_data_end(result, 1100)
-                assert (len(err) > 1)
+                with self.assertRaises(GUIError) as context:
+                    self.presenter.validate_row(change, data)
+                self.assert_data_end(
+                    context.exception.revert[TIME_TABLE]['rowData'], 1100)
+                assert (len(str(context.exception)) > 1)
 
     def test_validate_pass_stat(self):
         change, data = get_validation_data_start(900)
-        result, _ = self.presenter.validate_row(change,
-                                                  data)
+        result = self.presenter.validate_row(change, data)
         self.assert_data_start(result, 900)
 
     def test_validate_pass_end(self):
         change, data = get_validation_data_end(900)
-        result, _ = self.presenter.validate_row(change,
-                                                  data)
+        result = self.presenter.validate_row(change, data)
         self.assert_data_end(result, 900)
 
     def test_add(self):

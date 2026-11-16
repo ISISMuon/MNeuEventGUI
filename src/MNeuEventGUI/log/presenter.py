@@ -118,8 +118,8 @@ class LogPresenter(TablePresenter):
         changed row
         :param data: the data from the sample log
         filter table.
-        :returns: the updated sample log table and
-        an error message
+        :returns: the updated sample log table
+        :raises GUIError: if the new value is not valid
         """
         changed = change[0]
         col_name = changed['colId']
@@ -197,7 +197,9 @@ class LogPresenter(TablePresenter):
 
         data[changed['rowIndex']][col_name] = new_value
 
-        return data, msg
+        if msg:
+            self.reject(data, msg)
+        return data
 
     def btn_pressed(self, info, data):
         """
@@ -293,20 +295,10 @@ class LogPresenter(TablePresenter):
         if self._ok_clicks < ok:
             # ok pressed
             self._ok_clicks += 1
-
-            # the filter keeps all of the data in the log
-            log_data = self.data.dataset.get_sample_log(log)
-            min_value = np.min(log_data['value'])
-            max_value = np.max(log_data['value'])
-
             if self._replace is not None:
                 # replace/update row (i.e. graph button pressed)
                 name = data[self._replace][self.name_col]
-                self.data.edit_log_filter(0,
-                                          name,
-                                          log,
-                                          min_value,
-                                          max_value)
+                self.data.remove_log_filter(0, name)
             else:
                 # new row (i.e. from add button)
                 existing_filters = self.data._dict(0)["sample_log_filters"]
@@ -315,11 +307,16 @@ class LogPresenter(TablePresenter):
                 while name in existing_filters:
                     name = f"filter {next(self.count)}"
 
-                self.data.add_log_filter(0,
-                                         name,
-                                         log,
-                                         min_value,
-                                         max_value)
+            # the filter keeps all of the data in the log
+            log_data = self.data.dataset.get_sample_log(log)
+            min_value = np.min(log_data['value'])
+            max_value = np.max(log_data['value'])
+
+            self.data.add_log_filter(0,
+                                     name,
+                                     log,
+                                     min_value,
+                                     max_value)
         return False, self.load(self.data._dict(0)["sample_log_filters"])
 
     def add(self, n, data):

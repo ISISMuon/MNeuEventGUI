@@ -52,8 +52,7 @@ class FilterView(ViewTemplate):
         :param presenter: the presenter for the widget
         """
         # calculate events when Calculate button is pressed
-        callback([Output('N_events', 'children'),
-                  Output('error_msg', 'children', allow_duplicate=True)],
+        callback(Output('N_events', 'children'),
                  Input('calc_btn', 'n_clicks'),
                  prevent_initial_call=True)(presenter.calculate)
 
