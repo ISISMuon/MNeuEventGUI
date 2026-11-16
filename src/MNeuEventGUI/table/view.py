@@ -43,6 +43,11 @@ class TableView(ViewTemplate):
                  State(presenter.ID, 'virtualRowData'),
                  prevent_initial_call=True)(presenter.validate)
 
+        callback(Output(presenter.ID, 'rowData', allow_duplicate=True),
+                 Input(presenter.ID, 'cellValueChanged'),
+                 State(presenter.ID, 'virtualRowData'),
+                 prevent_initial_call=True)(presenter.edit_row)
+
         self.set_btn_callback(presenter)
         self.set_add_callback(presenter)
 
@@ -67,5 +72,4 @@ class TableView(ViewTemplate):
         """
         callback(Output(presenter.ID, 'rowData', allow_duplicate=True),
                  Input(presenter.ID + '_add', 'n_clicks'),
-                 State(presenter.ID, 'virtualRowData'),
-                 prevent_initial_call=True)(presenter.add)
+                 prevent_initial_call=True)(lambda _: presenter.add())

@@ -1,13 +1,12 @@
-from MNeuEventGUI.main_app.view import MainApp
-from MNeuEventGUI.load_bar.view import CURRENT
-from MNeuEventGUI.test_helpers.gui import (check_no_alert,
-                                           wait_and_press_btn)
-
 import os
-import h5py
-import numpy as np
 import sys
 import time
+
+import h5py
+import numpy as np
+
+from MNeuEventGUI.main_app.view import MainApp
+from MNeuEventGUI.test_helpers.gui import check_no_alert, wait_and_press_btn
 
 current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
@@ -16,11 +15,11 @@ from data_paths import FILE, FILTER  # noqa: E402
 
 
 def mock_load_nxs(n_clicks):
-    return CURRENT + FILE
+    return FILE
 
 
 def mock_bad_load(n_clicks):
-    return CURRENT + 'bad_file.txt'
+    return 'bad_file.txt'
 
 
 def mock_load_json(n_clicks):
@@ -44,7 +43,6 @@ def test_launch(dash_duo):
     dash_duo.start_server(app)
     dash_duo.wait_for_page()
 
-    pass
 
 
 def test_load_nxs_error(dash_duo):
@@ -60,7 +58,11 @@ def test_load_nxs_error(dash_duo):
     time.sleep(.1)
     # check that the error alert has appeared with correct msg
     assert (dash_duo.find_element('#error').is_enabled)
-    msg = "An error occurred: The file bad_file.txt cannot be read"
+    msg = (
+        "An error occurred: H5Fopen(): unable to synchronously open file: "
+        "unable to open file: name = 'bad_file.txt', errno = 2, "
+        "error message = 'No such file or directory', flags = 0, o_flags = 0"
+    )
     assert (dash_duo.find_element('#error_msg').text == msg)
 
 
@@ -74,7 +76,7 @@ def test_load_nxs(dash_duo):
     dash_duo.find_element('#Load').click()
 
     check_no_alert(dash_duo)
-    assert (dash_duo.find_element('#file_name').text == CURRENT + FILE)
+    assert (dash_duo.find_element('#file_name').text == FILE)
 
     wait_and_press_btn(dash_duo, 'Save')
 

@@ -6,7 +6,6 @@ from PySide6.QtCore import QThreadPool, QUrl
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWidgets import QFileDialog, QMainWindow, QVBoxLayout, QWidget
 
-from MNeuEventGUI.load_bar.view import CURRENT
 from MNeuEventGUI.utils.worker import Worker
 
 
@@ -94,9 +93,9 @@ class MainDashWindow(BasicMainDashWindow):
 
         if file_dialog.exec():
             selected_files = file_dialog.selectedFiles()
-            self.file = CURRENT + selected_files[0]
+            self.file = selected_files[0]
         else:
-            self.file = CURRENT + 'None'
+            self.file = 'None'
 
     def open_json(self, n_clicks):
         # should I add methods to allow us to alter the
