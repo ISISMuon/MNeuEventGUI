@@ -1,6 +1,9 @@
 import sys
+from pathlib import Path
 
-from PySide6 import QtWidgets
+from PySide6 import QtGui, QtWidgets
+
+ICON_PATH = Path(__file__).parent / 'assets' / 'icon.png'
 
 
 def launch_dash(dash_app, window):
@@ -11,6 +14,7 @@ def launch_dash(dash_app, window):
     inside of a pyqt web browser.
     """
     app = QtWidgets.QApplication(sys.argv)
+    app.setWindowIcon(QtGui.QIcon(str(ICON_PATH)))
 
     mainWin = window(dash_app)
     mainWin.show()
