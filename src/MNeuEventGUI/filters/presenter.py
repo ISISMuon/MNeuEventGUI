@@ -1,4 +1,5 @@
 from dash import no_update
+from dash.exceptions import PreventUpdate
 
 from MNeuEventGUI.amp.presenter import AmpPresenter
 from MNeuEventGUI.filters.view import FilterView
@@ -84,6 +85,42 @@ class FilterPresenter(PresenterTemplate):
         :returns: the string for no events
         """
         return self._view.no_events_str
+
+    @property
+    def _batch_presenters(self):
+        """
+        :returns: this presenter and all of the
+        presenters it contains
+        """
+        return [self, self._time, self._log, self._log._plot,
+                self._amp, self._amp._plot, self._hist_settings]
+
+    def set_index(self, index):
+        """
+        Sets the index of the batch in the data (e.g.
+        after an earlier batch has been removed), for this
+        presenter and all of the presenters it contains.
+        The IDs of the components do not change.
+        :param index: the new index of the batch
+        """
+        for presenter in self._batch_presenters:
+            PresenterTemplate.set_index(presenter, index)
+
+    def fill(self, _):
+        """
+        Gets the values for a batch's widgets when they
+        are first shown. A batch that is added after a
+        file is loaded has to show the data's values
+        and be editable.
+        :returns: the values for the filters and settings
+        (see read_values), if the add buttons are disabled
+        (time then log) and the amplitude plot
+        :raises PreventUpdate: if there is no data
+        """
+        if self._data is None:
+            raise PreventUpdate
+        return (*self.refresh(), False, False,
+                self._amp.plot(self._data))
 
     def set_data(self, data):
         """

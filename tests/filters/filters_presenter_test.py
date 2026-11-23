@@ -5,6 +5,7 @@ from unittest import mock
 
 import numpy as np
 from dash import no_update
+from dash.exceptions import PreventUpdate
 from MNeuEventLib import BatchData
 
 from MNeuEventGUI.filters.presenter import FilterPresenter
@@ -283,6 +284,36 @@ class FilterPresenterBatchTest(TestHelper):
         self.presenter = FilterPresenter(batch=1)
         self.data = BatchData(FILE, 64, 2)
         self.presenter.set_data(self.data)
+
+    def test_set_index(self):
+        self.presenter.set_index(0)
+        for presenter in (self.presenter, self.presenter._time,
+                          self.presenter._log, self.presenter._log._plot,
+                          self.presenter._amp, self.presenter._amp._plot,
+                          self.presenter._hist_settings):
+            self.assertEqual(presenter.batch, 0)
+            # the IDs of the components do not change
+            self.assertEqual(presenter.key, 1)
+        self.assertEqual(self.presenter._time.component_id(),
+                         {'type': 'time-table', 'batch': 1})
+
+    def test_set_index_edits_new_index(self):
+        self.presenter.set_index(0)
+        self.presenter._amp.edit_baseline(2.5)
+        self.assertEqual(self.presenter.refresh()[2], 2.5)
+        self.assertEqual(self.data._dict(1)['amplitudes'], {})
+
+    def test_fill(self):
+        self.data.add_time_filter(1, 'first', 0.01, 0.02)
+        values = self.presenter.fill('filters')
+        self.assertEqual(values[:8], self.presenter.refresh())
+        # the add buttons are enabled
+        self.assertEqual(values[8:10], (False, False))
+        self.assertEqual(len(values), 11)
+
+    def test_fill_no_data(self):
+        with self.assertRaises(PreventUpdate):
+            FilterPresenter(batch=1).fill('filters')
 
     def test_batch(self):
         self.assertEqual(self.presenter.batch, 1)

@@ -3,6 +3,7 @@ from dash import Input, Output, State, callback, dcc, html
 
 from MNeuEventGUI.plot_area.view import PLOT
 from MNeuEventGUI.table.view import ADD, TableView
+from MNeuEventGUI.utils.batch_callback import dispatch
 
 
 class LogView(TableView):
@@ -78,30 +79,30 @@ class LogView(TableView):
         """
         super().set_callbacks(presenter)
 
-        table = presenter.component_id()
-        callback([Output(presenter._plot.component_id(PLOT), 'figure',
+        table = presenter.callback_id()
+        callback([Output(presenter._plot.callback_id(PLOT), 'figure',
                          allow_duplicate=True),
-                  Output(presenter.component_id('_max'), 'children'),
-                  Output(presenter.component_id('_mean'), 'children'),
-                  Output(presenter.component_id('_min'), 'children'),
-                  Output(presenter.component_id('_std'), 'children'),],
-                 Input(presenter.component_id('_selection'), 'value'),
-                 prevent_initial_call=True)(presenter.show_log_data)
+                  Output(presenter.callback_id('_max'), 'children'),
+                  Output(presenter.callback_id('_mean'), 'children'),
+                  Output(presenter.callback_id('_min'), 'children'),
+                  Output(presenter.callback_id('_std'), 'children'),],
+                 Input(presenter.callback_id('_selection'), 'value'),
+                 prevent_initial_call=True)(dispatch(presenter.show_log_data))
 
-        callback([Output(presenter.component_id('_selector'), 'is_open'),
+        callback([Output(presenter.callback_id('_selector'), 'is_open'),
                   Output(table, 'rowData', allow_duplicate=True)],
-                 [Input(presenter.component_id('_ok'), 'n_clicks'),
-                  Input(presenter.component_id('_cancel'), 'n_clicks')],
-                 [State(presenter.component_id('_selection'), 'value'),
+                 [Input(presenter.callback_id('_ok'), 'n_clicks'),
+                  Input(presenter.callback_id('_cancel'), 'n_clicks')],
+                 [State(presenter.callback_id('_selection'), 'value'),
                   State(table, 'virtualRowData')],
-                 prevent_initial_call=True)(presenter.close_modal)
+                 prevent_initial_call=True)(dispatch(presenter.close_modal))
 
         callback([
-                  Output(presenter.component_id('_selection'), 'options'),
-                  Output(presenter.component_id('_selection'), 'value')],
-                 Input(presenter.component_id('_selector'), 'is_open'),
+                  Output(presenter.callback_id('_selection'), 'options'),
+                  Output(presenter.callback_id('_selection'), 'value')],
+                 Input(presenter.callback_id('_selector'), 'is_open'),
                  State(table, 'virtualRowData'),
-                 prevent_initial_call=True)(presenter.select_log)
+                 prevent_initial_call=True)(dispatch(presenter.select_log))
 
     def set_add_callback(self, presenter):
         """
@@ -110,11 +111,11 @@ class LogView(TableView):
         to have the pop up appear and not just add a row.
         :param presenter: the presenter object
         """
-        callback(Output(presenter.component_id('_selector'), 'is_open',
+        callback(Output(presenter.callback_id('_selector'), 'is_open',
                         allow_duplicate=True),
-                 Input(presenter.component_id(ADD), 'n_clicks'),
-                 State(presenter.component_id(), 'virtualRowData'),
-                 prevent_initial_call=True)(presenter.add)
+                 Input(presenter.callback_id(ADD), 'n_clicks'),
+                 State(presenter.callback_id(), 'virtualRowData'),
+                 prevent_initial_call=True)(dispatch(presenter.add))
 
     def set_btn_callback(self, presenter):
         """
@@ -123,10 +124,10 @@ class LogView(TableView):
         in the sample log table (delete and to create the pop up)
         :param presenter: the presenter object
         """
-        table = presenter.component_id()
+        table = presenter.callback_id()
         callback([Output(table, "rowData", allow_duplicate=True),
-                  Output(presenter.component_id('_selector'), 'is_open',
+                  Output(presenter.callback_id('_selector'), 'is_open',
                          allow_duplicate=True)],
                  Input(table, "cellRendererData"),
                  State(table, 'virtualRowData'),
-                 prevent_initial_call=True)(presenter.btn_pressed)
+                 prevent_initial_call=True)(dispatch(presenter.btn_pressed))

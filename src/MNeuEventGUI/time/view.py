@@ -1,6 +1,7 @@
 from dash import Input, Output, State, callback, dcc, html
 
 from MNeuEventGUI.table.view import CHANGED_STATE, TableView
+from MNeuEventGUI.utils.batch_callback import dispatch
 
 # suffix for the ID of the filter type dropdown
 DROPDOWN = '_dropdown'
@@ -45,9 +46,9 @@ class TimeView(TableView):
         # Anything that depends on the filter type should use the
         # changed state signal, so that it cannot read the model
         # before it has been updated.
-        callback([Output(presenter.component_id(), 'columnDefs',
+        callback([Output(presenter.callback_id(), 'columnDefs',
                          allow_duplicate=True),
-                  Output(presenter.component_id(CHANGED_STATE), 'data')],
-                 Input(presenter.component_id(DROPDOWN), 'value'),
-                 State(presenter.component_id(CHANGED_STATE), 'data'),
-                 prevent_initial_call=True)(presenter.update_state)
+                  Output(presenter.callback_id(CHANGED_STATE), 'data')],
+                 Input(presenter.callback_id(DROPDOWN), 'value'),
+                 State(presenter.callback_id(CHANGED_STATE), 'data'),
+                 prevent_initial_call=True)(dispatch(presenter.update_state))

@@ -1,24 +1,24 @@
 import unittest
 
-from dash import ALL, no_update
-from plotly.colors import sample_colorscale
+from dash import ALL, MATCH, no_update
 
 from MNeuEventGUI.utils.batch import (
-    NUM_BATCHES,
-    active_batch,
+    BATCH_COLOURS,
+    INITIAL_BATCHES,
     active_batch_only,
     all_batches,
     batch_colour,
     batch_id,
+    batch_label,
+    matching_batch,
     per_batch,
-    tab_id,
 )
 
 
 class BatchUtilsTest(unittest.TestCase):
 
-    def test_num_batches(self):
-        self.assertEqual(NUM_BATCHES, 3)
+    def test_initial_batches(self):
+        self.assertEqual(INITIAL_BATCHES, 1)
 
     def test_batch_id(self):
         self.assertEqual(batch_id('time-table', 2),
@@ -28,35 +28,27 @@ class BatchUtilsTest(unittest.TestCase):
         self.assertEqual(all_batches('time-table'),
                          {'type': 'time-table', 'batch': ALL})
 
+    def test_matching_batch(self):
+        self.assertEqual(matching_batch('time-table'),
+                         {'type': 'time-table', 'batch': MATCH})
+
     def test_per_batch(self):
-        self.assertEqual(per_batch(1), [1] * NUM_BATCHES)
+        self.assertEqual(per_batch(1, 4), [1] * 4)
 
     def test_active_batch_only(self):
-        result = active_batch_only('filters.json', tab_id(1))
+        result = active_batch_only('filters.json', 1, 3)
         self.assertEqual(result, [no_update, 'filters.json', no_update])
 
-    def test_batch_colour(self):
-        # colours are sampled from the middle of
-        # equal width sections of Viridis
-        expect = sample_colorscale('Viridis', [1/6, 1/2, 5/6])
-        for k in range(3):
-            self.assertEqual(batch_colour(k, 3), expect[k])
-
-    def test_batch_colour_default_num_batches(self):
-        self.assertEqual(batch_colour(0),
-                         batch_colour(0, NUM_BATCHES))
+    def test_batch_label(self):
+        self.assertEqual(batch_label(2), 'Batch 2')
 
     def test_batch_colours_unique(self):
-        colours = [batch_colour(k) for k in range(NUM_BATCHES)]
-        self.assertEqual(len(set(colours)), NUM_BATCHES)
+        colours = [batch_colour(k) for k in range(len(BATCH_COLOURS))]
+        self.assertEqual(len(set(colours)), len(BATCH_COLOURS))
 
-    def test_tab_id_round_trip(self):
-        for k in range(NUM_BATCHES):
-            self.assertEqual(active_batch(tab_id(k)), k)
-
-    def test_active_batch_none(self):
-        # before a tab is selected, the first batch is active
-        self.assertEqual(active_batch(None), 0)
+    def test_batch_colours_reused(self):
+        # there can be more batches than colours
+        self.assertEqual(batch_colour(len(BATCH_COLOURS)), batch_colour(0))
 
 
 if __name__ == '__main__':

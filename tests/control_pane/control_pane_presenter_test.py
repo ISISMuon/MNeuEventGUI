@@ -9,12 +9,17 @@ from MNeuEventLib import BatchData
 
 from MNeuEventGUI.control_pane.presenter import ControlPanePresenter
 from MNeuEventGUI.test_helpers.unit_test import TestHelper
-from MNeuEventGUI.utils.batch import NUM_BATCHES, batch_colour, tab_id
+from MNeuEventGUI.utils.batch import batch_colour
+from MNeuEventGUI.utils.batch_callback import registered
+from MNeuEventGUI.utils.errors import GUIError
 
 current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
 sys.path.append(parent)
 from data_paths import FILE  # noqa: E402
+
+# the tests use several batches
+NUM_BATCHES = 3
 
 TT = '_time-table'
 LT = '_log-table'
@@ -60,13 +65,13 @@ class ControlPanePresenterTest(TestHelper):
     def setUp(self):
         self.data = BatchData(FILE, 64, NUM_BATCHES)
 
-        self.presenter = ControlPanePresenter()
+        self.presenter = ControlPanePresenter(NUM_BATCHES)
         self.presenter.set_data(self.data)
 
         self.presenter.make_plot(empty_tables(),
                                  tables(b0=[TEMP_ROW, B_ROW]),
                                  [False] * NUM_BATCHES,
-                                 tab_id(0))
+                                 0)
 
     def assert_new_plot(self, names):
         """
@@ -152,7 +157,7 @@ class ControlPanePresenterTest(TestHelper):
         self.presenter.clear()
 
         self.presenter.make_plot(empty_tables(), empty_tables(),
-                                 [False] * NUM_BATCHES, tab_id(0))
+                                 [False] * NUM_BATCHES, 0)
         self.presenter.add_filter_shading.assert_not_called()
 
         self.assertMockOnce(self.presenter._plot.plot,
@@ -165,7 +170,7 @@ class ControlPanePresenterTest(TestHelper):
         self.presenter.add_filter_shading = mock.Mock()
 
         self.presenter.make_plot(empty_tables(), empty_tables(),
-                                 [False] * NUM_BATCHES, tab_id(0))
+                                 [False] * NUM_BATCHES, 0)
 
         self.assert_new_plot(['Temp'])
         # every batch keeps all of the data
@@ -183,7 +188,7 @@ class ControlPanePresenterTest(TestHelper):
         self.presenter.add_filter_shading = mock.Mock()
 
         self.presenter.make_plot(empty_tables(), empty_tables(),
-                                 [False] * NUM_BATCHES, tab_id(1))
+                                 [False] * NUM_BATCHES, 1)
 
         calls = self.shading_calls()
         self.assertEqual([call[0] for call in calls], [0, 2, 1])
@@ -197,7 +202,7 @@ class ControlPanePresenterTest(TestHelper):
         log_data = tables(b0=[TEMP_ROW], b2=[B_ROW])
 
         self.presenter.make_plot(empty_tables(), log_data,
-                                 [False] * NUM_BATCHES, tab_id(0))
+                                 [False] * NUM_BATCHES, 0)
 
         self.assert_new_plot(['Temp', 'B'])
         # each batch gets its own log table
@@ -216,7 +221,7 @@ class ControlPanePresenterTest(TestHelper):
         self.data.add_time_filter(1, 'time_Filter', 1., 4.)
 
         self.presenter.make_plot(time_data, empty_tables(),
-                                 [False] * NUM_BATCHES, tab_id(0))
+                                 [False] * NUM_BATCHES, 0)
 
         calls = {call[0]: call for call in self.shading_calls()}
         # filter times are converted from ns to seconds
@@ -293,6 +298,169 @@ class ControlPanePresenterTest(TestHelper):
         self.assertEqual(values[3][0], 'Include')
 
 
+def patch_operations(patch):
+    """
+    :param patch: a Dash Patch
+    :returns: the (operation, location) of each change in the patch
+    """
+    return [(op['operation'], op['location'])
+            for op in patch.to_plotly_json()['operations']]
+
+
+class BatchTabsTest(TestHelper):
+    """
+    Tests for selecting, adding and removing batches.
+    """
+
+    def setUp(self):
+        self.data = BatchData(FILE, 64, NUM_BATCHES)
+        self.presenter = ControlPanePresenter(NUM_BATCHES)
+        self.presenter.set_data(self.data)
+
+    def test_initial_batches(self):
+        presenter = ControlPanePresenter()
+        self.assertEqual(presenter.num_batches, 1)
+
+    def test_batch_keys(self):
+        self.assertEqual(self.presenter.batch_keys, [0, 1, 2])
+        self.assertEqual(self.presenter.order(), [0, 1, 2])
+
+    def test_index_of(self):
+        self.assertEqual(self.presenter.index_of(2), 2)
+
+    def test_index_of_unknown(self):
+        # e.g. before a tab has been selected
+        self.assertEqual(self.presenter.index_of(None), 0)
+
+    def test_select_batch(self):
+        self.assertEqual(self.presenter.select_batch(1), 1)
+
+    def test_select_batch_needs_new_click(self):
+        self.assertEqual(self.presenter.select_batch(1, 1), 1)
+        # Dash re-triggering the callback is not a new click
+        self.assertEqual(self.presenter.select_batch(1, 1), no_update)
+        self.assertEqual(self.presenter.select_batch(1, 2), 1)
+
+    def test_add_batch_needs_new_click(self):
+        self.presenter.add_batch(1)
+        self.assertEqual(self.presenter.add_batch(1), (no_update,) * 4)
+        self.assertEqual(self.presenter.num_batches, NUM_BATCHES + 1)
+        self.presenter.add_batch(2)
+        self.assertEqual(self.presenter.num_batches, NUM_BATCHES + 2)
+
+    def test_select_removed_batch(self):
+        self.assertEqual(self.presenter.select_batch(9), no_update)
+
+    def test_show_batch(self):
+        styles, active = self.presenter.show_batch(1)
+        self.assertEqual(active, [False, True, False])
+        self.assertEqual(styles, [{'display': 'none'}, None,
+                                  {'display': 'none'}])
+
+    def test_add_batch(self):
+        nav, panes, active, keys = self.presenter.add_batch(1)
+
+        self.assertEqual(self.presenter.num_batches, NUM_BATCHES + 1)
+        self.assertEqual(len(self.data), NUM_BATCHES + 1)
+        self.assertEqual(keys, [0, 1, 2, 3])
+        # the new batch is made active
+        self.assertEqual(active, 3)
+        self.assertEqual(patch_operations(nav), [('Append', [])])
+        self.assertEqual(patch_operations(panes), [('Append', [])])
+
+        new = self.presenter._filters[-1]
+        self.assertEqual(new.batch, NUM_BATCHES)
+        self.assertEqual(new._time.data, self.data)
+        # the new batch can be edited
+        new._time.add()
+        self.assertEqual(list(self.data._dict(3)['time_filters']),
+                         ['filter 1'])
+
+    def test_add_batch_no_data(self):
+        presenter = ControlPanePresenter()
+        presenter.add_batch(1)
+        self.assertEqual(presenter.batch_keys, [0, 1])
+
+    def test_remove_batch(self):
+        self.data.add_time_filter(2, 'last', 0.1, 0.2)
+
+        nav, panes, active, keys = self.presenter.remove_batch(1, 0)
+
+        self.assertEqual(keys, [0, 2])
+        self.assertEqual(len(self.data), NUM_BATCHES - 1)
+        # the active batch is unchanged
+        self.assertEqual(active, 0)
+        self.assertEqual(patch_operations(nav), [('Delete', [1])])
+        self.assertEqual(patch_operations(panes), [('Delete', [1])])
+
+        # the last batch has moved down, but keeps its IDs
+        last = self.presenter._filters[1]
+        self.assertEqual(last.batch, 1)
+        self.assertEqual(last._time.batch, 1)
+        self.assertEqual(last._time.component_id(),
+                         {'type': 'time-table', 'batch': 2})
+        self.assertEqual(list(last._time.batch_filters), ['last'])
+
+    def test_remove_active_batch(self):
+        _, _, active, _ = self.presenter.remove_batch(1, 1)
+        # the next batch becomes active
+        self.assertEqual(active, 2)
+
+    def test_remove_last_active_batch(self):
+        _, _, active, _ = self.presenter.remove_batch(2, 2)
+        # there is no next batch, so the previous one becomes active
+        self.assertEqual(active, 1)
+
+    def test_remove_unknown_batch(self):
+        self.assertEqual(self.presenter.remove_batch(9, 0),
+                         (no_update,) * 4)
+        self.assertEqual(self.presenter.num_batches, NUM_BATCHES)
+
+    def test_remove_only_batch(self):
+        presenter = ControlPanePresenter()
+        with self.assertRaises(GUIError):
+            presenter.remove_batch(0, 0)
+        self.assertEqual(presenter.num_batches, 1)
+
+    def test_remove_then_add_batch(self):
+        self.presenter.remove_batch(1, 0)
+        _, _, _, keys = self.presenter.add_batch(1)
+        # keys are not reused, so the IDs stay unique
+        self.assertEqual(keys, [0, 2, 3])
+        self.assertEqual(self.presenter._filters[-1].batch, 2)
+
+    def test_remove_batch_stops_its_callbacks(self):
+        removed = self.presenter._filters[1]._time
+        self.assertIs(registered(removed), removed)
+        self.presenter.remove_batch(1, 0)
+        self.assertIsNone(registered(removed))
+
+    def test_relabel(self):
+        self.presenter.remove_batch(0, 0)
+        labels, styles, close = self.presenter.relabel([1, 2])
+        self.assertEqual(labels, ['Batch 0', 'Batch 1'])
+        self.assertEqual([style['color'] for style in styles],
+                         [batch_colour(0), batch_colour(1)])
+        self.assertEqual(close, [{'cursor': 'pointer'}] * 2)
+
+    def test_relabel_hides_remove_for_only_batch(self):
+        presenter = ControlPanePresenter()
+        _, _, close = presenter.relabel([0])
+        self.assertEqual(close, [{'display': 'none'}])
+
+    def test_make_plot_after_remove(self):
+        self.presenter.remove_batch(0, 0)
+        self.presenter._plot = mock.Mock()
+        self.presenter.add_filter_shading = mock.Mock()
+        self.presenter.make_plot(tables()[:2], tables()[:2],
+                                 [False] * 2, 2)
+        # the active batch (key 2) is now index 1, so it is drawn last
+        calls = [call[0] for call in
+                 self.presenter.add_filter_shading.call_args_list]
+        self.assertEqual([call[0] for call in calls], [0, 1])
+        self.assertEqual([call[-1] for call in calls], [False, True])
+
+
 class AddFilterShadingTest(TestHelper):
     """
     Tests for the shaded regions of a single batch.
@@ -300,7 +468,7 @@ class AddFilterShadingTest(TestHelper):
 
     def setUp(self):
         self.data = BatchData(FILE, 64, NUM_BATCHES)
-        self.presenter = ControlPanePresenter()
+        self.presenter = ControlPanePresenter(NUM_BATCHES)
         self.presenter.set_data(self.data)
         self.plot = mock.Mock()
         self.plot._min = 0.
@@ -351,7 +519,7 @@ class AddFilterShadingTest(TestHelper):
 class DisplayHoverTest(TestHelper):
 
     def setUp(self):
-        self.presenter = ControlPanePresenter()
+        self.presenter = ControlPanePresenter(NUM_BATCHES)
         self.hover = {'points': [{'bbox': [1, 2, 3, 4],
                                   'x': 0.5,
                                   'y': 0.5}]}

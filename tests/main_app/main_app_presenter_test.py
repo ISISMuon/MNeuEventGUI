@@ -12,7 +12,6 @@ from dash import no_update
 
 from MNeuEventGUI.main_app.presenter import MainAppPresenter
 from MNeuEventGUI.test_helpers.unit_test import TestHelper
-from MNeuEventGUI.utils.batch import NUM_BATCHES, per_batch, tab_id
 from MNeuEventGUI.utils.errors import GUIError
 
 current = os.path.dirname(os.path.realpath(__file__))
@@ -32,7 +31,13 @@ DEFAULT_SETTINGS = [0, 'Include', 0., 32.768, 2048]
 # the number of events is only known after Calculate is pressed
 NO_EVENTS = 'Number of events: Not Calculated'
 DUMMY_SETTINGS = ([], 0, 0, 32.768, 2048, DEBUG)
+# the tests use several batches
+NUM_BATCHES = 3
 EMPTY = [[]] * NUM_BATCHES
+
+
+def per_batch(value):
+    return [value] * NUM_BATCHES
 
 
 def dummy_open(N_clicks):
@@ -105,15 +110,15 @@ class MainAppPresenterTest(TestHelper):
         control.return_value = mock.Mock()
         save.return_value = mock.Mock()
 
-        _ = MainAppPresenter(dummy_open)
+        _ = MainAppPresenter(dummy_open, NUM_BATCHES)
 
         load.assert_called_once_with()
-        control.assert_called_once_with()
+        control.assert_called_once_with(NUM_BATCHES)
         save.assert_called_once_with()
 
     def test_open_nxs(self):
         mock_open = mock.Mock(return_value='bob.nxs')
-        app = MainAppPresenter(mock_open)
+        app = MainAppPresenter(mock_open, NUM_BATCHES)
         new_name = app.open_nxs(1, 'old.nxs')
 
         self.assertEqual(new_name, 'bob.nxs')
@@ -121,14 +126,14 @@ class MainAppPresenterTest(TestHelper):
 
     def test_open_nxs_no_update(self):
         mock_open = mock.Mock(return_value='bob.nxs')
-        app = MainAppPresenter(mock_open)
+        app = MainAppPresenter(mock_open, NUM_BATCHES)
         new_name = app.open_nxs(0, 'old.nxs')
 
         self.assertEqual(new_name, 'old.nxs')
         mock_open.assert_not_called()
 
     def test_confirm_load_with_time_filters(self):
-        app = MainAppPresenter(dummy_open)
+        app = MainAppPresenter(dummy_open, NUM_BATCHES)
         filters = {'Name_t': 'test',
                    'Start' + TT: 1,
                    'End' + TT: 3}
@@ -137,14 +142,14 @@ class MainAppPresenterTest(TestHelper):
         self.assertEqual(clicks, 1)
 
     def test_confirm_load_with_log_filters(self):
-        app = MainAppPresenter(dummy_open)
+        app = MainAppPresenter(dummy_open, NUM_BATCHES)
         logs = [{'Name_log-table': 'mag_field'}]
         state, clicks = app.confirm_load(2, EMPTY, [[], [], logs], 1)
         self.assertTrue(state)
         self.assertEqual(clicks, 1)
 
     def test_confirm_load_no_filters(self):
-        app = MainAppPresenter(dummy_open)
+        app = MainAppPresenter(dummy_open, NUM_BATCHES)
         state, clicks = app.confirm_load(2, EMPTY, EMPTY, 1)
         self.assertFalse(state)
         self.assertEqual(clicks, 2)
@@ -185,7 +190,7 @@ class MainAppPresenterTest(TestHelper):
 
     def test_load_nxs(self):
 
-        app = MainAppPresenter(dummy_open)
+        app = MainAppPresenter(dummy_open, NUM_BATCHES)
         app.plot = mock.Mock(return_value='plot')
         app.plot_amps = mock.Mock(return_value=per_batch('amps'))
         result = app.load_nxs(FILE, EMPTY, EMPTY, DEBUG)
@@ -202,7 +207,7 @@ class MainAppPresenterTest(TestHelper):
         self.assertMockOnce(app.plot, [])
 
     def test_load_nxs_keeps_settings_for_same_file(self):
-        app = MainAppPresenter(dummy_open)
+        app = MainAppPresenter(dummy_open, NUM_BATCHES)
         app.plot = mock.Mock(return_value='plot')
         app.plot_amps = mock.Mock(return_value=per_batch('amps'))
         _ = app.load_nxs(FILE, EMPTY, EMPTY, DEBUG)
@@ -219,7 +224,7 @@ class MainAppPresenterTest(TestHelper):
         self.assertEqual(result[12], per_batch(no_update))
 
     def test_load_nxs_resets_settings_for_new_file(self):
-        app = MainAppPresenter(dummy_open)
+        app = MainAppPresenter(dummy_open, NUM_BATCHES)
         app.plot = mock.Mock(return_value='plot')
         app.plot_amps = mock.Mock(return_value=per_batch('amps'))
         _ = app.load_nxs(FILE, EMPTY, EMPTY, DEBUG)
@@ -235,7 +240,7 @@ class MainAppPresenterTest(TestHelper):
 
     def test_load_nxs_fails(self):
 
-        app = MainAppPresenter(dummy_open)
+        app = MainAppPresenter(dummy_open, NUM_BATCHES)
         app.gen_fake_data = mock.Mock(return_value=(np.array([1., 2., 3.]),
                                                     np.array([-1., 0., 1.])))
         bad_file = 'HIFI0.nxs'
@@ -252,7 +257,7 @@ class MainAppPresenterTest(TestHelper):
         A file that fails to load is not the loaded file,
         so its name should not be left in the load bar.
         """
-        app = MainAppPresenter(dummy_open)
+        app = MainAppPresenter(dummy_open, NUM_BATCHES)
         app.load_nxs(FILE, EMPTY, EMPTY, DEBUG)
 
         with pytest.raises(GUIError) as error:
@@ -263,7 +268,7 @@ class MainAppPresenterTest(TestHelper):
         self.assertEqual(app.load.file, FILE)
 
     def test_load_nxs_none(self):
-        app = MainAppPresenter(dummy_open)
+        app = MainAppPresenter(dummy_open, NUM_BATCHES)
         app.plot = mock.Mock(return_value='plot')
         app.gen_fake_data = mock.Mock(return_value=(np.array([1., 2., 3.]),
                                                     np.array([-1., 0., 1.])))
@@ -287,7 +292,7 @@ class MainAppPresenterTest(TestHelper):
         Cancelling the file browser leaves 'None' as the file,
         so a second cancel must not be treated as reloading it.
         """
-        app = MainAppPresenter(dummy_open)
+        app = MainAppPresenter(dummy_open, NUM_BATCHES)
         app.plot = mock.Mock(return_value='plot')
         bad_file = 'None'
         _ = app.load_nxs(bad_file, EMPTY, EMPTY, DEBUG)
@@ -308,7 +313,7 @@ class MainAppPresenterTest(TestHelper):
         file to fail puts it back to there being no file, which has
         no data and so must not try to read any settings.
         """
-        app = MainAppPresenter(dummy_open)
+        app = MainAppPresenter(dummy_open, NUM_BATCHES)
         app.plot = mock.Mock(return_value='plot')
 
         with pytest.raises(GUIError):
@@ -326,7 +331,7 @@ class MainAppPresenterTest(TestHelper):
 
     def test_load_nxs_with_filters(self):
 
-        app = MainAppPresenter(dummy_open)
+        app = MainAppPresenter(dummy_open, NUM_BATCHES)
         app.plot = mock.Mock(return_value='plot')
         app.plot_amps = mock.Mock(return_value=per_batch('amps'))
         filters = [{'Name' + TT: 'test', 'Start' + TT: 0, 'End' + TT: 1}]
@@ -355,7 +360,7 @@ class MainAppPresenterTest(TestHelper):
 
     def test_load_nxs_with_filters_same_file(self):
 
-        app = MainAppPresenter(dummy_open)
+        app = MainAppPresenter(dummy_open, NUM_BATCHES)
 
         result = app.load_nxs(FILE, EMPTY, EMPTY, DEBUG)
         plot = result[0]
@@ -386,7 +391,7 @@ class MainAppPresenterTest(TestHelper):
         self.assertEqual(result[12], per_batch(no_update))
 
     def test_load_nxs_none_with_filters(self):
-        app = MainAppPresenter(dummy_open)
+        app = MainAppPresenter(dummy_open, NUM_BATCHES)
         app.plot = mock.Mock(return_value='plot')
         app.gen_fake_data = mock.Mock(return_value=(np.array([1., 2., 3.]),
                                                     np.array([-1., 0., 1.])))
@@ -451,7 +456,7 @@ class MainAppPresenterTest(TestHelper):
 
         directory = self.make_temp_dir()
         file_name = os.path.join(directory, 'test.nxs')
-        name = app.save_data('n' + file_name, tab_id(0))
+        name = app.save_data('n' + file_name, 0)
         self.assertEqual(name, file_name)
         return directory
 
@@ -461,7 +466,7 @@ class MainAppPresenterTest(TestHelper):
         for each batch, we assume its correct
         (covered by other unit tests).
         """
-        app = MainAppPresenter(dummy_open)
+        app = MainAppPresenter(dummy_open, NUM_BATCHES)
         _ = app.load_nxs(FILE, EMPTY, EMPTY, DEBUG)
 
         directory = self.save_nxs(app)
@@ -471,7 +476,7 @@ class MainAppPresenterTest(TestHelper):
         """
         Each batch is saved with its own filters.
         """
-        app = MainAppPresenter(dummy_open)
+        app = MainAppPresenter(dummy_open, NUM_BATCHES)
         _ = app.load_nxs(FILE, EMPTY, EMPTY, DEBUG)
 
         data = app.load.get_data
@@ -484,23 +489,45 @@ class MainAppPresenterTest(TestHelper):
         self.assert_saved_counts(directory, [64147, 5755, 23745])
 
     def test_save_filters_active_batch(self):
-        app = MainAppPresenter(dummy_open)
+        app = MainAppPresenter(dummy_open, NUM_BATCHES)
         _ = app.load_nxs(FILE, EMPTY, EMPTY, DEBUG)
 
         data = app.load.get_data
         data.add_time_filter(2, "unit", 1.2, 2)
 
         file_name = os.path.join(self.make_temp_dir(), 'filters.json')
-        name = app.save_data('j' + file_name, tab_id(2))
+        name = app.save_data('j' + file_name, 2)
         self.assertEqual(name, file_name)
 
         # load into another batch to check the contents
         data.load_filters(0, file_name)
         self.assertEqual(list(data._dict(0)['time_filters']), ['unit'])
 
-    def test_save_none(self):
+    def test_save_filters_after_removing_a_batch(self):
+        app = MainAppPresenter(dummy_open, NUM_BATCHES)
+        _ = app.load_nxs(FILE, EMPTY, EMPTY, DEBUG)
+        app.control.remove_batch(0, 2)
+
+        # the batch with key 2 is now at index 1
+        data = app.load.get_data
+        data.add_time_filter(1, "unit", 1.2, 2)
+
+        file_name = os.path.join(self.make_temp_dir(), 'filters.json')
+        app.save_data('j' + file_name, 2)
+
+        data.load_filters(0, file_name)
+        self.assertEqual(list(data._dict(0)['time_filters']), ['unit'])
+
+    def test_load_nxs_uses_current_batches(self):
         app = MainAppPresenter(dummy_open)
-        result = app.save_data('None', tab_id(0))
+        app.control.add_batch()
+        result = app.load_nxs(FILE, [[], []], [[], []], DEBUG)
+        self.assertEqual(len(app.load.get_data), 2)
+        self.assertEqual(len(result[1]), 2)
+
+    def test_save_none(self):
+        app = MainAppPresenter(dummy_open, NUM_BATCHES)
+        result = app.save_data('None', 0)
         self.assertEqual(result, '')
 
 

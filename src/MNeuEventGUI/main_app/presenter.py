@@ -3,13 +3,13 @@ from dash import no_update
 from MNeuEventGUI.control_pane.presenter import ControlPanePresenter
 from MNeuEventGUI.load_bar.presenter import LoadBarPresenter
 from MNeuEventGUI.save_bar.presenter import SaveBarPresenter
-from MNeuEventGUI.utils.batch import active_batch, per_batch
+from MNeuEventGUI.utils.batch import INITIAL_BATCHES, per_batch
 from MNeuEventGUI.utils.errors import GUIError
 
 
 class MainAppPresenter:
 
-    def __init__(self, open_nxs_func):
+    def __init__(self, open_nxs_func, num_batches=INITIAL_BATCHES):
         """
         This is the presenter for the
         main app. It follows the MVP
@@ -17,9 +17,10 @@ class MainAppPresenter:
         is the main app.
         :param open_nxs_func: the function for
         opening a nxs file
+        :param num_batches: the number of batches to start with
         """
         self.load = LoadBarPresenter()
-        self.control = ControlPanePresenter()
+        self.control = ControlPanePresenter(num_batches)
         self.save = SaveBarPresenter()
         self._open_nxs_func = open_nxs_func
         self.N_submit = 0
@@ -72,7 +73,15 @@ class MainAppPresenter:
         print("debug mode " + tmp)
 
 
-    def save_data(self, name, active_tab):
+    def per_batch(self, value):
+        """
+        Repeats a value for every batch.
+        :param value: the value for a single batch
+        :returns: a list of the value for every batch
+        """
+        return per_batch(value, self.control.num_batches)
+
+    def save_data(self, name, active):
         """
         Saves either a muon histogram nexus file
         for each batch, or a filter file for the
@@ -80,7 +89,7 @@ class MainAppPresenter:
         event data.
         :param name: a string of the data type (json
         or nexus) and the name of the file to save to.
-        :param active_tab: the ID of the active batch tab
+        :param active: the key of the active batch
         :returns: the name of the saved file
         :raises GUIError: if the data cannot be saved
         """
@@ -96,7 +105,7 @@ class MainAppPresenter:
                 # a separate file for each batch
                 data.save('all', file, nexus_v3=False)
             elif dtype == 'j':
-                data.save_filters(active_batch(active_tab), file)
+                data.save_filters(self.control.index_of(active), file)
         except Exception as error:
             raise GUIError(f'The data could not be '
                            f'saved to {file}.') from error
@@ -153,14 +162,14 @@ class MainAppPresenter:
             # cannot be used, as there is no data to read settings from.
             self.load.set_file(name)
             return (self.plot(),
-                    per_batch([]),
-                    per_batch(True),
-                    per_batch([]),
-                    per_batch(True),
-                    *[per_batch(no_update)] * 5,
+                    self.per_batch([]),
+                    self.per_batch(True),
+                    self.per_batch([]),
+                    self.per_batch(True),
+                    *[self.per_batch(no_update)] * 5,
                     self.control.headers,
-                    per_batch({}),
-                    per_batch(self.control.no_events_str))
+                    self.per_batch({}),
+                    self.per_batch(self.control.no_events_str))
 
         if name == self.load.file:
             # same file, so the data (and the number of
@@ -170,21 +179,21 @@ class MainAppPresenter:
              min_time, max_time,
              num_bins, headers) = self.control.refresh()
             return (self.control._plot.fig,
-                    time_data, per_batch(False),
-                    log_data, per_batch(False),
+                    time_data, self.per_batch(False),
+                    log_data, self.per_batch(False),
                     amp, state, min_time, max_time, num_bins,
                     headers,
                     [filter_presenter._amp._plot.fig
                      for filter_presenter in self.control._filters],
-                    per_batch(no_update))
+                    self.per_batch(no_update))
         previous = self.load.file
         self.load.set_file(name)
 
         # any previous number of events was for the old data
-        no_events = per_batch(self.control.no_events_str)
+        no_events = self.per_batch(self.control.no_events_str)
 
         try:
-            self.load.load_nxs(name)
+            self.load.load_nxs(name, self.control.num_batches)
             data = self.load.get_data
             self.control.set_data(data)
         except Exception as error:
@@ -199,7 +208,8 @@ class MainAppPresenter:
          min_time, max_time,
          num_bins, headers) = self.control.refresh()
 
-        return (self.plot(), times, per_batch(False), logs, per_batch(False),
+        return (self.plot(), times, self.per_batch(False),
+                logs, self.per_batch(False),
                 amp, state, min_time, max_time, num_bins,
                 headers, self.plot_amps(data),
                 no_events)

@@ -1,6 +1,7 @@
 import dash_bootstrap_components as dbc
 from dash import Input, Output, callback, html
 
+from MNeuEventGUI.utils.batch_callback import dispatch
 from MNeuEventGUI.view_template import ViewTemplate
 
 
@@ -45,29 +46,31 @@ class HistSettingsView(ViewTemplate):
         """
         Set callbacks required by the GUI.
         """
-        min_time = presenter.component_id('min-time')
-        max_time = presenter.component_id('max-time')
-        num_bins = presenter.component_id('num-bins')
-        display_width = presenter.component_id('display-width')
+        min_time = presenter.callback_id('min-time')
+        max_time = presenter.callback_id('max-time')
+        num_bins = presenter.callback_id('num-bins')
+        display_width = presenter.callback_id('display-width')
 
         # callback to update resolution display
         callback(Output(display_width, 'children'),
                  Input(min_time, 'value'),
                  Input(max_time, 'value'),
-                 Input(num_bins, 'value'))(presenter.display_width)
+                 Input(num_bins, 'value'))(dispatch(presenter.display_width))
 
         # callback to update data when values change
         callback(Input(min_time, 'value'),
                  Input(max_time, 'value'),
                  Input(num_bins, 'value'),
-                 prevent_initial_call=True)(presenter.set_values)
+                 prevent_initial_call=True)(dispatch(presenter.set_values))
 
         # callback to mark number of bins if invalid
         callback(Output(num_bins, 'invalid'),
-                 Input(num_bins, 'value'))(presenter.check_num_bins_invalid)
+                 Input(num_bins, 'value')
+                 )(dispatch(presenter.check_num_bins_invalid))
 
         # callback to mark min or max time if invalid
         callback([Output(min_time, 'invalid'),
                   Output(max_time, 'invalid')],
                  [Input(min_time, 'value'),
-                  Input(max_time, 'value')])(presenter.check_range_invalid)
+                  Input(max_time, 'value')]
+                 )(dispatch(presenter.check_range_invalid))

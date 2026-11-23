@@ -1,5 +1,6 @@
 from dash import Input, callback, dcc, html
 
+from MNeuEventGUI.utils.batch_callback import dispatch
 from MNeuEventGUI.view_template import ViewTemplate
 
 
@@ -29,5 +30,5 @@ class AmplitudeView(ViewTemplate):
         """
         super().set_callbacks(presenter)
 
-        callback(Input(presenter.component_id('Amp'), 'value'),
-                 prevent_initial_call=True)(presenter.edit_baseline)
+        callback(Input(presenter.callback_id('Amp'), 'value'),
+                 prevent_initial_call=True)(dispatch(presenter.edit_baseline))

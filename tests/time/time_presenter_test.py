@@ -6,7 +6,7 @@ from unittest import mock
 from MNeuEventLib import BatchData
 
 from MNeuEventGUI.test_helpers.unit_test import TestHelper
-from MNeuEventGUI.time.presenter import TIME_TABLE, TimePresenter
+from MNeuEventGUI.time.presenter import TimePresenter
 from MNeuEventGUI.utils.errors import GUIError
 
 current = os.path.dirname(os.path.realpath(__file__))

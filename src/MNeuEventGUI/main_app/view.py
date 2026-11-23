@@ -2,6 +2,7 @@ import dash
 import dash_bootstrap_components as dbc
 from dash import Dash, Input, Output, State, callback, dcc, html
 
+from MNeuEventGUI.control_pane.view import ACTIVE
 from MNeuEventGUI.log.presenter import LOG_TABLE
 from MNeuEventGUI.main_app.presenter import MainAppPresenter
 from MNeuEventGUI.plot_area.view import PLOT
@@ -9,6 +10,7 @@ from MNeuEventGUI.table.view import ADD
 from MNeuEventGUI.time.presenter import TIME_TABLE
 from MNeuEventGUI.time.view import DROPDOWN
 from MNeuEventGUI.utils.batch import active_batch_only, all_batches
+from MNeuEventGUI.utils.batch_callback import ordered_callback
 from MNeuEventGUI.utils.errors import (
     DETAILS_BTN,
     DETAILS_COLLAPSE,
@@ -117,7 +119,9 @@ class MainApp(Dash):
         # data object, so the filters and settings are read back
         # from it, to keep the GUI and the data in step.
         # This updates every batch.
-        callback([Output('main_plot', 'figure'),
+        order = self.presenter.control.order
+        ordered_callback(order,
+                 [Output('main_plot', 'figure'),
                   Output(all_batches(TIME_TABLE), 'rowData',
                          allow_duplicate=True),
                   Output(all_batches(TIME_TABLE + ADD), 'disabled'),
@@ -139,7 +143,7 @@ class MainApp(Dash):
                   Output(all_batches('amp' + PLOT), 'figure'),
                   Output(all_batches('N_events'), 'children',
                          allow_duplicate=True)],
-                 Input('file_name', 'children'),
+                 [Input('file_name', 'children')],
                  [State(all_batches(TIME_TABLE), 'rowData'),
                   State(all_batches(LOG_TABLE), 'rowData'),
                   State('debug', 'on')],
@@ -153,7 +157,7 @@ class MainApp(Dash):
         # filter file for the active batch).
         callback(Output('save_exe_dummy', 'children'),
                  Input('save_btn_dummy', 'children'),
-                 State('batch-tabs', 'active_tab'),
+                 State(ACTIVE, 'data'),
                  prevent_initial_call=True)(self.presenter.save_data)
 
         callback([Output('load_confirm', 'displayed'),
@@ -175,13 +179,17 @@ class MainApp(Dash):
                  prevent_initial_call=True)(self.presenter.open_nxs)
 
         # open a json filter file, for the active batch
-        def open_filters(n_clicks, active_tab):
-            return active_batch_only(open_json(n_clicks), active_tab)
+        control = self.presenter.control
 
-        callback(
+        def open_filters(n_clicks, active):
+            return active_batch_only(open_json(n_clicks),
+                                     control.index_of(active),
+                                     control.num_batches)
+
+        ordered_callback(order,
                  Output(all_batches('title_test'), 'children'),
-                 Input('load_filters', 'n_clicks'),
-                 State('batch-tabs', 'active_tab'),
+                 [Input('load_filters', 'n_clicks')],
+                 [State(ACTIVE, 'data')],
                  prevent_initial_call=True)(open_filters)
 
         # open file browser on save (nxs and json)

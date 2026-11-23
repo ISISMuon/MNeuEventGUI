@@ -1,8 +1,12 @@
-from dash import ALL, no_update
-from plotly.colors import sample_colorscale
+from dash import ALL, MATCH, no_update
+from plotly.colors import qualitative
 
-# the number of batches (filter sets) the GUI provides
-NUM_BATCHES = 3
+# the number of batches (filter sets) the GUI starts with
+INITIAL_BATCHES = 1
+
+# the colours for the batches, these are reused if
+# there are more batches than colours
+BATCH_COLOURS = qualitative.Plotly
 
 
 def batch_id(name, batch):
@@ -10,7 +14,7 @@ def batch_id(name, batch):
     Gets a pattern matching ID for a component
     that is repeated for each batch.
     :param name: the name of the component
-    :param batch: the index of the batch
+    :param batch: the key of the batch
     :returns: the ID for the component
     """
     return {'type': name, 'batch': batch}
@@ -26,57 +30,57 @@ def all_batches(name):
     return batch_id(name, ALL)
 
 
-def per_batch(value):
+def matching_batch(name):
+    """
+    Gets a pattern matching ID that matches the
+    component in the same batch as the rest of
+    the callback.
+    :param name: the name of the component
+    :returns: the ID for the component
+    """
+    return batch_id(name, MATCH)
+
+
+def per_batch(value, num_batches):
     """
     Repeats a value for every batch.
     :param value: the value for a single batch
+    :param num_batches: the number of batches
     :returns: a list of the value for every batch
     """
-    return [value] * NUM_BATCHES
+    return [value] * num_batches
 
 
-def batch_colour(batch, num_batches=NUM_BATCHES):
+def batch_colour(batch):
     """
-    Gets the colour for a batch. The colours are
-    sampled from the middle of equal width sections
-    of Viridis, to avoid the hard to see ends.
+    Gets the colour for a batch. The colour only
+    depends on the batch's index, so adding a batch
+    does not change the colours of the others.
     :param batch: the index of the batch
-    :param num_batches: the total number of batches
-    :returns: the colour as an rgb string
+    :returns: the colour
     """
-    return sample_colorscale('Viridis',
-                             [(batch + 0.5) / num_batches])[0]
+    return BATCH_COLOURS[batch % len(BATCH_COLOURS)]
 
 
-def tab_id(batch):
+def batch_label(batch):
     """
-    Gets the ID of the tab for a batch.
+    Gets the label for a batch.
     :param batch: the index of the batch
-    :returns: the tab ID
+    :returns: the label
     """
-    return str(batch)
+    return f'Batch {batch}'
 
 
-def active_batch(active_tab):
-    """
-    Gets the index of the batch for the active tab.
-    :param active_tab: the ID of the active tab
-    :returns: the index of the batch
-    """
-    if active_tab is None:
-        return 0
-    return int(active_tab)
-
-
-def active_batch_only(value, active_tab):
+def active_batch_only(value, active, num_batches):
     """
     Gets the values to send to a component that is
     repeated for each batch, such that only the
     active batch is updated.
     :param value: the value for the active batch
-    :param active_tab: the ID of the active batch tab
+    :param active: the index of the active batch
+    :param num_batches: the number of batches
     :returns: the value for each batch
     """
-    values = per_batch(no_update)
-    values[active_batch(active_tab)] = value
+    values = per_batch(no_update, num_batches)
+    values[active] = value
     return values

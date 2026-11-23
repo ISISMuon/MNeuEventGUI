@@ -5,7 +5,7 @@ from unittest import mock
 
 from MNeuEventLib import BatchData
 
-from MNeuEventGUI.log.presenter import LOG_TABLE, LogPresenter
+from MNeuEventGUI.log.presenter import LogPresenter
 from MNeuEventGUI.test_helpers.unit_test import TestHelper
 from MNeuEventGUI.utils.errors import GUIError
 

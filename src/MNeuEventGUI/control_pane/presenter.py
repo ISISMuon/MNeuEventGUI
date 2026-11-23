@@ -1,5 +1,7 @@
 
-from dash import no_update
+from itertools import count
+
+from dash import Patch, no_update
 from MNeuEventLib import _get_filter_times
 
 from MNeuEventGUI.control_pane.view import ControlPaneView
@@ -8,7 +10,13 @@ from MNeuEventGUI.log.presenter import LOG_TABLE
 from MNeuEventGUI.plot_area.presenter import PlotAreaPresenter
 from MNeuEventGUI.presenter_template import PresenterTemplate
 from MNeuEventGUI.time.presenter import TIME_TABLE, TimePresenter
-from MNeuEventGUI.utils.batch import NUM_BATCHES, active_batch, batch_colour
+from MNeuEventGUI.utils.batch import (
+    INITIAL_BATCHES,
+    batch_colour,
+    batch_label,
+)
+from MNeuEventGUI.utils.batch_callback import unregister_batch
+from MNeuEventGUI.utils.errors import GUIError
 
 
 class ControlPanePresenter(PresenterTemplate):
@@ -19,18 +27,168 @@ class ControlPanePresenter(PresenterTemplate):
     widget. This follows the MVP
     pattern.
     """
-    def __init__(self):
+    def __init__(self, num_batches=INITIAL_BATCHES):
         """
         This creates the presenter object for the
         widget.
+        :param num_batches: the number of batches to start with
         """
         self._data = None
 
-        # one set of filters per batch
-        self._filters = [FilterPresenter(batch)
-                         for batch in range(NUM_BATCHES)]
+        # the keys for the IDs of each batch's components
+        self._keys = count()
+        # the last number of clicks of the add button and of
+        # each tab, as Dash can re-trigger a callback without a
+        # new click when the tabs are changed
+        self._clicks = {}
+
+        # one set of filters per batch, in the order of
+        # the batches in the data
+        self._filters = [FilterPresenter(next(self._keys))
+                         for _ in range(num_batches)]
         self._plot = PlotAreaPresenter('main')
         self._view = ControlPaneView(self)
+
+    @property
+    def num_batches(self):
+        """
+        :returns: the number of batches
+        """
+        return len(self._filters)
+
+    @property
+    def batch_keys(self):
+        """
+        :returns: the key of each batch, in batch order
+        """
+        return [filter_presenter.key for filter_presenter in self._filters]
+
+    def order(self):
+        """
+        Gets the order of the batches for the callbacks
+        that use every batch (see ordered_callback).
+        :returns: the key of each batch, in batch order
+        """
+        return self.batch_keys
+
+    def index_of(self, key):
+        """
+        Gets the index of a batch from its key.
+        :param key: the key of the batch (e.g. the active tab)
+        :returns: the index of the batch, the first batch
+        if it is not a current batch
+        """
+        keys = self.batch_keys
+        return keys.index(key) if key in keys else 0
+
+    def _new_click(self, name, n_clicks):
+        """
+        Checks if a button has been clicked since it was
+        last checked.
+        :param name: the name of the button
+        :param n_clicks: the button's number of clicks
+        :returns: if it is a new click
+        """
+        if not n_clicks or n_clicks <= self._clicks.get(name, 0):
+            return False
+        self._clicks[name] = n_clicks
+        return True
+
+    def select_batch(self, key, n_clicks=1):
+        """
+        Makes a batch the active one.
+        :param key: the key of the batch whose tab was clicked
+        :param n_clicks: the number of clicks of the tab
+        :returns: the key of the active batch
+        """
+        if (key not in self.batch_keys
+                or not self._new_click(('tab', key), n_clicks)):
+            return no_update
+        return key
+
+    def show_batch(self, active):
+        """
+        Shows the active batch's tab and hides the others.
+        :param active: the key of the active batch
+        :returns: the style of each batch's tab contents and
+        if each batch's tab is active (in batch order)
+        """
+        index = self.index_of(active)
+        shown = [k == index for k in range(self.num_batches)]
+        return ([self._view.pane_style(is_shown) for is_shown in shown],
+                shown)
+
+    def add_batch(self, n_clicks=None):
+        """
+        Adds a batch, after the existing batches,
+        and makes it the active one.
+        :param n_clicks: the number of clicks of the add button
+        (None to always add)
+        :returns: the changes to the tabs and their contents,
+        the key of the active batch and the key of each batch
+        """
+        if n_clicks is not None and not self._new_click('add', n_clicks):
+            return (no_update,) * 4
+        index = self.num_batches
+        filter_presenter = FilterPresenter(next(self._keys))
+        filter_presenter.set_index(index)
+        if self._data is not None:
+            self._data.add_batch()
+            filter_presenter.set_data(self._data)
+        self._filters.append(filter_presenter)
+
+        nav = Patch()
+        nav.append(self._view.nav_item(filter_presenter, index, True,
+                                       self.num_batches))
+        panes = Patch()
+        panes.append(self._view.pane(filter_presenter, True))
+        return nav, panes, filter_presenter.key, self.batch_keys
+
+    def remove_batch(self, key, active):
+        """
+        Removes a batch. The later batches move down
+        by one in the data, but their components keep
+        their IDs.
+        :param key: the key of the batch to remove
+        :param active: the key of the active batch
+        :returns: the changes to the tabs and their contents,
+        the key of the active batch and the key of each batch
+        :raises GUIError: if it is the only batch
+        """
+        keys = self.batch_keys
+        if key not in keys:
+            return (no_update,) * 4
+        if len(keys) == 1:
+            raise GUIError('The only batch cannot be removed.')
+
+        index = keys.index(key)
+        if self._data is not None:
+            self._data.remove_batch(index)
+        del self._filters[index]
+        unregister_batch(key)
+        for later in range(index, self.num_batches):
+            self._filters[later].set_index(later)
+
+        if active == key or active not in self.batch_keys:
+            active = self.batch_keys[min(index, self.num_batches - 1)]
+
+        nav = Patch()
+        del nav[index]
+        panes = Patch()
+        del panes[index]
+        return nav, panes, active, self.batch_keys
+
+    def relabel(self, _):
+        """
+        Gets the labels and styles of the batch tabs,
+        which depend on the batch index.
+        :returns: the label, tab style and remove button
+        style for each batch (in batch order)
+        """
+        n_batches = self.num_batches
+        return ([batch_label(k) for k in range(n_batches)],
+                [self._view.link_style(k) for k in range(n_batches)],
+                [self._view.close_style(n_batches)] * n_batches)
 
     def clear(self):
         """
@@ -84,7 +242,8 @@ class ControlPanePresenter(PresenterTemplate):
             names = [self._filters[0]._log.get_new_log_name([])]
         return names
 
-    def make_plot(self, time_data, log_data, state_changed, active_tab):
+    def make_plot(self, time_data, log_data, state_changed, active,
+                  keys=None):
         """
         This method creates a plot.
         If no sample logs are selected, it will just plot a
@@ -96,7 +255,9 @@ class ControlPanePresenter(PresenterTemplate):
         for each batch. Its also used to get which plots to make.
         :param state_changed: the signal for the state of the time
         filters (inc/exc) having changed, for each batch
-        :param active_tab: the ID of the active batch tab
+        :param active: the key of the active batch
+        :param keys: the key of each batch (so the plot is
+        redrawn when a batch is added or removed)
         :returns: an updated figure
         """
         if self._data is None:
@@ -107,7 +268,7 @@ class ControlPanePresenter(PresenterTemplate):
         self._plot.new_plot(names, logs)
 
         # draw the active batch last, so it is on top
-        active = active_batch(active_tab)
+        active = self.index_of(active)
         order = [batch for batch in range(len(self._filters))
                  if batch != active] + [active]
 
