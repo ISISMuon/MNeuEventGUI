@@ -1,14 +1,26 @@
 """
-Batches can be added and removed while the GUI is running,
-but Dash callbacks can only be registered before it starts.
-So the callbacks for a batch's widgets are registered once,
-with pattern matching (MATCH) IDs, and then passed on to the
-presenter for the batch that triggered them.
+Helpers for callbacks on widgets that are repeated for each batch.
 
-Callbacks that use every batch (ALL) get their values in the
-order of the components in the page, which is not reliably the
-order of the batches. ordered_callback puts them into batch
-order, so presenters can use the batch index.
+Batches can be added while the GUI is running, but Dash callbacks
+can only be registered before it starts. So each batch's components
+have pattern matching IDs ({'type': name, 'batch': key}), and their
+callbacks are registered once with MATCH in place of the batch.
+One callback then serves every batch, including later ones.
+
+A MATCH callback is registered with the first batch's presenter, so
+dispatch wraps the method: when called, it finds the batch MATCH
+resolved to and calls the same method on that batch's presenter
+(looked up in the registry filled by register). Methods passed to
+dispatch should not rely on the state of the first presenter.
+
+IDs use the batch key, which does not change, rather than the index,
+which does when an earlier batch is removed. So removing a batch
+leaves the other batches' components untouched.
+
+Callbacks that use every batch (ALL) get their values in page order,
+which is not reliably batch order. ordered_callback reorders the ALL
+inputs into batch order, and the ALL outputs back into page order,
+so presenters can use the batch index.
 """
 from dash import callback, ctx, no_update
 from dash.exceptions import PreventUpdate
