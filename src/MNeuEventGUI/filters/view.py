@@ -10,7 +10,7 @@ from MNeuEventGUI.view_template import ViewTemplate
 # the ID of the filter widget
 FILTERS = 'filters'
 
-NUM = 'Number of events: '
+NUM = 'Events in this batch: '
 NC = 'Not Calculated'
 
 

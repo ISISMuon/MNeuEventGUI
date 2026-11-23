@@ -86,22 +86,6 @@ def current_batch():
     return None
 
 
-def triggered_batch():
-    """
-    Gets the key of the batch whose component was
-    clicked to trigger the running callback. This
-    ignores components that have just been created
-    (which have not been clicked).
-    :returns: the batch key (or None if a batch's
-    component was not clicked) and the number of clicks
-    """
-    trigger = ctx.triggered_id
-    clicks = max((item['value'] or 0 for item in ctx.triggered), default=0)
-    if not isinstance(trigger, dict) or not clicks:
-        return None, 0
-    return trigger.get('batch'), clicks
-
-
 def dispatch(method):
     """
     Gets the function to use as a callback for a

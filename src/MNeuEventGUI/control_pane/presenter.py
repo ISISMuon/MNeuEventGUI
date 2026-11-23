@@ -37,9 +37,8 @@ class ControlPanePresenter(PresenterTemplate):
 
         # the keys for the IDs of each batch's components
         self._keys = count()
-        # the last number of clicks of the add button and of
-        # each tab, as Dash can re-trigger a callback without a
-        # new click when the tabs are changed
+        # the last number of clicks of each button for
+        # choosing, adding and removing batches
         self._clicks = {}
 
         # one set of filters per batch, in the order of
@@ -84,39 +83,88 @@ class ControlPanePresenter(PresenterTemplate):
     def _new_click(self, name, n_clicks):
         """
         Checks if a button has been clicked since it was
-        last checked.
+        last checked, as Dash can re-trigger a callback
+        without a new click when the page changes.
         :param name: the name of the button
         :param n_clicks: the button's number of clicks
+        (None means it is not from a button)
         :returns: if it is a new click
         """
-        if not n_clicks or n_clicks <= self._clicks.get(name, 0):
+        if n_clicks is None:
+            return True
+        if n_clicks <= self._clicks.get(name, 0):
             return False
         self._clicks[name] = n_clicks
         return True
 
-    def select_batch(self, key, n_clicks=1):
+    def batch_options(self):
         """
-        Makes a batch the active one.
-        :param key: the key of the batch whose tab was clicked
-        :param n_clicks: the number of clicks of the tab
-        :returns: the key of the active batch
+        :returns: the options for the dropdown for
+        choosing the batch (one for each batch)
         """
-        if (key not in self.batch_keys
-                or not self._new_click(('tab', key), n_clicks)):
+        return [{'label': batch_label(index), 'value': key}
+                for index, key in enumerate(self.batch_keys)]
+
+    def batch_controls(self, active, keys):
+        """
+        Gets the state of the controls for choosing the batch.
+        :param active: the key of the active batch
+        :param keys: the key of each batch (so this is updated
+        when a batch is added or removed)
+        :returns: the dropdown options, if the previous, next and
+        remove buttons are disabled and the style of the mark
+        showing the active batch's colour
+        """
+        index = self.index_of(active)
+        last = self.num_batches - 1
+        return (self.batch_options(),
+                index == 0,
+                index == last,
+                last == 0,
+                ControlPaneView.swatch_style(index))
+
+    def _step(self, active, step, name, n_clicks):
+        """
+        Moves to a neighbouring batch.
+        :param active: the key of the active batch
+        :param step: how many batches to move by
+        :param name: the name of the button
+        :param n_clicks: the button's number of clicks
+        :returns: the key of the new active batch
+        """
+        index = self.index_of(active) + step
+        if (not self._new_click(name, n_clicks)
+                or not 0 <= index < self.num_batches):
             return no_update
-        return key
+        return self.batch_keys[index]
+
+    def previous_batch(self, n_clicks, active):
+        """
+        Moves to the previous batch.
+        :param n_clicks: the number of clicks of the previous button
+        :param active: the key of the active batch
+        :returns: the key of the new active batch
+        """
+        return self._step(active, -1, 'previous', n_clicks)
+
+    def next_batch(self, n_clicks, active):
+        """
+        Moves to the next batch.
+        :param n_clicks: the number of clicks of the next button
+        :param active: the key of the active batch
+        :returns: the key of the new active batch
+        """
+        return self._step(active, 1, 'next', n_clicks)
 
     def show_batch(self, active):
         """
-        Shows the active batch's tab and hides the others.
+        Shows the active batch's filters and hides the others.
         :param active: the key of the active batch
-        :returns: the style of each batch's tab contents and
-        if each batch's tab is active (in batch order)
+        :returns: the style of each batch's filters (in batch order)
         """
         index = self.index_of(active)
-        shown = [k == index for k in range(self.num_batches)]
-        return ([self._view.pane_style(is_shown) for is_shown in shown],
-                shown)
+        return [self._view.pane_style(k == index)
+                for k in range(self.num_batches)]
 
     def add_batch(self, n_clicks=None):
         """
@@ -124,11 +172,12 @@ class ControlPanePresenter(PresenterTemplate):
         and makes it the active one.
         :param n_clicks: the number of clicks of the add button
         (None to always add)
-        :returns: the changes to the tabs and their contents,
+        :returns: the change to the batches' filters,
         the key of the active batch and the key of each batch
         """
-        if n_clicks is not None and not self._new_click('add', n_clicks):
-            return (no_update,) * 4
+        if not self._new_click('add', n_clicks):
+            return (no_update,) * 3
+
         index = self.num_batches
         filter_presenter = FilterPresenter(next(self._keys))
         filter_presenter.set_index(index)
@@ -137,58 +186,48 @@ class ControlPanePresenter(PresenterTemplate):
             filter_presenter.set_data(self._data)
         self._filters.append(filter_presenter)
 
-        nav = Patch()
-        nav.append(self._view.nav_item(filter_presenter, index, True,
-                                       self.num_batches))
+        # hide the other batches in the same change that shows the
+        # new one, otherwise both are shown until show_batch runs
         panes = Patch()
+        for other in range(index):
+            panes[other]['props']['style'] = self._view.pane_style(False)
         panes.append(self._view.pane(filter_presenter, True))
-        return nav, panes, filter_presenter.key, self.batch_keys
+        return panes, filter_presenter.key, self.batch_keys
 
-    def remove_batch(self, key, active):
+    def remove_batch(self, n_clicks, active):
         """
-        Removes a batch. The later batches move down
-        by one in the data, but their components keep
-        their IDs.
-        :param key: the key of the batch to remove
-        :param active: the key of the active batch
-        :returns: the changes to the tabs and their contents,
+        Removes the active batch. The later batches move
+        down by one in the data, but their components keep
+        their IDs. The next batch (or the previous one, if
+        it was the last) becomes active.
+        :param n_clicks: the number of clicks of the remove button
+        (None to always remove)
+        :param active: the key of the batch to remove
+        :returns: the change to the batches' filters,
         the key of the active batch and the key of each batch
         :raises GUIError: if it is the only batch
         """
         keys = self.batch_keys
-        if key not in keys:
-            return (no_update,) * 4
+        if active not in keys or not self._new_click('remove', n_clicks):
+            return (no_update,) * 3
         if len(keys) == 1:
             raise GUIError('The only batch cannot be removed.')
 
-        index = keys.index(key)
+        index = keys.index(active)
         if self._data is not None:
             self._data.remove_batch(index)
         del self._filters[index]
-        unregister_batch(key)
+        unregister_batch(active)
         for later in range(index, self.num_batches):
             self._filters[later].set_index(later)
 
-        if active == key or active not in self.batch_keys:
-            active = self.batch_keys[min(index, self.num_batches - 1)]
-
-        nav = Patch()
-        del nav[index]
+        # show the new active batch in the same change that removes
+        # the old one, otherwise none are shown until show_batch runs
+        new_index = min(index, self.num_batches - 1)
         panes = Patch()
         del panes[index]
-        return nav, panes, active, self.batch_keys
-
-    def relabel(self, _):
-        """
-        Gets the labels and styles of the batch tabs,
-        which depend on the batch index.
-        :returns: the label, tab style and remove button
-        style for each batch (in batch order)
-        """
-        n_batches = self.num_batches
-        return ([batch_label(k) for k in range(n_batches)],
-                [self._view.link_style(k) for k in range(n_batches)],
-                [self._view.close_style(n_batches)] * n_batches)
+        panes[new_index]['props']['style'] = self._view.pane_style(True)
+        return panes, self.batch_keys[new_index], self.batch_keys
 
     def clear(self):
         """

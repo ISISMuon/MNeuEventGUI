@@ -157,7 +157,7 @@ class MainApp(Dash):
         # filter file for the active batch).
         callback(Output('save_exe_dummy', 'children'),
                  Input('save_btn_dummy', 'children'),
-                 State(ACTIVE, 'data'),
+                 State(ACTIVE, 'value'),
                  prevent_initial_call=True)(self.presenter.save_data)
 
         callback([Output('load_confirm', 'displayed'),
@@ -189,7 +189,7 @@ class MainApp(Dash):
         ordered_callback(order,
                  Output(all_batches('title_test'), 'children'),
                  [Input('load_filters', 'n_clicks')],
-                 [State(ACTIVE, 'data')],
+                 [State(ACTIVE, 'value')],
                  prevent_initial_call=True)(open_filters)
 
         # open file browser on save (nxs and json)

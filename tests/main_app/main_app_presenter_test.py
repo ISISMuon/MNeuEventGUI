@@ -29,7 +29,7 @@ TT = '_time-table'
 # that a freshly loaded data object reports
 DEFAULT_SETTINGS = [0, 'Include', 0., 32.768, 2048]
 # the number of events is only known after Calculate is pressed
-NO_EVENTS = 'Number of events: Not Calculated'
+NO_EVENTS = 'Events in this batch: Not Calculated'
 DUMMY_SETTINGS = ([], 0, 0, 32.768, 2048, DEBUG)
 # the tests use several batches
 NUM_BATCHES = 3
@@ -506,7 +506,7 @@ class MainAppPresenterTest(TestHelper):
     def test_save_filters_after_removing_a_batch(self):
         app = MainAppPresenter(dummy_open, NUM_BATCHES)
         _ = app.load_nxs(FILE, EMPTY, EMPTY, DEBUG)
-        app.control.remove_batch(0, 2)
+        app.control.remove_batch(None, 0)
 
         # the batch with key 2 is now at index 1
         data = app.load.get_data

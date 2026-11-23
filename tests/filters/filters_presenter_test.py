@@ -151,7 +151,7 @@ class FilterPresenterTest(TestHelper):
         self.presenter._data.calculate()
         N_str = self.presenter.n_events
         self.assertEqual(N_str.children,
-                         'Number of events: 64,147')
+                         'Events in this batch: 64,147')
 
     def test_n_events_amp_filter(self):
         data = load_data()
@@ -160,7 +160,7 @@ class FilterPresenterTest(TestHelper):
         self.presenter._data.calculate()
         N_str = self.presenter.n_events
         self.assertEqual(N_str.children,
-                         'Number of events: 7,944')
+                         'Events in this batch: 7,944')
 
     def test_n_events_with_exclude_filter(self):
         data = load_data()
@@ -170,7 +170,7 @@ class FilterPresenterTest(TestHelper):
         self.presenter._data.calculate()
         N_str = self.presenter.n_events
         self.assertEqual(N_str.children,
-                         'Number of events: 57,653')
+                         'Events in this batch: 57,653')
 
     def test_n_events_with_include_filter(self):
         data = load_data()
@@ -180,7 +180,7 @@ class FilterPresenterTest(TestHelper):
         self.presenter._data.calculate()
         N_str = self.presenter.n_events
         self.assertEqual(N_str.children,
-                         'Number of events: 6,494')
+                         'Events in this batch: 6,494')
 
     def test_n_events_with_log_filter(self):
         data = load_data()
@@ -189,7 +189,7 @@ class FilterPresenterTest(TestHelper):
         self.presenter._data.calculate()
         N_str = self.presenter.n_events
         self.assertEqual(N_str.children,
-                         'Number of events: 58,972')
+                         'Events in this batch: 58,972')
 
     def test_load_include(self):
         data = load_data()
@@ -266,7 +266,7 @@ class FilterPresenterTest(TestHelper):
             result = self.presenter.update_N_events(
                     [{'colId': col_id}], 'old'
                     )
-            self.assertEqual(result, 'Number of events: Not Calculated')
+            self.assertEqual(result, 'Events in this batch: Not Calculated')
 
     def test_update_N_events_fail(self):
         result = self.presenter.update_N_events([{'colId': 'unit test'}],
@@ -373,7 +373,7 @@ class FilterPresenterBatchTest(TestHelper):
         self.data.set_amps_baseline(1, 2500.)
         self.data.calculate()
         self.assertEqual(self.presenter.n_events.children,
-                         'Number of events: 7,944')
+                         'Events in this batch: 7,944')
 
 
 if __name__ == '__main__':

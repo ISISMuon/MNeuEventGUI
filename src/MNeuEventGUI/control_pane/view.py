@@ -6,27 +6,42 @@ from MNeuEventGUI.plot_area.view import PLOT, TOOLTIP
 from MNeuEventGUI.table.view import CHANGED_STATE
 from MNeuEventGUI.time.presenter import TIME_TABLE
 from MNeuEventGUI.time.view import DROPDOWN
-from MNeuEventGUI.utils.batch import (
-    all_batches,
-    batch_colour,
-    batch_id,
-    batch_label,
-)
-from MNeuEventGUI.utils.batch_callback import ordered_callback, triggered_batch
+from MNeuEventGUI.utils.batch import all_batches, batch_colour, batch_id
+from MNeuEventGUI.utils.batch_callback import ordered_callback
 from MNeuEventGUI.view_template import ViewTemplate
 
-# the IDs for the batch tabs
-ACTIVE = 'batch-tabs'
+# the IDs for choosing the batch. The value of the
+# dropdown is the key of the active batch.
+ACTIVE = 'batch-select'
 KEYS = 'batch-keys'
-NAV = 'batch-nav'
-PANES = 'batch-panes'
+PREV = 'batch-prev'
+NEXT = 'batch-next'
 ADD_BATCH = 'batch-add'
-LINK = 'batch-link'
-LABEL = 'batch-label'
-CLOSE = 'batch-close'
+REMOVE_BATCH = 'batch-remove'
+SWATCH = 'batch-swatch'
+PANES = 'batch-panes'
 PANE = 'batch-pane'
 
 HIDDEN = {'display': 'none'}
+
+
+def icon_button(icon, component_id, title, disabled=False):
+    """
+    Creates a small button with an icon.
+    :param icon: the bootstrap icon class
+    :param component_id: the ID of the button
+    :param title: the text shown when hovering on the button
+    :param disabled: if the button starts disabled
+    :returns: the button
+    """
+    return dbc.Button(html.I(className=icon),
+                      id=component_id,
+                      n_clicks=0,
+                      color='link',
+                      size='sm',
+                      class_name='px-1',
+                      title=title,
+                      disabled=disabled)
 
 
 class ControlPaneView(ViewTemplate):
@@ -44,32 +59,35 @@ class ControlPaneView(ViewTemplate):
         # set width of the filter tables
         filter_width = 2
 
-        # a tab of filters for each batch. The tabs are made
-        # by hand, because a dbc.Tab's label can only be text
-        # and each tab needs a button to remove it.
+        # the batch is chosen with the back/forward buttons or
+        # the dropdown (which can be searched), and only the
+        # active batch's filters are shown
         active = presenter.batch_keys[0]
-        n_batches = len(presenter._filters)
-        tabs = html.Div([
-            dcc.Store(id=ACTIVE, data=active),
+        (options, prev_disabled, next_disabled,
+         remove_disabled, swatch) = presenter.batch_controls(
+             active, presenter.batch_keys)
+        controls = html.Div([
+            icon_button('bi-chevron-left', PREV, 'Previous batch',
+                        prev_disabled),
+            html.Span(id=SWATCH, style=swatch),
+            dcc.Dropdown(options,
+                         active,
+                         id=ACTIVE,
+                         clearable=False,
+                         searchable=True,
+                         placeholder='Search batches',
+                         style={'flex': '1 1 auto', 'minWidth': 0}),
+            icon_button('bi-chevron-right', NEXT, 'Next batch',
+                        next_disabled),
+            icon_button('bi-plus-lg', ADD_BATCH, 'Add a batch'),
+            icon_button('bi-trash', REMOVE_BATCH, 'Remove this batch',
+                        remove_disabled),
+            ],
+                            className='d-flex align-items-center mb-2')
+
+        batches = html.Div([
             dcc.Store(id=KEYS, data=presenter.batch_keys),
-            html.Div([
-                dbc.Nav([self.nav_item(filter_presenter, index,
-                                       index == 0, n_batches)
-                         for index, filter_presenter
-                         in enumerate(presenter._filters)],
-                        id=NAV,
-                        class_name='nav-tabs flex-wrap flex-grow-1'),
-                # this is not one of the tabs, as Dash re-triggers
-                # the callbacks of components in the tabs when they
-                # are changed
-                dbc.Button(html.I(className='bi-plus-lg'),
-                           id=ADD_BATCH,
-                           n_clicks=0,
-                           color='link',
-                           size='sm',
-                           title='Add a batch'),
-                ],
-                     className='d-flex align-items-end mb-2'),
+            controls,
             html.Div([self.pane(filter_presenter, index == 0)
                       for index, filter_presenter
                       in enumerate(presenter._filters)],
@@ -78,71 +96,36 @@ class ControlPaneView(ViewTemplate):
 
         # setup the layout
         return dbc.Row([
-                    dbc.Col(tabs, width=filter_width),
+                    dbc.Col(batches, width=filter_width),
                     dbc.Col(presenter._plot.layout, width=12-filter_width)
                     ],
                         className="g-0", align='center')
 
     @staticmethod
-    def link_style(index):
+    def swatch_style(index):
         """
-        :param index: the index of the batch
-        :returns: the style for the batch's tab
+        :param index: the index of the active batch
+        :returns: the style of the mark showing the
+        active batch's colour (as used in the plot)
         """
-        return {'color': batch_colour(index), 'fontWeight': 'bold'}
-
-    @staticmethod
-    def close_style(n_batches):
-        """
-        :param n_batches: the number of batches
-        :returns: the style of the buttons that remove a batch,
-        which are hidden when there is only one batch
-        """
-        return HIDDEN if n_batches == 1 else {'cursor': 'pointer'}
-
-    def nav_item(self, filter_presenter, index, active, n_batches):
-        """
-        Creates the tab for a batch.
-        :param filter_presenter: the batch's filter presenter
-        :param index: the index of the batch
-        :param active: if the batch is the active one
-        :param n_batches: the number of batches
-        :returns: the tab
-        """
-        key = filter_presenter.key
-        return dbc.NavItem([
-            dbc.NavLink(html.Span(batch_label(index),
-                                  id=batch_id(LABEL, key)),
-                        id=batch_id(LINK, key),
-                        n_clicks=0,
-                        class_name='px-2',
-                        active=active,
-                        style=self.link_style(index)),
-            # this is beside the link, not in it, so that
-            # removing a batch does not also select it
-            html.I(id=batch_id(CLOSE, key),
-                   className='bi-x',
-                   n_clicks=0,
-                   title='Remove this batch',
-                   style=self.close_style(n_batches)),
-            ],
-                           className='d-flex align-items-center',
-                           # React matches the tabs by key, not by position,
-                           # so removing a tab does not reuse (and re-trigger)
-                           # the components of the tabs after it
-                           key=str(key))
+        return {'backgroundColor': batch_colour(index),
+                'width': '0.75rem',
+                'height': '0.75rem',
+                'borderRadius': '50%',
+                'flex': '0 0 auto',
+                'marginRight': '0.25rem'}
 
     @staticmethod
     def pane_style(shown):
         """
-        :param shown: if the tab's contents are shown
-        :returns: the style for a batch's tab contents
+        :param shown: if the batch's filters are shown
+        :returns: the style for a batch's filters
         """
         return None if shown else HIDDEN
 
     def pane(self, filter_presenter, active):
         """
-        Creates the contents of the tab for a batch.
+        Creates the filters for a batch.
         :param filter_presenter: the batch's filter presenter
         :param active: if the batch is the active one
         :returns: the tab's contents
@@ -172,7 +155,7 @@ class ControlPaneView(ViewTemplate):
                           Input(all_batches(LOG_TABLE), 'rowData'),
                           Input(all_batches(TIME_TABLE + CHANGED_STATE),
                                 'data'),
-                          Input(ACTIVE, 'data'),
+                          Input(ACTIVE, 'value'),
                           Input(KEYS, 'data')],
                          prevent_initial_call=True)(presenter.make_plot)
 
@@ -194,53 +177,52 @@ class ControlPaneView(ViewTemplate):
 
     def set_tab_callbacks(self, presenter):
         """
-        Sets the callbacks for selecting, adding and
+        Sets the callbacks for choosing, adding and
         removing batches.
         :param presenter: the presenter for the widget
         """
         order = presenter.order
 
-        def select(_):
-            return presenter.select_batch(*triggered_batch())
-
-        callback(Output(ACTIVE, 'data', allow_duplicate=True),
-                 Input(all_batches(LINK), 'n_clicks'),
-                 prevent_initial_call=True)(select)
-
-        # show the active batch's tab
+        # show the active batch's filters
         ordered_callback(order,
-                         [Output(all_batches(PANE), 'style'),
-                          Output(all_batches(LINK), 'active')],
-                         [Input(ACTIVE, 'data')],
+                         Output(all_batches(PANE), 'style'),
+                         [Input(ACTIVE, 'value')],
                          prevent_initial_call=True)(presenter.show_batch)
 
-        callback([Output(NAV, 'children', allow_duplicate=True),
-                  Output(PANES, 'children', allow_duplicate=True),
-                  Output(ACTIVE, 'data', allow_duplicate=True),
+        # the dropdown options and buttons depend on which batch is
+        # active and on the batches (the labels follow the index, so
+        # they change when an earlier batch is removed)
+        callback([Output(ACTIVE, 'options'),
+                  Output(PREV, 'disabled'),
+                  Output(NEXT, 'disabled'),
+                  Output(REMOVE_BATCH, 'disabled'),
+                  Output(SWATCH, 'style')],
+                 [Input(ACTIVE, 'value'),
+                  Input(KEYS, 'data')],
+                 prevent_initial_call=True)(presenter.batch_controls)
+
+        callback(Output(ACTIVE, 'value', allow_duplicate=True),
+                 Input(PREV, 'n_clicks'),
+                 State(ACTIVE, 'value'),
+                 prevent_initial_call=True)(presenter.previous_batch)
+
+        callback(Output(ACTIVE, 'value', allow_duplicate=True),
+                 Input(NEXT, 'n_clicks'),
+                 State(ACTIVE, 'value'),
+                 prevent_initial_call=True)(presenter.next_batch)
+
+        callback([Output(PANES, 'children', allow_duplicate=True),
+                  Output(ACTIVE, 'value', allow_duplicate=True),
                   Output(KEYS, 'data', allow_duplicate=True)],
                  Input(ADD_BATCH, 'n_clicks'),
                  prevent_initial_call=True)(presenter.add_batch)
 
-        def remove(_, active):
-            key, _ = triggered_batch()
-            return presenter.remove_batch(key, active)
-
-        callback([Output(NAV, 'children', allow_duplicate=True),
-                  Output(PANES, 'children', allow_duplicate=True),
-                  Output(ACTIVE, 'data', allow_duplicate=True),
+        callback([Output(PANES, 'children', allow_duplicate=True),
+                  Output(ACTIVE, 'value', allow_duplicate=True),
                   Output(KEYS, 'data', allow_duplicate=True)],
-                 Input(all_batches(CLOSE), 'n_clicks'),
-                 State(ACTIVE, 'data'),
-                 prevent_initial_call=True)(remove)
-
-        # the labels and colours follow the batch index,
-        # so they change when an earlier batch is removed
-        ordered_callback(order,
-                         [Output(all_batches(LABEL), 'children'),
-                          Output(all_batches(LINK), 'style'),
-                          Output(all_batches(CLOSE), 'style')],
-                         [Input(KEYS, 'data')],
-                         prevent_initial_call=True)(presenter.relabel)
+                 Input(REMOVE_BATCH, 'n_clicks'),
+                 State(ACTIVE, 'value'),
+                 prevent_initial_call=True)(presenter.remove_batch)
 
     def hover_text(self, pt, lines):
         """

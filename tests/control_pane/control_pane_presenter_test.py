@@ -256,9 +256,9 @@ class ControlPanePresenterTest(TestHelper):
         self.data.set_amps_baseline(1, 2500.)
         N_strs = self.presenter.calculate([1, None, None])
         self.assertEqual([N.children for N in N_strs],
-                         ['Number of events: 64,147',
-                          'Number of events: 7,944',
-                          'Number of events: 64,147'])
+                         ['Events in this batch: 64,147',
+                          'Events in this batch: 7,944',
+                          'Events in this batch: 64,147'])
 
     def test_calculate_with_error(self):
         data = mock.Mock()
@@ -307,9 +307,19 @@ def patch_operations(patch):
             for op in patch.to_plotly_json()['operations']]
 
 
-class BatchTabsTest(TestHelper):
+def patch_values(patch):
     """
-    Tests for selecting, adding and removing batches.
+    :param patch: a Dash Patch
+    :returns: the value of each change in the patch
+    (None if it does not have one)
+    """
+    return [op['params'].get('value')
+            for op in patch.to_plotly_json()['operations']]
+
+
+class BatchControlsTest(TestHelper):
+    """
+    Tests for choosing, adding and removing batches.
     """
 
     def setUp(self):
@@ -329,44 +339,83 @@ class BatchTabsTest(TestHelper):
         self.assertEqual(self.presenter.index_of(2), 2)
 
     def test_index_of_unknown(self):
-        # e.g. before a tab has been selected
         self.assertEqual(self.presenter.index_of(None), 0)
 
-    def test_select_batch(self):
-        self.assertEqual(self.presenter.select_batch(1), 1)
+    def test_batch_options(self):
+        self.assertEqual(self.presenter.batch_options(),
+                         [{'label': 'Batch 0', 'value': 0},
+                          {'label': 'Batch 1', 'value': 1},
+                          {'label': 'Batch 2', 'value': 2}])
 
-    def test_select_batch_needs_new_click(self):
-        self.assertEqual(self.presenter.select_batch(1, 1), 1)
+    def test_batch_controls_middle(self):
+        (options, prev_disabled, next_disabled,
+         remove_disabled, swatch) = self.presenter.batch_controls(1, None)
+        self.assertEqual(len(options), NUM_BATCHES)
+        self.assertFalse(prev_disabled)
+        self.assertFalse(next_disabled)
+        self.assertFalse(remove_disabled)
+        self.assertEqual(swatch['backgroundColor'], batch_colour(1))
+
+    def test_batch_controls_ends(self):
+        _, prev_disabled, next_disabled, _, _ = \
+            self.presenter.batch_controls(0, None)
+        self.assertTrue(prev_disabled)
+        self.assertFalse(next_disabled)
+        _, prev_disabled, next_disabled, _, _ = \
+            self.presenter.batch_controls(2, None)
+        self.assertFalse(prev_disabled)
+        self.assertTrue(next_disabled)
+
+    def test_batch_controls_only_batch(self):
+        presenter = ControlPanePresenter()
+        _, prev_disabled, next_disabled, remove_disabled, _ = \
+            presenter.batch_controls(0, None)
+        self.assertTrue(prev_disabled)
+        self.assertTrue(next_disabled)
+        # the only batch cannot be removed
+        self.assertTrue(remove_disabled)
+
+    def test_next_batch(self):
+        self.assertEqual(self.presenter.next_batch(1, 0), 1)
+
+    def test_next_batch_at_end(self):
+        self.assertEqual(self.presenter.next_batch(1, 2), no_update)
+
+    def test_previous_batch(self):
+        self.assertEqual(self.presenter.previous_batch(1, 2), 1)
+
+    def test_previous_batch_at_start(self):
+        self.assertEqual(self.presenter.previous_batch(1, 0), no_update)
+
+    def test_step_needs_new_click(self):
+        self.assertEqual(self.presenter.next_batch(1, 0), 1)
         # Dash re-triggering the callback is not a new click
-        self.assertEqual(self.presenter.select_batch(1, 1), no_update)
-        self.assertEqual(self.presenter.select_batch(1, 2), 1)
+        self.assertEqual(self.presenter.next_batch(1, 1), no_update)
+        self.assertEqual(self.presenter.next_batch(2, 1), 2)
 
-    def test_add_batch_needs_new_click(self):
-        self.presenter.add_batch(1)
-        self.assertEqual(self.presenter.add_batch(1), (no_update,) * 4)
-        self.assertEqual(self.presenter.num_batches, NUM_BATCHES + 1)
-        self.presenter.add_batch(2)
-        self.assertEqual(self.presenter.num_batches, NUM_BATCHES + 2)
-
-    def test_select_removed_batch(self):
-        self.assertEqual(self.presenter.select_batch(9), no_update)
+    def test_next_batch_skips_removed_keys(self):
+        self.presenter.remove_batch(None, 1)
+        self.assertEqual(self.presenter.next_batch(1, 0), 2)
 
     def test_show_batch(self):
-        styles, active = self.presenter.show_batch(1)
-        self.assertEqual(active, [False, True, False])
-        self.assertEqual(styles, [{'display': 'none'}, None,
-                                  {'display': 'none'}])
+        self.assertEqual(self.presenter.show_batch(1),
+                         [{'display': 'none'}, None, {'display': 'none'}])
 
     def test_add_batch(self):
-        nav, panes, active, keys = self.presenter.add_batch(1)
+        panes, active, keys = self.presenter.add_batch(1)
 
         self.assertEqual(self.presenter.num_batches, NUM_BATCHES + 1)
         self.assertEqual(len(self.data), NUM_BATCHES + 1)
         self.assertEqual(keys, [0, 1, 2, 3])
         # the new batch is made active
         self.assertEqual(active, 3)
-        self.assertEqual(patch_operations(nav), [('Append', [])])
-        self.assertEqual(patch_operations(panes), [('Append', [])])
+        # the other batches are hidden in the same change
+        self.assertEqual(patch_operations(panes),
+                         [('Assign', [0, 'props', 'style']),
+                          ('Assign', [1, 'props', 'style']),
+                          ('Assign', [2, 'props', 'style']),
+                          ('Append', [])])
+        self.assertEqual(patch_values(panes)[:3], [{'display': 'none'}] * 3)
 
         new = self.presenter._filters[-1]
         self.assertEqual(new.batch, NUM_BATCHES)
@@ -376,22 +425,29 @@ class BatchTabsTest(TestHelper):
         self.assertEqual(list(self.data._dict(3)['time_filters']),
                          ['filter 1'])
 
+    def test_add_batch_needs_new_click(self):
+        self.presenter.add_batch(1)
+        self.assertEqual(self.presenter.add_batch(1), (no_update,) * 3)
+        self.assertEqual(self.presenter.num_batches, NUM_BATCHES + 1)
+
     def test_add_batch_no_data(self):
         presenter = ControlPanePresenter()
-        presenter.add_batch(1)
+        presenter.add_batch()
         self.assertEqual(presenter.batch_keys, [0, 1])
 
     def test_remove_batch(self):
         self.data.add_time_filter(2, 'last', 0.1, 0.2)
 
-        nav, panes, active, keys = self.presenter.remove_batch(1, 0)
+        panes, active, keys = self.presenter.remove_batch(1, 1)
 
         self.assertEqual(keys, [0, 2])
         self.assertEqual(len(self.data), NUM_BATCHES - 1)
-        # the active batch is unchanged
-        self.assertEqual(active, 0)
-        self.assertEqual(patch_operations(nav), [('Delete', [1])])
-        self.assertEqual(patch_operations(panes), [('Delete', [1])])
+        # the next batch becomes active
+        self.assertEqual(active, 2)
+        # the new active batch is shown in the same change
+        self.assertEqual(patch_operations(panes),
+                         [('Delete', [1]), ('Assign', [1, 'props', 'style'])])
+        self.assertEqual(patch_values(panes), [None, None])
 
         # the last batch has moved down, but keeps its IDs
         last = self.presenter._filters[1]
@@ -401,55 +457,49 @@ class BatchTabsTest(TestHelper):
                          {'type': 'time-table', 'batch': 2})
         self.assertEqual(list(last._time.batch_filters), ['last'])
 
-    def test_remove_active_batch(self):
-        _, _, active, _ = self.presenter.remove_batch(1, 1)
-        # the next batch becomes active
-        self.assertEqual(active, 2)
-
-    def test_remove_last_active_batch(self):
-        _, _, active, _ = self.presenter.remove_batch(2, 2)
+    def test_remove_last_batch(self):
+        panes, active, _ = self.presenter.remove_batch(1, 2)
         # there is no next batch, so the previous one becomes active
         self.assertEqual(active, 1)
+        self.assertEqual(patch_operations(panes),
+                         [('Delete', [2]), ('Assign', [1, 'props', 'style'])])
+
+    def test_remove_batch_needs_new_click(self):
+        self.presenter.remove_batch(1, 2)
+        self.assertEqual(self.presenter.remove_batch(1, 1), (no_update,) * 3)
+        self.assertEqual(self.presenter.num_batches, NUM_BATCHES - 1)
 
     def test_remove_unknown_batch(self):
-        self.assertEqual(self.presenter.remove_batch(9, 0),
-                         (no_update,) * 4)
+        self.assertEqual(self.presenter.remove_batch(1, 9), (no_update,) * 3)
         self.assertEqual(self.presenter.num_batches, NUM_BATCHES)
 
     def test_remove_only_batch(self):
         presenter = ControlPanePresenter()
         with self.assertRaises(GUIError):
-            presenter.remove_batch(0, 0)
+            presenter.remove_batch(1, 0)
         self.assertEqual(presenter.num_batches, 1)
 
     def test_remove_then_add_batch(self):
-        self.presenter.remove_batch(1, 0)
-        _, _, _, keys = self.presenter.add_batch(1)
+        self.presenter.remove_batch(None, 1)
+        _, _, keys = self.presenter.add_batch()
         # keys are not reused, so the IDs stay unique
         self.assertEqual(keys, [0, 2, 3])
         self.assertEqual(self.presenter._filters[-1].batch, 2)
 
+    def test_remove_renumbers_options(self):
+        self.presenter.remove_batch(None, 0)
+        self.assertEqual(self.presenter.batch_options(),
+                         [{'label': 'Batch 0', 'value': 1},
+                          {'label': 'Batch 1', 'value': 2}])
+
     def test_remove_batch_stops_its_callbacks(self):
         removed = self.presenter._filters[1]._time
         self.assertIs(registered(removed), removed)
-        self.presenter.remove_batch(1, 0)
+        self.presenter.remove_batch(None, 1)
         self.assertIsNone(registered(removed))
 
-    def test_relabel(self):
-        self.presenter.remove_batch(0, 0)
-        labels, styles, close = self.presenter.relabel([1, 2])
-        self.assertEqual(labels, ['Batch 0', 'Batch 1'])
-        self.assertEqual([style['color'] for style in styles],
-                         [batch_colour(0), batch_colour(1)])
-        self.assertEqual(close, [{'cursor': 'pointer'}] * 2)
-
-    def test_relabel_hides_remove_for_only_batch(self):
-        presenter = ControlPanePresenter()
-        _, _, close = presenter.relabel([0])
-        self.assertEqual(close, [{'display': 'none'}])
-
     def test_make_plot_after_remove(self):
-        self.presenter.remove_batch(0, 0)
+        self.presenter.remove_batch(None, 0)
         self.presenter._plot = mock.Mock()
         self.presenter.add_filter_shading = mock.Mock()
         self.presenter.make_plot(tables()[:2], tables()[:2],

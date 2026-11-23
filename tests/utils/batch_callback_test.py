@@ -15,7 +15,6 @@ from MNeuEventGUI.utils.batch_callback import (
     registered,
     to_batch_order,
     to_page_order,
-    triggered_batch,
     unregister_batch,
 )
 
@@ -92,24 +91,6 @@ class BatchCallbackTest(unittest.TestCase):
         ctx = context(outputs=[{'id': 'plot', 'property': 'figure'}])
         with mock.patch(CTX, ctx):
             self.assertIsNone(current_batch())
-
-    def test_triggered_batch(self):
-        ctx = context(triggered_id=batch_id('close', 2),
-                      triggered=[{'value': 1}])
-        with mock.patch(CTX, ctx):
-            self.assertEqual(triggered_batch(), (2, 1))
-
-    def test_triggered_batch_not_clicked(self):
-        # a component that has just been created
-        ctx = context(triggered_id=batch_id('close', 2),
-                      triggered=[{'value': 0}])
-        with mock.patch(CTX, ctx):
-            self.assertEqual(triggered_batch(), (None, 0))
-
-    def test_triggered_batch_not_a_batch(self):
-        ctx = context(triggered_id='add', triggered=[{'value': 1}])
-        with mock.patch(CTX, ctx):
-            self.assertEqual(triggered_batch(), (None, 0))
 
     def test_dispatch_shared_presenter(self):
         presenter = SharedPresenter()
