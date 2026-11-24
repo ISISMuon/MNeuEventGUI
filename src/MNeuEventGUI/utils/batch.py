@@ -1,3 +1,5 @@
+import os
+
 from dash import ALL, MATCH, no_update
 from plotly.colors import qualitative
 
@@ -84,3 +86,17 @@ def active_batch_only(value, active, num_batches):
     values = per_batch(no_update, num_batches)
     values[active] = value
     return values
+
+
+def batch_file_names(file, num_batches):
+    """
+    Gets the names of the files that are saved for
+    each batch, which have the batch index added
+    before the extension (e.g. out.nxs becomes
+    out_0.nxs, out_1.nxs, ...).
+    :param file: the name of the file to save to
+    :param num_batches: the number of batches
+    :returns: the name of the file for each batch
+    """
+    stem, ext = os.path.splitext(file)
+    return [f'{stem}_{index}{ext}' for index in range(num_batches)]

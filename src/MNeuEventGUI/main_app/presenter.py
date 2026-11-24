@@ -3,7 +3,11 @@ from dash import no_update
 from MNeuEventGUI.control_pane.presenter import ControlPanePresenter
 from MNeuEventGUI.load_bar.presenter import LoadBarPresenter
 from MNeuEventGUI.save_bar.presenter import SaveBarPresenter
-from MNeuEventGUI.utils.batch import INITIAL_BATCHES, per_batch
+from MNeuEventGUI.utils.batch import (
+    INITIAL_BATCHES,
+    batch_file_names,
+    per_batch,
+)
 from MNeuEventGUI.utils.errors import GUIError
 
 
@@ -90,7 +94,8 @@ class MainAppPresenter:
         :param name: a string of the data type (json
         or nexus) and the name of the file to save to.
         :param active: the key of the active batch
-        :returns: the name of the saved file
+        :returns: the name of the saved file (for nexus, the
+        names of the files for each batch, separated by commas)
         :raises GUIError: if the data cannot be saved
         """
         data = self.load.get_data
@@ -99,17 +104,26 @@ class MainAppPresenter:
         dtype = name[0]
         file = name[1:]
 
-        print("saving to ", file)
+        if dtype == 'j':
+            # checked first, so a removed batch is not reported
+            # as a failure to save
+            index = self.control.active_index(active)
+        saved = file
+        if dtype == 'n':
+            # a separate file for each batch, with its index
+            saved = ', '.join(batch_file_names(file,
+                                               self.control.num_batches))
+
+        print("saving to ", saved)
         try:
             if dtype == "n":
-                # a separate file for each batch
                 data.save('all', file, nexus_v3=False)
             elif dtype == 'j':
-                data.save_filters(self.control.index_of(active), file)
+                data.save_filters(index, file)
         except Exception as error:
             raise GUIError(f'The data could not be '
-                           f'saved to {file}.') from error
-        return file
+                           f'saved to {saved}.') from error
+        return saved
 
     def plot(self):
         """

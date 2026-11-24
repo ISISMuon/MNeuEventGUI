@@ -8,6 +8,7 @@ from dash.exceptions import PreventUpdate
 from MNeuEventGUI.utils import batch_callback
 from MNeuEventGUI.utils.batch import all_batches, batch_id
 from MNeuEventGUI.utils.batch_callback import (
+    clear_registry,
     current_batch,
     dispatch,
     ordered_callback,
@@ -121,6 +122,22 @@ class BatchCallbackTest(unittest.TestCase):
         specs = [spec('t', 2), spec('t', 0), spec('t', 1)]
         self.assertEqual(to_batch_order(['c', 'a', 'b'], specs, [0, 1, 2]),
                          ['a', 'b', 'c'])
+
+    def test_to_batch_order_missing_batch(self):
+        # a batch that has been added but is not on the page yet
+        specs = [spec('t', 0)]
+        with self.assertRaises(PreventUpdate):
+            to_batch_order(['a'], specs, [0, 1])
+
+    def test_to_batch_order_extra_batch(self):
+        # a batch that has been removed but is still on the page
+        specs = [spec('t', 1), spec('t', 0)]
+        self.assertEqual(to_batch_order(['b', 'a'], specs, [0]), ['a'])
+
+    def test_clear_registry(self):
+        register(FakePresenter(0))
+        clear_registry()
+        self.assertIsNone(registered(FakePresenter(0)))
 
     def test_to_page_order(self):
         specs = [spec('t', 2), spec('t', 0), spec('t', 1)]

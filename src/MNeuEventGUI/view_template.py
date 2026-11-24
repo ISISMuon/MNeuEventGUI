@@ -1,6 +1,8 @@
 from MNeuEventGUI.utils.batch_callback import register
 
-# the batch views that have had their callbacks registered
+# the batch views that have had their callbacks registered. This is
+# kept for the whole process, as Dash callbacks are global (so a new
+# control pane reuses them, see batch_callback.clear_registry)
 _REGISTERED_VIEWS = set()
 
 

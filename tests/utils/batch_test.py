@@ -8,6 +8,7 @@ from MNeuEventGUI.utils.batch import (
     active_batch_only,
     all_batches,
     batch_colour,
+    batch_file_names,
     batch_id,
     batch_label,
     matching_batch,
@@ -16,6 +17,10 @@ from MNeuEventGUI.utils.batch import (
 
 
 class BatchUtilsTest(unittest.TestCase):
+
+    def test_batch_file_names(self):
+        self.assertEqual(batch_file_names('/a/out.nxs', 2),
+                         ['/a/out_0.nxs', '/a/out_1.nxs'])
 
     def test_initial_batches(self):
         self.assertEqual(INITIAL_BATCHES, 1)

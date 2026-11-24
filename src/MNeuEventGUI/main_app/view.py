@@ -183,7 +183,7 @@ class MainApp(Dash):
 
         def open_filters(n_clicks, active):
             return active_batch_only(open_json(n_clicks),
-                                     control.index_of(active),
+                                     control.active_index(active),
                                      control.num_batches)
 
         ordered_callback(order,

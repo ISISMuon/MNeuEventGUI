@@ -457,7 +457,10 @@ class MainAppPresenterTest(TestHelper):
         directory = self.make_temp_dir()
         file_name = os.path.join(directory, 'test.nxs')
         name = app.save_data('n' + file_name, 0)
-        self.assertEqual(name, file_name)
+        # the names of the files that are actually written
+        self.assertEqual(name.split(', '),
+                         [os.path.join(directory, f'test_{k}.nxs')
+                          for k in range(app.control.num_batches)])
         return directory
 
     def test_save_nxs(self):
@@ -517,6 +520,16 @@ class MainAppPresenterTest(TestHelper):
 
         data.load_filters(0, file_name)
         self.assertEqual(list(data._dict(0)['time_filters']), ['unit'])
+
+    def test_save_filters_removed_batch(self):
+        app = MainAppPresenter(dummy_open, NUM_BATCHES)
+        _ = app.load_nxs(FILE, EMPTY, EMPTY, DEBUG)
+        app.control.remove_batch(None, 0)
+
+        file_name = os.path.join(self.make_temp_dir(), 'filters.json')
+        with self.assertRaises(GUIError):
+            app.save_data('j' + file_name, 0)
+        self.assertFalse(os.path.exists(file_name))
 
     def test_load_nxs_uses_current_batches(self):
         app = MainAppPresenter(dummy_open)

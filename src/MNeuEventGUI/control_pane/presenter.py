@@ -15,7 +15,10 @@ from MNeuEventGUI.utils.batch import (
     batch_colour,
     batch_label,
 )
-from MNeuEventGUI.utils.batch_callback import unregister_batch
+from MNeuEventGUI.utils.batch_callback import (
+    clear_registry,
+    unregister_batch,
+)
 from MNeuEventGUI.utils.errors import GUIError
 
 
@@ -34,6 +37,9 @@ class ControlPanePresenter(PresenterTemplate):
         :param num_batches: the number of batches to start with
         """
         self._data = None
+        # the keys restart from 0, so forget the
+        # batches of any previous control pane
+        clear_registry()
 
         # the keys for the IDs of each batch's components
         self._keys = count()
@@ -79,6 +85,21 @@ class ControlPanePresenter(PresenterTemplate):
         """
         keys = self.batch_keys
         return keys.index(key) if key in keys else 0
+
+    def active_index(self, key):
+        """
+        Gets the index of the active batch, for actions
+        that change or save a single batch's data (so it
+        must not quietly fall back to another batch).
+        :param key: the key of the active batch
+        :returns: the index of the batch
+        :raises GUIError: if it is not a current batch
+        """
+        keys = self.batch_keys
+        if key not in keys:
+            raise GUIError('The selected batch no longer exists. '
+                           'Please choose a batch and try again.')
+        return keys.index(key)
 
     def _new_click(self, name, n_clicks):
         """
@@ -405,12 +426,24 @@ class ControlPanePresenter(PresenterTemplate):
         A method to calculate the number of
         events that would be used to make
         the histogram for each batch.
+        Dash also runs this when a batch is added or removed
+        (as the ALL input changes), so it only calculates if
+        a calculate button has a new click.
         :param n_clicks: the number of button
-        presses for each calculate button
+        presses for each calculate button, in batch order
         :returns: The number of events to display
         for each batch
+        :raises GUIError: if no data is loaded
         :raises RuntimeError: if the filters cannot be applied
         """
+        # check every button, so all of the counts are kept up to date
+        new_clicks = [self._new_click(f'calc_{key}', clicks)
+                      for key, clicks in zip(self.batch_keys, n_clicks)
+                      if clicks is not None]
+        if not any(new_clicks):
+            return no_update
+        if self._data is None:
+            raise GUIError('Please load a file before calculating.')
         self._data.calculate()
         return [filter_presenter.n_events
                 for filter_presenter in self._filters]

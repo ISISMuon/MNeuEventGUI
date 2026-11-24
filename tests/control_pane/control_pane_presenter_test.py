@@ -260,6 +260,40 @@ class ControlPanePresenterTest(TestHelper):
                           'Events in this batch: 7,944',
                           'Events in this batch: 64,147'])
 
+    def test_calculate_without_new_click(self):
+        # Dash runs it when a batch is added, the new button
+        # has no clicks and the others have not changed
+        self.presenter.calculate([1, None, None])
+        self.presenter.add_batch()
+        data = mock.Mock()
+        self.presenter._data = data
+
+        result = self.presenter.calculate([1, None, None, None])
+        self.assertIs(result, no_update)
+        data.calculate.assert_not_called()
+
+    def test_calculate_after_removing_a_batch(self):
+        data = mock.Mock()
+        self.presenter._data = data
+        self.presenter.calculate([None, 2, None])
+        self.presenter.remove_batch(None, 0)
+        data.calculate.reset_mock()
+
+        # the counts follow the batch, not its index
+        self.assertIs(self.presenter.calculate([2, None]), no_update)
+        self.presenter.calculate([2, 1])
+        data.calculate.assert_called_once()
+
+    def test_calculate_new_batch_with_no_data(self):
+        self.presenter.clear()
+        self.presenter.add_batch()
+        self.assertIs(self.presenter.calculate([None] * 4), no_update)
+
+    def test_calculate_click_with_no_data(self):
+        self.presenter.clear()
+        with self.assertRaises(GUIError):
+            self.presenter.calculate([1, None, None])
+
     def test_calculate_with_error(self):
         data = mock.Mock()
         data.calculate.side_effect = RuntimeError("mock throw")
@@ -340,6 +374,22 @@ class BatchControlsTest(TestHelper):
 
     def test_index_of_unknown(self):
         self.assertEqual(self.presenter.index_of(None), 0)
+
+    def test_active_index(self):
+        self.assertEqual(self.presenter.active_index(2), 2)
+
+    def test_active_index_unknown(self):
+        # e.g. a batch that has just been removed
+        with self.assertRaises(GUIError):
+            self.presenter.active_index(7)
+
+    def test_new_presenter_forgets_old_batches(self):
+        old = self.presenter._filters[2]
+        self.assertIs(registered(old), old)
+        new = ControlPanePresenter(1)
+        # the new control pane only has batch 0
+        self.assertIsNone(registered(old))
+        self.assertIs(registered(new._filters[0]), new._filters[0])
 
     def test_batch_options(self):
         self.assertEqual(self.presenter.batch_options(),

@@ -20,7 +20,9 @@ leaves the other batches' components untouched.
 Callbacks that use every batch (ALL) get their values in page order,
 which is not reliably batch order. ordered_callback reorders the ALL
 inputs into batch order, and the ALL outputs back into page order,
-so presenters can use the batch index.
+so presenters can use the batch index. Just after a batch is added,
+the page may not have its components yet; ordered_callback skips the
+callback then, as there are no values for that batch.
 """
 from dash import callback, ctx, no_update
 from dash.exceptions import PreventUpdate
@@ -45,6 +47,19 @@ def register(presenter):
     :param presenter: the presenter (for a batch)
     """
     _REGISTRY.setdefault(_kind(presenter), {})[presenter.key] = presenter
+
+
+def clear_registry():
+    """
+    Forgets every batch's presenters. Batch keys start
+    from 0 for each control pane, so this is used when a
+    new one is made, otherwise its batches would be mixed
+    with the old one's. The Dash callbacks are global and
+    stay registered, so after this they are passed on to
+    the new control pane's batches: only one control pane
+    is in use at a time.
+    """
+    _REGISTRY.clear()
 
 
 def unregister_batch(key):
@@ -139,9 +154,13 @@ def to_batch_order(value, specs, order):
     :param specs: the matched components, in page order
     :param order: the batch keys, in batch order
     :returns: the values, in batch order
+    :raises PreventUpdate: if a batch is not on the page yet
+    (it has just been added), as there is no value for it
     """
     by_key = dict(zip(_keys(specs), value))
-    return [by_key.get(key) for key in order]
+    if any(key not in by_key for key in order):
+        raise PreventUpdate
+    return [by_key[key] for key in order]
 
 
 def to_page_order(value, specs, order):
