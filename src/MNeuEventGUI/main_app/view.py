@@ -2,15 +2,14 @@ import dash
 import dash_bootstrap_components as dbc
 from dash import Dash, Input, Output, State, callback, dcc, html
 
-from MNeuEventGUI.control_pane.view import ACTIVE
+from MNeuEventGUI.filters.view import FILTER_FILE
 from MNeuEventGUI.log.presenter import LOG_TABLE
 from MNeuEventGUI.main_app.presenter import MainAppPresenter
 from MNeuEventGUI.plot_area.view import PLOT
 from MNeuEventGUI.table.view import ADD
 from MNeuEventGUI.time.presenter import TIME_TABLE
 from MNeuEventGUI.time.view import DROPDOWN
-from MNeuEventGUI.utils.batch import active_batch_only, all_batches
-from MNeuEventGUI.utils.batch_callback import ordered_callback
+from MNeuEventGUI.utils.batch import ACTIVE
 from MNeuEventGUI.utils.errors import (
     DETAILS_BTN,
     DETAILS_COLLAPSE,
@@ -118,35 +117,23 @@ class MainApp(Dash):
         # Plots the data after it is loaded. A new file means a new
         # data object, so the filters and settings are read back
         # from it, to keep the GUI and the data in step.
-        # This updates every batch.
-        order = self.presenter.control.order
-        ordered_callback(order,
-                 [Output('main_plot', 'figure'),
-                  Output(all_batches(TIME_TABLE), 'rowData',
+        callback([Output('main_plot', 'figure'),
+                  Output(TIME_TABLE, 'rowData', allow_duplicate=True),
+                  Output(TIME_TABLE + ADD, 'disabled'),
+                  Output(LOG_TABLE, 'rowData', allow_duplicate=True),
+                  Output(LOG_TABLE + ADD, 'disabled'),
+                  Output('Amp', 'value', allow_duplicate=True),
+                  Output(TIME_TABLE + DROPDOWN, 'value',
                          allow_duplicate=True),
-                  Output(all_batches(TIME_TABLE + ADD), 'disabled'),
-                  Output(all_batches(LOG_TABLE), 'rowData',
-                         allow_duplicate=True),
-                  Output(all_batches(LOG_TABLE + ADD), 'disabled'),
-                  Output(all_batches('Amp'), 'value',
-                         allow_duplicate=True),
-                  Output(all_batches(TIME_TABLE + DROPDOWN), 'value',
-                         allow_duplicate=True),
-                  Output(all_batches('min-time'), 'value',
-                         allow_duplicate=True),
-                  Output(all_batches('max-time'), 'value',
-                         allow_duplicate=True),
-                  Output(all_batches('num-bins'), 'value',
-                         allow_duplicate=True),
-                  Output(all_batches(TIME_TABLE), 'columnDefs',
-                         allow_duplicate=True),
-                  Output(all_batches('amp' + PLOT), 'figure'),
-                  Output(all_batches('N_events'), 'children',
-                         allow_duplicate=True)],
-                 [Input('file_name', 'children')],
-                 [State(all_batches(TIME_TABLE), 'rowData'),
-                  State(all_batches(LOG_TABLE), 'rowData'),
-                  State('debug', 'on')],
+                  Output('min-time', 'value', allow_duplicate=True),
+                  Output('max-time', 'value', allow_duplicate=True),
+                  Output('num-bins', 'value', allow_duplicate=True),
+                  Output(TIME_TABLE, 'columnDefs', allow_duplicate=True),
+                  Output('amp' + PLOT, 'figure'),
+                  Output('N_events', 'children', allow_duplicate=True)],
+                 Input('file_name', 'children'),
+                 [State('debug', 'on'),
+                  State(ACTIVE, 'value')],
                  prevent_initial_call=True)(self.presenter.load_nxs)
 
         # Turns on debug mode
@@ -163,9 +150,7 @@ class MainApp(Dash):
         callback([Output('load_confirm', 'displayed'),
                   Output('load_confirm', 'submit_n_clicks')],
                  Input('Load', 'n_clicks'),
-                 [State(all_batches(TIME_TABLE), 'rowData'),
-                  State(all_batches(LOG_TABLE), 'rowData'),
-                  State('load_confirm', 'submit_n_clicks')],
+                 State('load_confirm', 'submit_n_clicks'),
                  prevent_initial_call=True)(self.presenter.confirm_load)
 
         """
@@ -178,19 +163,10 @@ class MainApp(Dash):
                  State('file_name', 'children'),
                  prevent_initial_call=True)(self.presenter.open_nxs)
 
-        # open a json filter file, for the active batch
-        control = self.presenter.control
-
-        def open_filters(n_clicks, active):
-            return active_batch_only(open_json(n_clicks),
-                                     control.active_index(active),
-                                     control.num_batches)
-
-        ordered_callback(order,
-                 Output(all_batches('title_test'), 'children'),
-                 [Input('load_filters', 'n_clicks')],
-                 [State(ACTIVE, 'value')],
-                 prevent_initial_call=True)(open_filters)
+        # open a json filter file (it is loaded into the active batch)
+        callback(Output(FILTER_FILE, 'data'),
+                 Input('load_filters', 'n_clicks'),
+                 prevent_initial_call=True)(open_json)
 
         # open file browser on save (nxs and json)
         callback(

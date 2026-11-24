@@ -7,7 +7,23 @@ from MNeuEventGUI.histogram_settings.presenter import HistSettingsPresenter
 from MNeuEventGUI.log.presenter import LOG_TABLE, LogPresenter
 from MNeuEventGUI.presenter_template import PresenterTemplate
 from MNeuEventGUI.time.presenter import TIME_TABLE, TimePresenter
+from MNeuEventGUI.utils.batch import INITIAL_BATCHES
 from MNeuEventGUI.utils.errors import GUIError
+
+
+def new_batch_state():
+    """
+    :returns: the state of the widgets for a new batch
+    that is not kept in the data
+    """
+    # file: the name of the loaded filter file ('' if none),
+    # time/log/amp: the filters the file had, so we know if
+    # the batch still matches it,
+    # n_events: the number of events when it was last calculated
+    # (None if the filters have changed since). This is kept
+    # because the data's results are reset when any batch changes.
+    return {'file': '', 'time': [], 'log': [], 'amp': 0,
+            'n_events': None}
 
 
 class FilterPresenter(PresenterTemplate):
@@ -15,25 +31,37 @@ class FilterPresenter(PresenterTemplate):
     A class for the filter widget's presenter.
     This code follows the MVP template,
     note that the model is MNeuEventLib's BatchData class.
+
+    The widgets are shared by all of the batches and show
+    the active batch, so the callbacks are given the index
+    of the active batch (see utils/batch.py).
     """
-    def __init__(self, batch):
+    def __init__(self, num_batches=INITIAL_BATCHES):
         """
         Create the presenter.
-        Hold a copy of:
-        - time filter table
-        :param batch: the index of the batch the
-        filters are for
+        :param num_batches: the number of batches to start with
         """
-        self.batch = batch
-        self._time = TimePresenter(batch)
-        self._log = LogPresenter(batch)
-        self._amp = AmpPresenter(batch)
-        self._hist_settings = HistSettingsPresenter(batch)
+        self._time = TimePresenter()
+        self._log = LogPresenter()
+        self._amp = AmpPresenter()
+        self._hist_settings = HistSettingsPresenter()
         self._view = FilterView(self)
         self._data = None
-        self._time_file_data = []
-        self._log_file_data = []
-        self._amp_file_data = 0
+        self._batches = [new_batch_state() for _ in range(num_batches)]
+
+    def add_batch(self):
+        """
+        Adds the widget state for a new batch, after
+        the existing ones.
+        """
+        self._batches.append(new_batch_state())
+
+    def remove_batch(self, index):
+        """
+        Removes the widget state for a batch.
+        :param index: the index of the batch
+        """
+        del self._batches[index]
 
     def show_file(self,
                   name,
@@ -42,7 +70,8 @@ class FilterPresenter(PresenterTemplate):
                   amp_data,
                   min_time,
                   max_time,
-                  num_bins):
+                  num_bins,
+                  batch):
         """
         If to display the name of the loaded
         filter file. This method checks
@@ -55,16 +84,22 @@ class FilterPresenter(PresenterTemplate):
         :param log_data: the log data for the
         log filter table
         :param amp_data: The amplitude filter data
+        :param min_time: the histogram's minimum time
+        :param max_time: the histogram's maximum time
+        :param num_bins: the histogram's number of bins
+        :param batch: the index of the active batch
         :returns: if to hide the name in the GUI
         """
-        if self._data is None:
+        if self._data is None or not name:
             return True
 
-        hist_settings = self._data._dict(self.batch)["hist_settings"]
+        state = self._batches[batch]
+        hist_settings = self._data._dict(batch)["hist_settings"]
         # the data stores times in ns, the GUI uses microseconds
-        return not (self._time_file_data == time_data
-            and self._log_file_data == log_data
-            and self._amp_file_data == float(amp_data)
+        return not (state['time'] == time_data
+            and state['log'] == log_data
+            and amp_data is not None and amp_data != ''
+            and state['amp'] == float(amp_data)
             and hist_settings["min_time"] / 1e3 == min_time
             and hist_settings["max_time"] / 1e3 == max_time
             and hist_settings["n_bins"] == num_bins)
@@ -86,41 +121,43 @@ class FilterPresenter(PresenterTemplate):
         """
         return self._view.no_events_str
 
-    @property
-    def _batch_presenters(self):
+    def n_events_text(self, batch):
         """
-        :returns: this presenter and all of the
-        presenters it contains
+        Gets the number of events for a batch, if it
+        is up to date.
+        :param batch: the index of the batch
+        :returns: the number of events component
         """
-        return [self, self._time, self._log, self._log._plot,
-                self._amp, self._amp._plot, self._hist_settings]
+        n_events = self._batches[batch]['n_events']
+        return self.no_events_str if n_events is None else n_events
 
-    def set_index(self, index):
+    def uncount(self, batch):
         """
-        Sets the index of the batch in the data (e.g.
-        after an earlier batch has been removed), for this
-        presenter and all of the presenters it contains.
-        The IDs of the components do not change.
-        :param index: the new index of the batch
+        Marks a batch's number of events as out of date,
+        because its filters have changed.
+        :param batch: the index of the batch
+        :returns: the string for no events
         """
-        for presenter in self._batch_presenters:
-            PresenterTemplate.set_index(presenter, index)
+        self._batches[batch]['n_events'] = None
+        return self.no_events_str
 
-    def fill(self, _):
+    def fill(self, active, num_batches=None):
         """
-        Gets the values for a batch's widgets when they
-        are first shown. A batch that is added after a
-        file is loaded has to show the data's values
-        and be editable.
+        Gets the values for the widgets when the active
+        batch changes (or a batch is added or removed).
+        :param active: the index of the active batch
+        :param num_batches: the number of batches (only
+        used so this is updated when it changes)
         :returns: the values for the filters and settings
-        (see read_values), if the add buttons are disabled
-        (time then log) and the amplitude plot
+        (see values), the name of the batch's filter file
+        and the number of events
         :raises PreventUpdate: if there is no data
         """
         if self._data is None:
             raise PreventUpdate
-        return (*self.refresh(), False, False,
-                self._amp.plot(self._data))
+        return (*self.values(active),
+                self._batches[active]['file'],
+                self.n_events_text(active))
 
     def set_data(self, data):
         """
@@ -132,6 +169,9 @@ class FilterPresenter(PresenterTemplate):
         self._log.set_data(data)
         self._amp.set_data(data)
         self._hist_settings.set_data(data)
+        # the numbers of events were for the old data
+        for batch in range(len(self._batches)):
+            self.uncount(batch)
 
     def clear(self):
         """
@@ -144,37 +184,20 @@ class FilterPresenter(PresenterTemplate):
         self._amp.data = None
         self._hist_settings.data = None
 
-    def read_filters(self) -> tuple:
+    def values(self, batch) -> tuple:
         """
-        Read the filter tables with the data from the Data object.
-        """
-        data = self._data._dict(self.batch)
-
-        # note we convert min_time and max_time to microseconds
-        return self.load(data)
-
-    def refresh(self) -> tuple:
-        """
-        Get the GUI values for the filters and settings
-        currently in the Data object.
-        :returns: the values for the filters and settings
-        (see read_values)
-        """
-        return self.read_values(self._data._dict(self.batch))
-
-    def read_values(self, filters: dict) -> tuple:
-        """
-        Get the GUI values for a set of filters, as reported
-        by a Data object.
-        :param filters: the filter data
+        Get the GUI values for a batch's filters and
+        settings, from the Data object.
+        :param batch: the index of the batch
         :returns: the time filters, the sample log filters,
         the amplitude filter, if to include/exclude the time
         filters, the histogram settings (minimum time, maximum
         time and number of bins) and the table headers
         """
+        filters = self._data._dict(batch)
         state = filters["time_filter_type"]
         time_data = self._time.load(filters["time_filters"])
-        self._time.set_state(state)
+        self._time.show_state(state)
 
         log_data = self._log.load(filters["sample_log_filters"])
         amp_data = self._amp.load(filters["amplitudes"])
@@ -184,6 +207,45 @@ class FilterPresenter(PresenterTemplate):
 
         return (time_data, log_data, amp_data, state,
                 min_time, max_time, num_bins, self.headers)
+
+    def has_filters(self):
+        """
+        :returns: if any batch has a time or sample log filter
+        """
+        if self._data is None:
+            return False
+        for batch in range(len(self._batches)):
+            filters = self._data._dict(batch)
+            if filters['time_filters'] or filters['sample_log_filters']:
+                return True
+        return False
+
+    def edit_amp(self, value, batch):
+        """
+        Sets the amplitude baseline for a batch.
+        :param value: the amplitude baseline
+        :param batch: the index of the active batch
+        :returns: the number of events string, which is
+        cleared if the baseline changed
+        """
+        if self._amp.edit_baseline(value, batch):
+            return self.uncount(batch)
+        return no_update
+
+    def edit_hist_settings(self, min_time, max_time, num_bins, batch):
+        """
+        Sets the histogram settings for a batch.
+        :param min_time: the histogram's minimum time
+        :param max_time: the histogram's maximum time
+        :param num_bins: the histogram's number of bins
+        :param batch: the index of the active batch
+        :returns: the number of events string, which is
+        cleared if the settings changed
+        """
+        if self._hist_settings.set_values(min_time, max_time,
+                                          num_bins, batch):
+            return self.uncount(batch)
+        return no_update
 
     def get_log_y_range(self, row_log):
         """
@@ -211,60 +273,74 @@ class FilterPresenter(PresenterTemplate):
 
         return row_log['y_min_log-table'], row_log['y_max_log-table']
 
-    @property
-    def n_events(self):
+    def n_events(self, batch):
         """
         Gets the GUI component for the number of
         events in the calculated histogram for
-        this batch.
+        a batch.
+        :param batch: the index of the batch
         :returns: the number of events component
         """
-        N = f"{self._data.get_n_events(self.batch)[0]:,}"
+        N = f"{self._data.get_n_events(batch)[0]:,}"
         return self._view.get_N(N)
 
-    def load_filter_file(self, name):
+    def calculate(self, n_clicks, batch):
+        """
+        A method to calculate the number of
+        events that would be used to make
+        the histogram for each batch.
+        :param n_clicks: the number of clicks of the
+        calculate button
+        :param batch: the index of the active batch
+        :returns: The number of events to display
+        for the active batch
+        :raises GUIError: if no data is loaded
+        :raises RuntimeError: if the filters cannot be applied
+        """
+        if self._data is None:
+            raise GUIError('Please load a file before calculating.')
+        self._data.calculate()
+        for index, state in enumerate(self._batches):
+            state['n_events'] = self.n_events(index)
+        return self.n_events_text(batch)
+
+    def load_filter_file(self, name, batch):
         """
         Loads the filters from a file into
-        this batch.
+        the active batch.
         :param name: the name of the json file
+        :param batch: the index of the active batch
         :returns: the values for the filters and settings
-        (see read_values)
+        (see values), the name of the file and the
+        number of events
         :raises GUIError: if the filter file cannot be read
         """
-        if name == 'None':
-            return (no_update,) * 8
+        if not name or name == 'None':
+            return (no_update,) * 10
         try:
-            self._data.load_filters(self.batch, name)
-            return self.read_filters()
+            self._data.load_filters(batch, name)
+            values = self.values(batch)
         except Exception as error:
             raise GUIError(f'The filter file {name} '
                            f'could not be loaded.') from error
 
-    def load(self, filters: dict):
-        """
-        Loads the filters that have been reported from a Filters json.
-        :param filters: the JSON filter data
-        :returns: the values for the filters and settings
-        (see read_values)
-        """
-        values = self.read_values(filters)
-
         # record the file's values, so we know if the GUI
         # still matches the file that was loaded
-        (self._time_file_data,
-         self._log_file_data,
-         self._amp_file_data) = values[:3]
-
+        state = self._batches[batch]
+        state['file'] = name
+        state['time'], state['log'], state['amp'] = values[:3]
         print('loading filters ....')
-        return values
+        return (*values, name, self.uncount(batch))
 
-    def update_N_events(self, update: list[dict], current_str: str) -> str:
+    def update_N_events(self, update: list[dict], current_str: str,
+                        batch) -> str:
         """
         Update the events string when the filters are updated.
         Expects update data in the form returned by
         the Dash cellValueChanged property.
         :param update: The filter update data.
         :param current_str: The current string for the number of events.
+        :param batch: the index of the active batch
         :returns: The string to display for the number of events.
         """
         # I'm not sure if it's even possible
@@ -284,7 +360,7 @@ class FilterPresenter(PresenterTemplate):
                                       ]
 
             if update_required:
-                return self._view.no_events_str
+                return self.uncount(batch)
 
         return current_str
 

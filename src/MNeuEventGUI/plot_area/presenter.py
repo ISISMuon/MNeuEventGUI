@@ -14,7 +14,7 @@ class PlotAreaPresenter(PresenterTemplate):
     This follows the MVP pattern.
     """
 
-    def __init__(self, ID, batch=None):
+    def __init__(self, ID):
         """
         Creates a Plot Area Presenter.
         This widget deals with plotly.
@@ -22,11 +22,8 @@ class PlotAreaPresenter(PresenterTemplate):
         way to tell them apart.
         :param ID: the ID (unique name) for
         the plot presenter.
-        :param batch: the index of the batch the
-        plot is for (None if shared by all batches)
         """
         self.ID = ID
-        self.batch = batch
         self._view = PlotAreaView(self)
         self.reset_plot_range()
         self.fig = None

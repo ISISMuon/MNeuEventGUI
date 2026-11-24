@@ -35,10 +35,7 @@ class GUIError(Exception):
         """
         :param msg: the message to show the user
         :param revert: a dict of component ID to a dict
-        of the props to set on that component. Pattern
-        matching IDs are dicts, which cannot be keys, so
-        a list of (component ID, props) pairs can be used
-        instead.
+        of the props to set on that component
         """
         super().__init__(msg)
         self.revert = revert or {}
@@ -121,10 +118,7 @@ def display_error(err):
     """
     msg = UNEXPECTED_MSG
     if isinstance(err, GUIError):
-        revert = err.revert
-        if isinstance(revert, dict):
-            revert = revert.items()
-        for component_id, props in revert:
+        for component_id, props in err.revert.items():
             set_props(component_id, props)
         msg = str(err)
 

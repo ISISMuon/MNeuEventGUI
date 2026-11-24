@@ -2,7 +2,7 @@ import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 from dash import Input, Output, State, callback, dcc, html
 
-from MNeuEventGUI.utils.batch_callback import dispatch
+from MNeuEventGUI.utils.batch import ACTIVE
 from MNeuEventGUI.view_template import ViewTemplate
 
 # suffixes for the IDs of the table's components
@@ -42,16 +42,18 @@ class TableView(ViewTemplate):
         Set the callbacks for the GUI.
         :param presenter: the presenter for the GUI
         """
-        table = presenter.callback_id()
+        table = presenter.component_id()
         callback(Output(table, 'rowData', allow_duplicate=True),
                  Input(table, 'cellValueChanged'),
-                 State(table, 'virtualRowData'),
-                 prevent_initial_call=True)(dispatch(presenter.validate))
+                 [State(table, 'virtualRowData'),
+                  State(ACTIVE, 'value')],
+                 prevent_initial_call=True)(presenter.validate)
 
         callback(Output(table, 'rowData', allow_duplicate=True),
                  Input(table, 'cellValueChanged'),
-                 State(table, 'virtualRowData'),
-                 prevent_initial_call=True)(dispatch(presenter.edit_row))
+                 [State(table, 'virtualRowData'),
+                  State(ACTIVE, 'value')],
+                 prevent_initial_call=True)(presenter.edit_row)
 
         self.set_btn_callback(presenter)
         self.set_add_callback(presenter)
@@ -64,11 +66,12 @@ class TableView(ViewTemplate):
         distinguish between the signals.
         :param presenter: the presenter object
         """
-        table = presenter.callback_id()
+        table = presenter.component_id()
         callback(Output(table, "rowData", allow_duplicate=True),
                  Input(table, "cellRendererData"),
-                 State(table, 'virtualRowData'),
-                 prevent_initial_call=True)(dispatch(presenter.delete_row))
+                 [State(table, 'virtualRowData'),
+                  State(ACTIVE, 'value')],
+                 prevent_initial_call=True)(presenter.delete_row)
 
     def set_add_callback(self, presenter):
         """
@@ -76,8 +79,9 @@ class TableView(ViewTemplate):
         can overwrite it if we need to.
         :param presenter: the presenter object
         """
-        callback(Output(presenter.callback_id(), 'rowData',
+        callback(Output(presenter.component_id(), 'rowData',
                         allow_duplicate=True),
-                 Input(presenter.callback_id(ADD), 'n_clicks'),
+                 Input(presenter.component_id(ADD), 'n_clicks'),
+                 State(ACTIVE, 'value'),
                  prevent_initial_call=True
-                 )(lambda _: dispatch(presenter.add)())
+                 )(lambda _, batch: presenter.add(batch))

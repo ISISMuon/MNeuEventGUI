@@ -29,15 +29,9 @@ class PlotAreaPresenterTest(TestHelper):
         self.assertEqual(self.presenter.ID,
                          'plot_test')
 
-    def test_component_id_no_batch(self):
+    def test_component_id(self):
         self.assertEqual(self.presenter.component_id('_plot'),
                          'plot_test_plot')
-
-    def test_component_id_batch(self):
-        presenter = PlotAreaPresenter('amp', batch=2)
-        self.assertEqual(presenter.batch, 2)
-        self.assertEqual(presenter.component_id('_plot'),
-                         {'type': 'amp_plot', 'batch': 2})
 
     def assert_style(self, shape, colour, outline):
         self.assertEqual(shape.fillcolor, colour)

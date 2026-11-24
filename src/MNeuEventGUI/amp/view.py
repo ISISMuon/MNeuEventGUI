@@ -1,6 +1,5 @@
-from dash import Input, callback, dcc, html
+from dash import dcc, html
 
-from MNeuEventGUI.utils.batch_callback import dispatch
 from MNeuEventGUI.view_template import ViewTemplate
 
 
@@ -24,11 +23,5 @@ class AmplitudeView(ViewTemplate):
                                 type='numeric')])
             ])
 
-    def set_callbacks(self, presenter):
-        """
-        Set the callback for editing the amplitude.
-        """
-        super().set_callbacks(presenter)
-
-        callback(Input(presenter.callback_id('Amp'), 'value'),
-                 prevent_initial_call=True)(dispatch(presenter.edit_baseline))
+    # the callback for editing the amplitude is set by the filter
+    # view, as it also clears the number of events

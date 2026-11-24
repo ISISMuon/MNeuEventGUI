@@ -99,20 +99,6 @@ class ErrorsTest(unittest.TestCase):
         self.assertEqual(props['time-table'], {'rowData': [1, 2]})
 
     @mock.patch('MNeuEventGUI.utils.errors.set_props')
-    def test_display_error_reverts_pattern_matching_props(self, set_props):
-        """
-        Pattern matching IDs are dicts, so they are given
-        as a list of (ID, props) pairs.
-        """
-        table = {'type': 'time-table', 'batch': 1}
-        error = catch(GUIError('Nice message',
-                               [(table, {'rowData': [1, 2]})]))
-
-        display_error(error)
-
-        set_props.assert_any_call(table, {'rowData': [1, 2]})
-
-    @mock.patch('MNeuEventGUI.utils.errors.set_props')
     def test_display_error_generic_message_for_other_errors(self, set_props):
         """
         Only a GUIError has a message meant for the user,

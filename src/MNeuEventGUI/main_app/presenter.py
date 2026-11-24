@@ -3,11 +3,7 @@ from dash import no_update
 from MNeuEventGUI.control_pane.presenter import ControlPanePresenter
 from MNeuEventGUI.load_bar.presenter import LoadBarPresenter
 from MNeuEventGUI.save_bar.presenter import SaveBarPresenter
-from MNeuEventGUI.utils.batch import (
-    INITIAL_BATCHES,
-    batch_file_names,
-    per_batch,
-)
+from MNeuEventGUI.utils.batch import INITIAL_BATCHES, batch_file_names
 from MNeuEventGUI.utils.errors import GUIError
 
 
@@ -44,7 +40,7 @@ class MainAppPresenter:
             return self._open_nxs_func(self.N_submit)
         return name
 
-    def confirm_load(self, n_clicks, time_data, log_data, submit):
+    def confirm_load(self, n_clicks, submit):
         """
         Gives a confirm pop up iff any batch has filters.
         If the pop up is not shown we still increment
@@ -52,13 +48,11 @@ class MainAppPresenter:
         because we still want to trigger the
         events.
         :param n_clicks: Number of clicks of load
-        :param time_data: the time filter table data for each batch
-        :param log_data: the log filter table data for each batch
         :param submit: the number of clicks of submit
         :reuturn: if to show the confirm pop=-p and the number
         of submit clicks.
         """
-        if any(len(table) > 0 for table in time_data + log_data):
+        if self.control._filters.has_filters():
             return True, submit
         return False, submit + 1
 
@@ -77,14 +71,6 @@ class MainAppPresenter:
         print("debug mode " + tmp)
 
 
-    def per_batch(self, value):
-        """
-        Repeats a value for every batch.
-        :param value: the value for a single batch
-        :returns: a list of the value for every batch
-        """
-        return per_batch(value, self.control.num_batches)
-
     def save_data(self, name, active):
         """
         Saves either a muon histogram nexus file
@@ -93,7 +79,7 @@ class MainAppPresenter:
         event data.
         :param name: a string of the data type (json
         or nexus) and the name of the file to save to.
-        :param active: the key of the active batch
+        :param active: the index of the active batch
         :returns: the name of the saved file (for nexus, the
         names of the files for each batch, separated by commas)
         :raises GUIError: if the data cannot be saved
@@ -104,10 +90,6 @@ class MainAppPresenter:
         dtype = name[0]
         file = name[1:]
 
-        if dtype == 'j':
-            # checked first, so a removed batch is not reported
-            # as a failure to save
-            index = self.control.active_index(active)
         saved = file
         if dtype == 'n':
             # a separate file for each batch, with its index
@@ -119,7 +101,7 @@ class MainAppPresenter:
             if dtype == "n":
                 data.save('all', file, nexus_v3=False)
             elif dtype == 'j':
-                data.save_filters(index, file)
+                data.save_filters(active, file)
         except Exception as error:
             raise GUIError(f'The data could not be '
                            f'saved to {saved}.') from error
@@ -136,23 +118,18 @@ class MainAppPresenter:
     def plot_amps(self, data):
         """
         Simple method to plot the amplitude
-        histogram for each batch
+        histogram
         :param data: the amplitude filter data
-        :returns: the plot object for each batch
+        :returns: the plot object
         """
-        return [filter_presenter._amp.plot(data)
-                for filter_presenter in self.control._filters]
+        return self.control._filters._amp.plot(data)
 
-    def load_nxs(self, name, time_data,
-                 log_data, debug_state):
+    def load_nxs(self, name, debug_state, active):
         """
         Loads a muon event nexus file.
-        Apart from the plot,
-        the values are a list with a value for each batch.
         :param name: the name of the file to open.
-        :param time_data: the time filter table data
-        :param log_data: the log filter table data
         :param debug_state: if debug mode is on or off.
+        :param active: the index of the active batch
         :returns: a tuple containing:
         - the updated figure
         - the time filter table data
@@ -167,6 +144,7 @@ class MainAppPresenter:
         - the filter table column names
         - plot of the amplitude histogram
         - the number of events string
+        The filters and settings are for the active batch.
         :raises GUIError: if the file cannot be read
         """
         if not name or 'None' in name:
@@ -175,36 +153,28 @@ class MainAppPresenter:
             # being no file (see the except below). The same file check
             # cannot be used, as there is no data to read settings from.
             self.load.set_file(name)
-            return (self.plot(),
-                    self.per_batch([]),
-                    self.per_batch(True),
-                    self.per_batch([]),
-                    self.per_batch(True),
-                    *[self.per_batch(no_update)] * 5,
+            return (self.plot(), [], True, [], True,
+                    *[no_update] * 5,
                     self.control.headers,
-                    self.per_batch({}),
-                    self.per_batch(self.control.no_events_str))
+                    {},
+                    self.control.no_events_str)
 
         if name == self.load.file:
             # same file, so the data (and the number of
             # events) is unchanged and only the settings
             # are read back
-            (_, _, amp, state,
+            (times, logs, amp, state,
              min_time, max_time,
-             num_bins, headers) = self.control.refresh()
+             num_bins, headers) = self.control.refresh(active)
             return (self.control._plot.fig,
-                    time_data, self.per_batch(False),
-                    log_data, self.per_batch(False),
+                    times, False,
+                    logs, False,
                     amp, state, min_time, max_time, num_bins,
                     headers,
-                    [filter_presenter._amp._plot.fig
-                     for filter_presenter in self.control._filters],
-                    self.per_batch(no_update))
+                    self.control._filters._amp._plot.fig,
+                    no_update)
         previous = self.load.file
         self.load.set_file(name)
-
-        # any previous number of events was for the old data
-        no_events = self.per_batch(self.control.no_events_str)
 
         try:
             self.load.load_nxs(name, self.control.num_batches)
@@ -220,10 +190,11 @@ class MainAppPresenter:
 
         (times, logs, amp, state,
          min_time, max_time,
-         num_bins, headers) = self.control.refresh()
+         num_bins, headers) = self.control.refresh(active)
 
-        return (self.plot(), times, self.per_batch(False),
-                logs, self.per_batch(False),
+        # any previous number of events was for the old data
+        return (self.plot(), times, False,
+                logs, False,
                 amp, state, min_time, max_time, num_bins,
                 headers, self.plot_amps(data),
-                no_events)
+                self.control.no_events_str)

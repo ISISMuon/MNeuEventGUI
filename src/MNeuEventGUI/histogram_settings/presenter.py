@@ -7,13 +7,10 @@ class HistSettingsPresenter(PresenterTemplate):
     A class for the presenter of the histogram settings widget.
     """
 
-    def __init__(self, batch):
+    def __init__(self):
         """
         Create the presenter.
-        :param batch: the index of the batch the
-        settings are for
         """
-        self.batch = batch
         self._view = HistSettingsView(self)
         self.data = None
 
@@ -51,19 +48,31 @@ class HistSettingsPresenter(PresenterTemplate):
         """
         self.data = data
 
-    def set_values(self, min_time, max_time, num_bins):
+    def set_values(self, min_time, max_time, num_bins, batch):
         """
-        Set the histogram settings in the data to some values.
+        Set the histogram settings in the data to some
+        values, if they are different to the batch's
+        current settings.
         :param min_time: the start time for the histogram
         :param max_time: the end time for the histogram
         :param num_bins: the number of bins in the histogram
+        :param batch: the index of the active batch
+        :returns: if the settings were changed
         """
         if self.data is None:
-            return
-        self.data.set_histogram_settings(self.batch,
+            return False
+        current = self.data._dict(batch)['hist_settings']
+        # the data stores whole ns, the GUI uses microseconds
+        if (min_time is not None and max_time is not None
+                and round(min_time * 1e3) == current['min_time']
+                and round(max_time * 1e3) == current['max_time']
+                and num_bins == current['n_bins']):
+            return False
+        self.data.set_histogram_settings(batch,
                                          min_time,
                                          max_time,
                                          num_bins)
+        return True
 
     def check_num_bins_invalid(self, num_bins: int) -> bool:
         """

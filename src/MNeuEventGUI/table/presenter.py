@@ -3,6 +3,7 @@ from itertools import count
 
 from MNeuEventGUI.presenter_template import PresenterTemplate
 from MNeuEventGUI.table.view import TableView
+from MNeuEventGUI.utils.batch import batch_label
 from MNeuEventGUI.utils.errors import GUIError
 
 
@@ -15,7 +16,7 @@ class TablePresenter(PresenterTemplate):
     # the key for the table's filters in the data's dict
     FILTER_KEY = None
 
-    def __init__(self, ID, columns, name_col, batch):
+    def __init__(self, ID, columns, name_col):
         """
         This creates the view object for the
         widget. The responses to the callbacks
@@ -25,10 +26,8 @@ class TablePresenter(PresenterTemplate):
         table (see column.py)
         :param name_col: the string used to identify the name
         column for the specific table
-        :param batch: the index of the batch the table is for
         """
         self.ID = ID
-        self.batch = batch
         self.name_col = name_col
         self.count = count(start=1)
 
@@ -42,62 +41,57 @@ class TablePresenter(PresenterTemplate):
         """
         return TableView(self)
 
-    @property
-    def batch_filters(self):
+    def batch_filters(self, batch):
         """
-        Gets the filters for this batch from the data.
+        Gets a batch's filters from the data.
+        :param batch: the index of the batch
         :returns: the filters (a dict keyed by name)
         """
-        return self.data._dict(self.batch)[self.FILTER_KEY]
+        return self.data._dict(batch)[self.FILTER_KEY]
 
-    def new_filter_name(self):
+    def new_filter_name(self, batch):
         """
         Gets a name for a new filter, which does not
         overwrite any of the batch's existing filters.
+        :param batch: the index of the batch
         :returns: the name
         """
-        existing_filters = self.batch_filters
+        existing_filters = self.batch_filters(batch)
         name = f"filter {next(self.count)}"
         while name in existing_filters:
             name = f"filter {next(self.count)}"
         return name
 
-    def batch_msg(self, msg):
-        """
-        Adds the batch to an error message, so the
-        user knows which batch it came from.
-        :param msg: the error message
-        :returns: the error message with the batch
-        """
-        return f'Batch {self.batch}: {msg}'
-
-    def add(self) -> dict:
+    def add(self, batch) -> dict:
         """
         Adds a row to the table.
+        :param batch: the index of the active batch
         :returns: the new data for the table.
         """
         raise NotImplementedError
 
-    def reject(self, data, msg):
+    def reject(self, data, msg, batch):
         """
         Rejects an edit to the table. The corrected data is
         carried on the error, because a callback that raises
         does not update its own outputs.
         :param data: the corrected table data (list of rows)
         :param msg: why the edit was rejected
+        :param batch: the index of the active batch, so the
+        user knows which batch the error came from
         :raises GUIError: always
         """
-        # the table's ID is a dict, so it cannot be a dict key
-        raise GUIError(self.batch_msg(msg),
-                       [(self.component_id(), {'rowData': data})])
+        raise GUIError(f'{batch_label(batch)}: {msg}',
+                       {self.ID: {'rowData': data}})
 
-    def validate(self, row, data):
+    def validate(self, row, data, batch):
         """
         A validation check for the table.
         It has a rule that each row name
         must be unique.
         :param row: the change in the table (row)
         :param data: the data in the table (list of rows)
+        :param batch: the index of the active batch
         :returns: the data to update the table with
         :raises GUIError: if the new name is already in use
         """
@@ -105,17 +99,18 @@ class TablePresenter(PresenterTemplate):
         repeat, num = Counter(names).most_common(1)[0]
         if num > 1:
             data[row[0]['rowIndex']]['Name_'+self.ID] = row[0]['oldValue']
-            self.reject(data, f'Repeated name {repeat}')
+            self.reject(data, f'Repeated name {repeat}', batch)
 
-        return self.validate_row(row, data)
+        return self.validate_row(row, data, batch)
 
-    def validate_row(self, change, data):
+    def validate_row(self, change, data, batch):
         """
         A validation check for the table.
         It has a rule that each row name
         must be unique.
         :param change: the change in the table (row)
         :param data: the data in the table (list of rows)
+        :param batch: the index of the active batch
         :returns: the data to update the table with
         """
         changed = change[0]
@@ -125,20 +120,22 @@ class TablePresenter(PresenterTemplate):
         data[changed['rowIndex']][col_name] = row[col_name]
         return data
 
-    def delete_row(self, info: dict, data: dict) -> dict:
+    def delete_row(self, info: dict, data: dict, batch) -> dict:
         """
         Remove a row from a table.
         :param info: dict of information about deleted row
         :param data: the table data (list of rows)
+        :param batch: the index of the active batch
         :returns: Updated data values
         """
         raise NotImplementedError
 
-    def edit_row(self, info: dict, data: dict) -> dict:
+    def edit_row(self, info: dict, data: dict, batch) -> dict:
         """
         Edit a row in the table.
         :param info: dict of information about deleted row
         :param data: the table data (list of rows)
+        :param batch: the index of the active batch
         :returns: Updated table values
         """
         raise NotImplementedError

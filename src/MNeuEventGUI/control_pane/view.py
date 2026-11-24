@@ -5,24 +5,16 @@ from MNeuEventGUI.log.presenter import LOG_TABLE
 from MNeuEventGUI.plot_area.view import PLOT, TOOLTIP
 from MNeuEventGUI.table.view import CHANGED_STATE
 from MNeuEventGUI.time.presenter import TIME_TABLE
-from MNeuEventGUI.time.view import DROPDOWN
-from MNeuEventGUI.utils.batch import all_batches, batch_colour, batch_id
-from MNeuEventGUI.utils.batch_callback import ordered_callback
+from MNeuEventGUI.utils.batch import ACTIVE, NUM_BATCHES, batch_colour
 from MNeuEventGUI.view_template import ViewTemplate
 
-# the IDs for choosing the batch. The value of the
-# dropdown is the key of the active batch.
-ACTIVE = 'batch-select'
-KEYS = 'batch-keys'
+# the IDs for choosing the batch (see utils/batch.py
+# for the dropdown and the number of batches)
 PREV = 'batch-prev'
 NEXT = 'batch-next'
 ADD_BATCH = 'batch-add'
 REMOVE_BATCH = 'batch-remove'
 SWATCH = 'batch-swatch'
-PANES = 'batch-panes'
-PANE = 'batch-pane'
-
-HIDDEN = {'display': 'none'}
 
 
 def icon_button(icon, component_id, title, disabled=False):
@@ -60,12 +52,11 @@ class ControlPaneView(ViewTemplate):
         filter_width = 2
 
         # the batch is chosen with the back/forward buttons or
-        # the dropdown (which can be searched), and only the
-        # active batch's filters are shown
-        active = presenter.batch_keys[0]
+        # the dropdown (which can be searched), and the filters
+        # show the active batch
+        active = 0
         (options, prev_disabled, next_disabled,
-         remove_disabled, swatch) = presenter.batch_controls(
-             active, presenter.batch_keys)
+         remove_disabled, swatch) = presenter.batch_controls(active)
         controls = html.Div([
             icon_button('bi-chevron-left', PREV, 'Previous batch',
                         prev_disabled),
@@ -86,12 +77,9 @@ class ControlPaneView(ViewTemplate):
                             className='d-flex align-items-center mb-2')
 
         batches = html.Div([
-            dcc.Store(id=KEYS, data=presenter.batch_keys),
+            dcc.Store(id=NUM_BATCHES, data=presenter.num_batches),
             controls,
-            html.Div([self.pane(filter_presenter, index == 0)
-                      for index, filter_presenter
-                      in enumerate(presenter._filters)],
-                     id=PANES),
+            presenter._filters.layout,
             ])
 
         # setup the layout
@@ -115,90 +103,51 @@ class ControlPaneView(ViewTemplate):
                 'flex': '0 0 auto',
                 'marginRight': '0.25rem'}
 
-    @staticmethod
-    def pane_style(shown):
-        """
-        :param shown: if the batch's filters are shown
-        :returns: the style for a batch's filters
-        """
-        return None if shown else HIDDEN
-
-    def pane(self, filter_presenter, active):
-        """
-        Creates the filters for a batch.
-        :param filter_presenter: the batch's filter presenter
-        :param active: if the batch is the active one
-        :returns: the tab's contents
-        """
-        return html.Div(filter_presenter.layout,
-                        id=batch_id(PANE, filter_presenter.key),
-                        key=str(filter_presenter.key),
-                        style=self.pane_style(active))
-
     def set_callbacks(self, presenter):
         """
         Set the callbacks for the widget
         :param pressenter: the presenter for the widget
         """
-        self.set_tab_callbacks(presenter)
+        self.set_batch_callbacks(presenter)
 
-        order = presenter.order
         plot = presenter._plot.component_id(PLOT)
         tooltip = presenter._plot.component_id(TOOLTIP)
 
-        # the filter type is picked up from the model, so we trigger
+        # the plot shows every batch, which it reads from the data.
+        # The tables show the active batch, and are refilled when it
+        # changes or a batch is added or removed, so they are the
+        # signal for the data having changed.
+        # The filter type is picked up from the model, so we trigger
         # off the time table's changed state signal. Using the dropdown
         # directly would race with the callback that updates the model.
-        ordered_callback(order,
-                         Output(plot, 'figure', allow_duplicate=True),
-                         [Input(all_batches(TIME_TABLE), 'rowData'),
-                          Input(all_batches(LOG_TABLE), 'rowData'),
-                          Input(all_batches(TIME_TABLE + CHANGED_STATE),
-                                'data'),
-                          Input(ACTIVE, 'value'),
-                          Input(KEYS, 'data')],
-                         prevent_initial_call=True)(presenter.make_plot)
+        callback(Output(plot, 'figure', allow_duplicate=True),
+                 [Input(TIME_TABLE, 'rowData'),
+                  Input(LOG_TABLE, 'rowData'),
+                  Input(TIME_TABLE + CHANGED_STATE, 'data')],
+                 State(ACTIVE, 'value'),
+                 prevent_initial_call=True)(presenter.make_plot)
 
-        ordered_callback(order,
-                         [Output(tooltip, 'show', allow_duplicate=True),
-                          Output(tooltip, 'bbox', allow_duplicate=True),
-                          Output(tooltip, 'children', allow_duplicate=True)],
-                         [Input(plot, 'hoverData')],
-                         [State(all_batches(TIME_TABLE), 'rowData'),
-                          State(all_batches(TIME_TABLE + DROPDOWN), 'value')],
-                         prevent_initial_call=True)(presenter.display_hover)
+        callback([Output(tooltip, 'show', allow_duplicate=True),
+                  Output(tooltip, 'bbox', allow_duplicate=True),
+                  Output(tooltip, 'children', allow_duplicate=True)],
+                 Input(plot, 'hoverData'),
+                 prevent_initial_call=True)(presenter.display_hover)
 
-        # calculating updates the number of events for every batch
-        ordered_callback(order,
-                         Output(all_batches('N_events'), 'children',
-                                allow_duplicate=True),
-                         [Input(all_batches('calc_btn'), 'n_clicks')],
-                         prevent_initial_call=True)(presenter.calculate)
-
-    def set_tab_callbacks(self, presenter):
+    def set_batch_callbacks(self, presenter):
         """
         Sets the callbacks for choosing, adding and
         removing batches.
         :param presenter: the presenter for the widget
         """
-        order = presenter.order
-
-        # show the active batch's filters
-        ordered_callback(order,
-                         Output(all_batches(PANE), 'style'),
-                         [Input(ACTIVE, 'value')],
-                         prevent_initial_call=True)(presenter.show_batch)
-
         # the dropdown options and buttons depend on which batch is
-        # active and on the batches (the labels follow the index, so
-        # they change when an earlier batch is removed)
+        # active and on the number of batches
         callback([Output(ACTIVE, 'options'),
                   Output(PREV, 'disabled'),
                   Output(NEXT, 'disabled'),
                   Output(REMOVE_BATCH, 'disabled'),
                   Output(SWATCH, 'style')],
                  [Input(ACTIVE, 'value'),
-                  Input(KEYS, 'data')],
+                  Input(NUM_BATCHES, 'data')],
                  prevent_initial_call=True)(presenter.batch_controls)
 
         callback(Output(ACTIVE, 'value', allow_duplicate=True),
@@ -211,15 +160,13 @@ class ControlPaneView(ViewTemplate):
                  State(ACTIVE, 'value'),
                  prevent_initial_call=True)(presenter.next_batch)
 
-        callback([Output(PANES, 'children', allow_duplicate=True),
-                  Output(ACTIVE, 'value', allow_duplicate=True),
-                  Output(KEYS, 'data', allow_duplicate=True)],
+        callback([Output(ACTIVE, 'value', allow_duplicate=True),
+                  Output(NUM_BATCHES, 'data', allow_duplicate=True)],
                  Input(ADD_BATCH, 'n_clicks'),
                  prevent_initial_call=True)(presenter.add_batch)
 
-        callback([Output(PANES, 'children', allow_duplicate=True),
-                  Output(ACTIVE, 'value', allow_duplicate=True),
-                  Output(KEYS, 'data', allow_duplicate=True)],
+        callback([Output(ACTIVE, 'value', allow_duplicate=True),
+                  Output(NUM_BATCHES, 'data', allow_duplicate=True)],
                  Input(REMOVE_BATCH, 'n_clicks'),
                  State(ACTIVE, 'value'),
                  prevent_initial_call=True)(presenter.remove_batch)

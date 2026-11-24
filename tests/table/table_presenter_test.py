@@ -31,8 +31,7 @@ class TablePresenterTest(TestHelper):
                             False)
         self.presenter = TablePresenter('table_test',
                                         cols,
-                                        NAME,
-                                        0)
+                                        NAME)
 
     def assert_data(self, result, name, value):
         self.assertEqual(result, make_row(name, value))
@@ -42,7 +41,7 @@ class TablePresenterTest(TestHelper):
 
     def test_add_not_implemented(self):
         with self.assertRaises(NotImplementedError):
-            self.presenter.add()
+            self.presenter.add(0)
 
     def test_delete_row_not_implemented(self):
         info = {'colId': 'Delete_table_test',
@@ -50,13 +49,13 @@ class TablePresenterTest(TestHelper):
                 'rowId': '0',
                 'timestamp': 174}
         with self.assertRaises(NotImplementedError):
-            self.presenter.delete_row(info, [make_row('default_1', 42)])
+            self.presenter.delete_row(info, [make_row('default_1', 42)], 0)
 
     def test_edit_row_not_implemented(self):
         info = [{'rowIndex': 0,
                  'data': make_row('default', 42)}]
         with self.assertRaises(NotImplementedError):
-            self.presenter.edit_row(info, [make_row('default_1', 42)])
+            self.presenter.edit_row(info, [make_row('default_1', 42)], 0)
 
     def test_validate(self):
         row = [{'rowIndex': 0, 'rowId': '0',
@@ -68,7 +67,7 @@ class TablePresenterTest(TestHelper):
         data = [make_row('default_1', 42),
                 make_row('default_2', 42)]
 
-        data = self.presenter.validate(row, data)
+        data = self.presenter.validate(row, data, 0)
 
         self.assertEqual(len(data), 2)
 
@@ -86,16 +85,14 @@ class TablePresenterTest(TestHelper):
                 make_row('default_1', 42)]
 
         with self.assertRaises(GUIError) as context:
-            self.presenter.validate(row, data)
+            self.presenter.validate(row, data, 0)
 
         self.assertEqual(str(context.exception),
                          'Batch 0: Repeated name default_1')
 
         # the corrected data is carried on the error, so the
         # error handler can put it back into the table
-        [(component_id, props)] = context.exception.revert
-        self.assertEqual(component_id, self.presenter.component_id())
-        data = props['rowData']
+        data = context.exception.revert[self.presenter.ID]['rowData']
         self.assertEqual(len(data), 2)
 
         # the name is reverted
@@ -106,7 +103,7 @@ class TablePresenterTest(TestHelper):
     def test_validate_fails_batch(self, view):
         cols = TableColumns([TableGroup([TextColumn(NAME, 'name')])],
                             False)
-        presenter = TablePresenter('table_test', cols, NAME, batch=2)
+        presenter = TablePresenter('table_test', cols, NAME)
         row = [{'rowIndex': 1, 'rowId': '1',
                 'data': make_row('default_1', 42),
                 'oldValue': 'default_2',
@@ -117,17 +114,16 @@ class TablePresenterTest(TestHelper):
                 make_row('default_1', 42)]
 
         with self.assertRaises(GUIError) as context:
-            presenter.validate(row, data)
+            presenter.validate(row, data, 2)
         self.assertEqual(str(context.exception),
                          'Batch 2: Repeated name default_1')
-        [(component_id, _)] = context.exception.revert
-        self.assertEqual(component_id, presenter.component_id())
+        self.assertIn(presenter.ID, context.exception.revert)
 
     def test_component_id(self):
         self.assertEqual(self.presenter.component_id(),
-                         {'type': 'table_test', 'batch': 0})
+                         'table_test')
         self.assertEqual(self.presenter.component_id('_add'),
-                         {'type': 'table_test_add', 'batch': 0})
+                         'table_test_add')
 
     def test_validate_row(self):
         """
@@ -143,7 +139,7 @@ class TablePresenterTest(TestHelper):
         data = [make_row('default_1', 42),
                 make_row('default_2', 42)]
 
-        data = self.presenter.validate_row(row, data)
+        data = self.presenter.validate_row(row, data, 0)
 
         self.assertEqual(len(data), 2)
 

@@ -9,7 +9,7 @@ from tests.data_paths import FILE
 class HistogramSettingsPresenterTest(TestHelper):
 
     def setUp(self):
-        self.presenter = HistSettingsPresenter(0)
+        self.presenter = HistSettingsPresenter()
 
     def test_display_width(self):
         """
@@ -64,20 +64,28 @@ class HistogramSettingsPresenterTest(TestHelper):
 class HistogramSettingsPresenterBatchTest(TestHelper):
     """
     Check that the presenter only changes the
-    settings for its own batch.
+    settings for the active batch.
     """
 
     def setUp(self):
-        self.presenter = HistSettingsPresenter(batch=1)
+        self.presenter = HistSettingsPresenter()
         self.data = BatchData(FILE, 64, 2)
         self.presenter.set_data(self.data)
 
-    def test_batch(self):
-        self.assertEqual(self.presenter.batch, 1)
-
     def test_set_values(self):
         default = self.data._dict(0)['hist_settings']
-        self.presenter.set_values(0.5, 15.22, 1024)
-        self.assertEqual(self.data._dict(1)['hist_settings']['n_bins'],
-                         1024)
+        self.assertTrue(self.presenter.set_values(0.5, 15.22, 1024, 1))
+        self.assertEqual(self.data._dict(1)['hist_settings'],
+                         {'min_time': 500, 'max_time': 15220,
+                          'n_bins': 1024})
         self.assertEqual(self.data._dict(0)['hist_settings'], default)
+
+    def test_set_values_unchanged(self):
+        # e.g. the widgets being filled from the data
+        self.presenter.set_values(0.5, 15.22, 1024, 1)
+        self.assertFalse(self.presenter.set_values(0.5, 15.22, 1024, 1))
+        self.assertFalse(self.presenter.set_values(0, 32.768, 2048, 0))
+
+    def test_set_values_no_data(self):
+        presenter = HistSettingsPresenter()
+        self.assertFalse(presenter.set_values(0.5, 15.22, 1024, 0))
