@@ -18,7 +18,10 @@ for package in [
     datas += collect_data_files(package)
 
 # The window icon is loaded at runtime from the package's assets folder.
-datas += [('src/MNeuEventGUI/assets/icon.png', 'MNeuEventGUI/assets')]
+datas += [('src/MNeuEventGUI/assets/icon.png', 'MNeuEventGUI/assets'),
+          ('src/MNeuEventGUI/main_app/assets/*.json',
+         'MNeuEventGUI/main_app/assets'),
+	 ]
 
 # macOS needs an .icns icon; Windows uses the .ico. Linux ignores the icon.
 icon = 'extras/icon.icns' if sys.platform == 'darwin' else 'extras/icon.ico'
