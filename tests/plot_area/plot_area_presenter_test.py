@@ -29,6 +29,49 @@ class PlotAreaPresenterTest(TestHelper):
         self.assertEqual(self.presenter.ID,
                          'plot_test')
 
+    def test_component_id(self):
+        self.assertEqual(self.presenter.component_id('_plot'),
+                         'plot_test_plot')
+
+    def assert_style(self, shape, colour, outline):
+        self.assertEqual(shape.fillcolor, colour)
+        self.assertEqual(shape.opacity, 0.3)
+        if outline:
+            self.assertEqual(shape.line['color'], 'black')
+            self.assertEqual(shape.line['width'], 4)
+        else:
+            self.assertEqual(shape.line['width'], 0)
+
+    def test_add_shaded_region_style(self):
+        self.presenter.add_shaded_region(0.5, 0.8, 'red', False)
+        for shape in self.presenter.fig.layout.shapes:
+            self.assert_style(shape, 'red', False)
+
+    def test_add_rect_style(self):
+        self.presenter.add_rect(0.2, .3, .5, .6, axis=2,
+                                colour='red', outline=False)
+        shape = self.presenter.fig.layout.shapes[0]
+        self.assert_style(shape, 'red', False)
+        self.assertEqual(shape.yref, 'y2')
+
+    def test_add_rect_domain(self):
+        # full height of a single subplot
+        self.presenter.add_rect(0.2, 0, 0.5, 1, '2', 'red', True,
+                                domain=True)
+        shapes = self.presenter.fig.layout.shapes
+        self.assertEqual(len(shapes), 1)
+        self.check_line(shapes[0], 0, 0.2, 0.5, 0, 1)
+        self.assertEqual(shapes[0].xref, 'x2')
+        self.assertEqual(shapes[0].yref, 'y2 domain')
+        self.assert_style(shapes[0], 'red', True)
+
+    def test_add_hline_row(self):
+        self.presenter.add_hline(1.2, row=2, colour='red')
+        shapes = self.presenter.fig.layout.shapes
+        self.assertEqual(len(shapes), 1)
+        self.assertEqual(shapes[0].yref, 'y2')
+        self.assertEqual(shapes[0].line['color'], 'red')
+
     def test_shade_all(self):
         self.check_shapes([], [])
 

@@ -1,4 +1,4 @@
-from dash import Input, callback, dcc, html
+from dash import dcc, html
 
 from MNeuEventGUI.view_template import ViewTemplate
 
@@ -18,16 +18,10 @@ class AmplitudeView(ViewTemplate):
         return html.Div([
             presenter._plot.layout,
             html.Div(['Amplitude threshold',
-                      dcc.Input(id='Amp',
+                      dcc.Input(id=presenter.component_id('Amp'),
                                 value=0,
                                 type='numeric')])
             ])
 
-    def set_callbacks(self, presenter):
-        """
-        Set the callback for editing the amplitude.
-        """
-        super().set_callbacks(presenter)
-
-        callback(Input('Amp', 'value'),
-                 prevent_initial_call=True)(presenter.edit_baseline)
+    # the callback for editing the amplitude is set by the filter
+    # view, as it also clears the number of events

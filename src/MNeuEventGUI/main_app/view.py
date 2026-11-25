@@ -2,7 +2,14 @@ import dash
 import dash_bootstrap_components as dbc
 from dash import Dash, Input, Output, State, callback, dcc, html
 
+from MNeuEventGUI.filters.view import FILTER_FILE
+from MNeuEventGUI.log.presenter import LOG_TABLE
 from MNeuEventGUI.main_app.presenter import MainAppPresenter
+from MNeuEventGUI.plot_area.view import PLOT
+from MNeuEventGUI.table.view import ADD
+from MNeuEventGUI.time.presenter import TIME_TABLE
+from MNeuEventGUI.time.view import DROPDOWN
+from MNeuEventGUI.utils.batch import ACTIVE
 from MNeuEventGUI.utils.errors import (
     DETAILS_BTN,
     DETAILS_COLLAPSE,
@@ -107,55 +114,43 @@ class MainApp(Dash):
                  State(DETAILS_COLLAPSE, 'is_open'),
                  prevent_initial_call=True)(toggle_details)
 
-        # Updates the information on the loaded filter.
-        callback([
-                  Output('time-table', 'rowData', allow_duplicate=True),
-                  Output('log-table', 'rowData', allow_duplicate=True),
-                  Output('Amp', 'value', allow_duplicate=True),
-                  Output('dropdown-time', 'value', allow_duplicate=True),
-                  Output('min-time', 'value', allow_duplicate=True),
-                  Output('max-time', 'value', allow_duplicate=True),
-                  Output('num-bins', 'value', allow_duplicate=True),
-                  Output('time-table', 'columnDefs', allow_duplicate=True),],
-                 Input('title_test', 'children'),
-                 prevent_initial_call=True)(self.presenter.load_filter)
-
         # Plots the data after it is loaded. A new file means a new
         # data object, so the filters and settings are read back
         # from it, to keep the GUI and the data in step.
         callback([Output('main_plot', 'figure'),
-                  Output('time-table', 'rowData', allow_duplicate=True),
-                  Output('time-table_add', 'disabled'),
-                  Output('log-table', 'rowData', allow_duplicate=True),
-                  Output('log-table_add', 'disabled'),
+                  Output(TIME_TABLE, 'rowData', allow_duplicate=True),
+                  Output(TIME_TABLE + ADD, 'disabled'),
+                  Output(LOG_TABLE, 'rowData', allow_duplicate=True),
+                  Output(LOG_TABLE + ADD, 'disabled'),
                   Output('Amp', 'value', allow_duplicate=True),
-                  Output('dropdown-time', 'value', allow_duplicate=True),
+                  Output(TIME_TABLE + DROPDOWN, 'value',
+                         allow_duplicate=True),
                   Output('min-time', 'value', allow_duplicate=True),
                   Output('max-time', 'value', allow_duplicate=True),
                   Output('num-bins', 'value', allow_duplicate=True),
-                  Output('time-table', 'columnDefs', allow_duplicate=True),
-                  Output('amp_plot', 'figure'),
+                  Output(TIME_TABLE, 'columnDefs', allow_duplicate=True),
+                  Output('amp' + PLOT, 'figure'),
                   Output('N_events', 'children', allow_duplicate=True)],
                  Input('file_name', 'children'),
-                 [State('time-table', 'rowData'),
-                  State('log-table', 'rowData'),
-                  State('debug', 'on')],
+                 [State('debug', 'on'),
+                  State(ACTIVE, 'value')],
                  prevent_initial_call=True)(self.presenter.load_nxs)
 
         # Turns on debug mode
         callback(dash.dependencies.Input('debug', 'on'),
                  prevent_initial_call=True)(self.presenter.debug)
 
-        # Saves the data (both histogram and filter file).
+        # Saves the data (histograms for every batch, or the
+        # filter file for the active batch).
         callback(Output('save_exe_dummy', 'children'),
                  Input('save_btn_dummy', 'children'),
+                 State(ACTIVE, 'value'),
                  prevent_initial_call=True)(self.presenter.save_data)
 
         callback([Output('load_confirm', 'displayed'),
                   Output('load_confirm', 'submit_n_clicks')],
                  Input('Load', 'n_clicks'),
-                 [State('time-table', 'rowData'),
-                  State('load_confirm', 'submit_n_clicks')],
+                 State('load_confirm', 'submit_n_clicks'),
                  prevent_initial_call=True)(self.presenter.confirm_load)
 
         """
@@ -168,9 +163,8 @@ class MainApp(Dash):
                  State('file_name', 'children'),
                  prevent_initial_call=True)(self.presenter.open_nxs)
 
-        # open a json filter file
-        callback(
-                 Output('title_test', 'children'),
+        # open a json filter file (it is loaded into the active batch)
+        callback(Output(FILTER_FILE, 'data'),
                  Input('load_filters', 'n_clicks'),
                  prevent_initial_call=True)(open_json)
 

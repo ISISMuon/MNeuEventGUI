@@ -17,7 +17,6 @@ class AmpPresenter(PresenterTemplate):
         This creates the presenter object for the
         widget.
         """
-
         # create a plot area
         self._plot = PlotAreaPresenter('amp')
         self._view = AmplitudeView(self)
@@ -38,14 +37,22 @@ class AmpPresenter(PresenterTemplate):
         """
         self.data = data
 
-    def edit_baseline(self, value):
+    def edit_baseline(self, value, batch):
         """
-        Set the amplitude baseline.
+        Set the amplitude baseline, if it is
+        different to the batch's current one.
+        :param value: the new amplitude baseline
+        :param batch: the index of the active batch
+        :returns: if the baseline was changed
         """
-        if self.data is None or value is None:
-            return
+        if self.data is None or value is None or value == '':
+            return False
 
-        self.data.set_amps_baseline(0, float(value))
+        value = float(value)
+        if value == self.load(self.data._dict(batch)['amplitudes']):
+            return False
+        self.data.set_amps_baseline(batch, value)
+        return True
 
     def plot(self, data):
         """

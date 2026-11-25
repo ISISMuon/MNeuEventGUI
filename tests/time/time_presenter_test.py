@@ -3,6 +3,7 @@ import sys
 import unittest
 from unittest import mock
 
+from dash import no_update
 from MNeuEventLib import BatchData
 
 from MNeuEventGUI.test_helpers.unit_test import TestHelper
@@ -106,7 +107,7 @@ class TimePresenterTest(TestHelper):
             with self.subTest(val=val):
                 change, data = get_validation_data_start(val)
                 with self.assertRaises(GUIError) as context:
-                    self.presenter.validate_row(change, data)
+                    self.presenter.validate_row(change, data, 0)
                 self.assert_data_start(
                     context.exception.revert[TIME_TABLE]['rowData'], 800)
                 assert (len(str(context.exception)) > 1)
@@ -117,23 +118,23 @@ class TimePresenterTest(TestHelper):
             with self.subTest(val=val):
                 change, data = get_validation_data_end(val)
                 with self.assertRaises(GUIError) as context:
-                    self.presenter.validate_row(change, data)
+                    self.presenter.validate_row(change, data, 0)
                 self.assert_data_end(
                     context.exception.revert[TIME_TABLE]['rowData'], 1100)
                 assert (len(str(context.exception)) > 1)
 
     def test_validate_pass_stat(self):
         change, data = get_validation_data_start(900)
-        result = self.presenter.validate_row(change, data)
+        result = self.presenter.validate_row(change, data, 0)
         self.assert_data_start(result, 900)
 
     def test_validate_pass_end(self):
         change, data = get_validation_data_end(900)
-        result = self.presenter.validate_row(change, data)
+        result = self.presenter.validate_row(change, data, 0)
         self.assert_data_end(result, 900)
 
     def test_add(self):
-        data = self.presenter.add()
+        data = self.presenter.add(0)
         self.assertEqual(data,
                          [{'Name_time-table': 'filter 1',
                            'Start_time-table': 330,
@@ -141,7 +142,7 @@ class TimePresenterTest(TestHelper):
 
     def test_add_updated_range(self):
         self.presenter.set_time_range(1, 200)
-        data = self.presenter.add()
+        data = self.presenter.add(0)
         self.assertEqual(data,
                          [{'Name_time-table': 'filter 1',
                            'Start_time-table': 66,
@@ -177,7 +178,7 @@ class TimePresenterTest(TestHelper):
         info = self.edit_info(table, 'default_2',
                               **{'Start_time-table': 700,
                                  'End_time-table': 900})
-        result = self.presenter.edit_row(info, table)
+        result = self.presenter.edit_row(info, table, 0)
 
         self.assertCountEqual(result, [{'Name_time-table': 'default_1',
                                         'Start_time-table': 200,
@@ -190,7 +191,7 @@ class TimePresenterTest(TestHelper):
         table = self.add_filters()
         info = self.edit_info(table, 'default_1',
                               **{'Name_time-table': 'renamed'})
-        result = self.presenter.edit_row(info, table)
+        result = self.presenter.edit_row(info, table, 0)
 
         self.assertCountEqual(result, [{'Name_time-table': 'renamed',
                                         'Start_time-table': 200,
@@ -216,17 +217,29 @@ class TimePresenterTest(TestHelper):
 
         for state in ['Exclude', 'Include']:
             with self.subTest(state=state):
-                self.presenter.set_state(state)
+                self.presenter.set_state(state, 0)
                 cols = self.presenter.cols.get_column_dict
                 self.assertEqual(cols[2]['headerName'],
                                  f'{state} Filter details')
                 self.assertEqual(self.data._dict(0)['time_filter_type'],
                                  state)
 
+    def test_update_state_unchanged(self):
+        # e.g. the dropdown being filled from the data
+        self.assertEqual(self.presenter.update_state('Include', False, 0),
+                         (no_update, no_update))
+
+    def test_show_state(self):
+        self.presenter.show_state('Exclude')
+        cols = self.presenter.cols.get_column_dict
+        self.assertEqual(cols[2]['headerName'], 'Exclude Filter details')
+        # the data is not changed
+        self.assertEqual(self.data._dict(0)['time_filter_type'], 'Include')
+
     def test_update_state(self):
         for state, changed in [('Exclude', False), ('Include', True)]:
             with self.subTest(state=state):
-                cols, signal = self.presenter.update_state(state, changed)
+                cols, signal = self.presenter.update_state(state, changed, 0)
                 self.assertEqual(cols[2]['headerName'],
                                  f'{state} Filter details')
                 self.assertEqual(self.data._dict(0)['time_filter_type'],
@@ -249,6 +262,74 @@ class TimePresenterTest(TestHelper):
 
     def test_load_empty(self):
         self.assertEqual(self.presenter.load({}), [])
+
+
+class TimePresenterBatchTest(TestHelper):
+    """
+    Check that the presenter only changes the
+    filters for the active batch.
+    """
+
+    @mock.patch("MNeuEventGUI.time.presenter.TimeView")
+    def setUp(self, view):
+        self.presenter = TimePresenter()
+        self.data = BatchData(FILE, 64, 2)
+        self.presenter.set_data(self.data)
+        self.presenter.set_time_range(0, 1000)
+
+    def assert_batch_0_unchanged(self):
+        self.assertEqual(self.data._dict(0)['time_filters'], {})
+
+    def test_add(self):
+        self.presenter.add(1)
+        self.assertEqual(list(self.data._dict(1)['time_filters']),
+                         ['filter 1'])
+        self.assert_batch_0_unchanged()
+
+    def test_add_name_in_use(self):
+        self.data.add_time_filter(1, 'filter 1', 200, 400)
+        self.presenter.add(1)
+        self.assertEqual(sorted(self.data._dict(1)['time_filters']),
+                         ['filter 1', 'filter 2'])
+
+    def test_delete_row(self):
+        self.data.add_time_filter(1, 'default_1', 200, 400)
+        table = self.presenter.load(self.data._dict(1)['time_filters'])
+        result = self.presenter.delete_row({'rowIndex': 0}, table, 1)
+        self.assertEqual(result, [])
+        self.assertEqual(self.data._dict(1)['time_filters'], {})
+
+    def test_edit_row(self):
+        self.data.add_time_filter(1, 'default_1', 200, 400)
+        table = self.presenter.load(self.data._dict(1)['time_filters'])
+        info = [{'rowIndex': 0,
+                 'data': {**table[0], 'End_time-table': 500}}]
+        self.presenter.edit_row(info, table, 1)
+        self.assertEqual(self.data._dict(1)['time_filters']['default_1'],
+                         {'start': 200, 'end': 500})
+        self.assert_batch_0_unchanged()
+
+    def test_edit_row_rename(self):
+        self.data.add_time_filter(1, 'default_1', 200, 400)
+        table = self.presenter.load(self.data._dict(1)['time_filters'])
+        info = [{'rowIndex': 0,
+                 'data': {**table[0], 'Name_time-table': 'renamed'}}]
+        self.presenter.edit_row(info, table, 1)
+        self.assertEqual(list(self.data._dict(1)['time_filters']),
+                         ['renamed'])
+        self.assert_batch_0_unchanged()
+
+    def test_set_state(self):
+        self.presenter.set_state('Exclude', 1)
+        self.assertEqual(self.data._dict(1)['time_filter_type'], 'Exclude')
+        self.assertEqual(self.data._dict(0)['time_filter_type'], 'Include')
+
+    def test_validate_row_error_has_batch(self):
+        change, data = get_validation_data_start(1200)
+        with self.assertRaises(GUIError) as context:
+            self.presenter.validate(change, data, 1)
+        self.assertTrue(str(context.exception).startswith('Batch 1: '))
+        self.assertIn(TIME_TABLE, context.exception.revert)
 
 
 if __name__ == '__main__':

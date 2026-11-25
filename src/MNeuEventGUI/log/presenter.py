@@ -21,6 +21,8 @@ class LogPresenter(TablePresenter):
     widget. This follows the MVP
     pattern.
     """
+    FILTER_KEY = 'sample_log_filters'
+
     def __init__(self):
         """
         This creates the presenter object for the
@@ -109,7 +111,7 @@ class LogPresenter(TablePresenter):
         """
         self.data = data
 
-    def validate_row(self, change, data):
+    def validate_row(self, change, data, batch):
         """
         This checks if the new row values are valid.
         It will also keep the 'magic' column in sync
@@ -118,6 +120,7 @@ class LogPresenter(TablePresenter):
         changed row
         :param data: the data from the sample log
         filter table.
+        :param batch: the index of the active batch
         :returns: the updated sample log table
         :raises GUIError: if the new value is not valid
         """
@@ -198,10 +201,10 @@ class LogPresenter(TablePresenter):
         data[changed['rowIndex']][col_name] = new_value
 
         if msg:
-            self.reject(data, msg)
+            self.reject(data, msg, batch)
         return data
 
-    def btn_pressed(self, info, data):
+    def btn_pressed(self, info, data, batch):
         """
         It is not possible to differentiate between
         different buttons in the same table. So
@@ -211,6 +214,7 @@ class LogPresenter(TablePresenter):
         - delete row
         :param info: the information on the button pressed
         :param data: the data from the table
+        :param batch: the index of the active batch
         :returns: the updated data and if to open the sample log pop up
         """
         if 'change_btn_log-table' == info['colId']:
@@ -218,7 +222,7 @@ class LogPresenter(TablePresenter):
             self._replace = info['rowIndex']
             return data, True
         else:
-            return self.delete_row(info, data), False
+            return self.delete_row(info, data, batch), False
 
     def get_new_log_name(self, data):
         """
@@ -272,7 +276,7 @@ class LogPresenter(TablePresenter):
             return options, self._selected_name
         return options, self.get_new_log_name(data)
 
-    def close_modal(self, ok, cancel, log, data):
+    def close_modal(self, ok, cancel, log, data, batch):
         """
         A method for closing the pop up. To tell
         if ok or cancel has been pressed we track
@@ -285,6 +289,7 @@ class LogPresenter(TablePresenter):
         :param log: the name of the sample log being viewed
         (if ok is pressed it will be added/updated in the table)
         :param data: the sample log table data
+        :param batch: the index of the active batch
         :returns if the pop up is open (always no) and
         the updated sample log table data.
         """
@@ -295,29 +300,28 @@ class LogPresenter(TablePresenter):
         if self._ok_clicks < ok:
             # ok pressed
             self._ok_clicks += 1
-            if self._replace is not None:
-                # replace/update row (i.e. graph button pressed)
-                name = data[self._replace][self.name_col]
-                self.data.remove_log_filter(0, name)
-            else:
-                # new row (i.e. from add button)
-                existing_filters = self.data._dict(0)["sample_log_filters"]
-                name = f"filter {next(self.count)}"
-                # if filters already exist, avoid overwriting
-                while name in existing_filters:
-                    name = f"filter {next(self.count)}"
 
             # the filter keeps all of the data in the log
             log_data = self.data.dataset.get_sample_log(log)
             min_value = np.min(log_data['value'])
             max_value = np.max(log_data['value'])
 
-            self.data.add_log_filter(0,
-                                     name,
-                                     log,
-                                     min_value,
-                                     max_value)
-        return False, self.load(self.data._dict(0)["sample_log_filters"])
+            if self._replace is not None:
+                # replace/update row (i.e. graph button pressed)
+                name = data[self._replace][self.name_col]
+                self.data.edit_log_filter(batch,
+                                          name,
+                                          log,
+                                          min_value,
+                                          max_value)
+            else:
+                # new row (i.e. from add button)
+                self.data.add_log_filter(batch,
+                                         self.new_filter_name(batch),
+                                         log,
+                                         min_value,
+                                         max_value)
+        return False, self.load(self.batch_filters(batch))
 
     def add(self, n, data):
         """
@@ -331,22 +335,24 @@ class LogPresenter(TablePresenter):
         self._selected_name = self.get_new_log_name(data)
         return True, self.get_new_log_name(data)
 
-    def delete_row(self, info: dict, data: dict):
+    def delete_row(self, info: dict, data: dict, batch):
         """
         Remove a row from the table.
         :param info: Dash information about the deleted row.
         :param data: The row data.
+        :param batch: the index of the active batch
         """
         row = info["rowIndex"]
         name = data[row]['Name_' + LOG_TABLE]
-        self.data.remove_log_filter(0, name)
-        return self.load(self.data._dict(0)["sample_log_filters"])
+        self.data.remove_log_filter(batch, name)
+        return self.load(self.batch_filters(batch))
 
-    def edit_row(self, info, data):
+    def edit_row(self, info, data, batch):
         """
         Edit a row in the table.
         :param info: dict of information about deleted row
         :param data: the table data (list of rows)
+        :param batch: the index of the active batch
         :returns: Updated table values
         """
         row = info[0]["rowIndex"]
@@ -357,19 +363,19 @@ class LogPresenter(TablePresenter):
         new_name = new_data["Name_" + self.ID]
 
         if new_name == row_name:
-            self.data.edit_log_filter(0, row_name,
+            self.data.edit_log_filter(batch, row_name,
                                       new_data["sample_" + self.ID],
                                       new_data["y0_" + self.ID],
                                       new_data["yN_" + self.ID])
         else:
             # filters cannot be renamed, so replace it
-            self.data.remove_log_filter(0, row_name)
-            self.data.add_log_filter(0, new_name,
+            self.data.remove_log_filter(batch, row_name)
+            self.data.add_log_filter(batch, new_name,
                                      new_data["sample_" + self.ID],
                                      new_data["y0_" + self.ID],
                                      new_data["yN_" + self.ID])
 
-        return self.load(self.data._dict(0)["sample_log_filters"])
+        return self.load(self.batch_filters(batch))
 
     def load(self, filters: list[dict]):
         """

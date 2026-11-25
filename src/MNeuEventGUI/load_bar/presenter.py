@@ -35,12 +35,14 @@ class LoadBarPresenter(PresenterTemplate):
         """
         self.name = name
 
-    def load_nxs(self, name):
+    def load_nxs(self, name, num_batches):
         """
         Reads a muon event nexus file
         and creates a BatchData object
+        :param name: the name of the file
+        :param num_batches: the number of batches
         """
-        self._data = BatchData(name, 64, 1)
+        self._data = BatchData(name, 64, num_batches)
 
     @property
     def get_data(self):

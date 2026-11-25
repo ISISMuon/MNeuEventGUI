@@ -5,6 +5,8 @@ from plotly.subplots import make_subplots
 from MNeuEventGUI.plot_area.view import PlotAreaView
 from MNeuEventGUI.presenter_template import PresenterTemplate
 
+DEFAULT_COLOUR = 'PaleGreen'
+
 
 class PlotAreaPresenter(PresenterTemplate):
     """
@@ -26,6 +28,20 @@ class PlotAreaPresenter(PresenterTemplate):
         self.reset_plot_range()
         self.fig = None
 
+    @staticmethod
+    def _style(colour, outline):
+        """
+        Gets the style for a shaded region.
+        :param colour: the fill colour
+        :param outline: if to draw the outline
+        :returns: the shape properties
+        """
+        line = {'color': 'black', 'width': 4} if outline else {'width': 0}
+        return {'fillcolor': colour,
+                'opacity': 0.3,
+                'layer': 'above',
+                'line': line}
+
     def reset_plot_range(self):
         """
         Resets the plot range.
@@ -36,17 +52,21 @@ class PlotAreaPresenter(PresenterTemplate):
         self._min = 1000
         self._max = -1000
 
-    def add_hline(self, value):
+    def add_hline(self, value, row='all', colour='gray'):
         """
         Adds a horizontal line at
         value.
         :param value: the y value to
         place the line at
+        :param row: the subplot row to add the
+        line to (default is all of them)
+        :param colour: the colour of the line
         """
         self.fig.add_hline(y=value,
+                           row=row,
                            line_width=2,
                            line_dash='dash',
-                           line_color='gray')
+                           line_color=colour)
 
     def add_vline(self, value):
         """
@@ -60,7 +80,8 @@ class PlotAreaPresenter(PresenterTemplate):
                            line_dash='dash',
                            line_color='gray')
 
-    def add_rect(self, x0, y0, x1, y1, axis):
+    def add_rect(self, x0, y0, x1, y1, axis,
+                 colour=DEFAULT_COLOUR, outline=True, domain=False):
         """
         Adds a rectangle to a specific subplot.
         :param x0: the x value for the bottom left corner
@@ -68,34 +89,33 @@ class PlotAreaPresenter(PresenterTemplate):
         :param x1: the x value for the top right corner
         :param y1: the y value for the top right corner
         :param axis: the subplot to add the rectanlge to
+        :param colour: the fill colour
+        :param outline: if to draw the outline
+        :param domain: if the y values are a fraction of the
+        subplot's height, rather than data values
         """
         self.fig.add_shape(type='rect',
                            xref=f'x{axis}',
-                           yref=f'y{axis}',
+                           yref=f'y{axis} domain' if domain else f'y{axis}',
                            x0=x0,
                            y0=y0,
                            x1=x1,
                            y1=y1,
-                           fillcolor='PaleGreen',
-                           opacity=0.3,
-                           layer='above',
-                           line={'color': 'black',
-                                 'width': 4})
+                           **self._style(colour, outline))
 
-    def add_shaded_region(self, start, stop):
+    def add_shaded_region(self, start, stop,
+                          colour=DEFAULT_COLOUR, outline=True):
         """
         Adds a shaded region to the plot.
         :param start: when to start the shaded
         region
         :param stop: when to stop the shaded region
+        :param colour: the fill colour
+        :param outline: if to draw the outline
         """
         self.fig.add_vrect(x0=start,
                            x1=stop,
-                           opacity=0.3,
-                           fillcolor='PaleGreen',
-                           layer='above',
-                           line={'color': 'black',
-                                 'width': 4})
+                           **self._style(colour, outline))
 
     def shade_all(self):
         """

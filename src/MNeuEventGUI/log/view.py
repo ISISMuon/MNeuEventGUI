@@ -1,7 +1,9 @@
 import dash_bootstrap_components as dbc
 from dash import Input, Output, State, callback, dcc, html
 
-from MNeuEventGUI.table.view import TableView
+from MNeuEventGUI.plot_area.view import PLOT
+from MNeuEventGUI.table.view import ADD, TableView
+from MNeuEventGUI.utils.batch import ACTIVE
 
 
 class LogView(TableView):
@@ -18,18 +20,19 @@ class LogView(TableView):
         """
 
         # set up the selection and stats (text area)
+        _id = presenter.component_id
         text = html.Div([html.H4('Sample log:'),
                          dcc.Dropdown(['Temp'],
                                       'Temp',
-                                      id='log_selection',
+                                      id=_id('_selection'),
                                       clearable=False),
                          html.Hr(),
                          html.H4('Statistics'),
-                         html.P('max: 0.0', id='log_max'),
-                         html.P('mean: 0.0', id='log_mean'),
-                         html.P('min: 0.0', id='log_min'),
+                         html.P('max: 0.0', id=_id('_max')),
+                         html.P('mean: 0.0', id=_id('_mean')),
+                         html.P('min: 0.0', id=_id('_min')),
                          html.Hr(),
-                         html.P('sigma (std): 0.0', id='log_std'),
+                         html.P('sigma (std): 0.0', id=_id('_std')),
                          ])
         # set width of the text area
         filter_width = 4
@@ -42,13 +45,13 @@ class LogView(TableView):
         # setup the ok and cancel buttons at bottom of the pop up
         btns = html.Div([dbc.Button('ok',
                                     color='secondary',
-                                    id='log_ok',
+                                    id=presenter.component_id('_ok'),
                                     n_clicks=0,
                                     className='ms-auto'),
                          dbc.Button('cancel',
                                     color='secondary',
                                     n_clicks=0,
-                                    id='log_cancel',
+                                    id=presenter.component_id('_cancel'),
                                     className='ms-md-2')])
 
         return html.Div([
@@ -58,7 +61,7 @@ class LogView(TableView):
                                  close_button=False),
                  dbc.ModalBody(tmp),
                  dbc.ModalFooter(btns)],
-                id='log_selector',
+                id=presenter.component_id('_selector'),
                 size='xl',
                 is_open=False),
             # setup normal table
@@ -76,27 +79,30 @@ class LogView(TableView):
         """
         super().set_callbacks(presenter)
 
-        callback([Output('log_plot', 'figure', allow_duplicate=True),
-                  Output('log_max', 'children'),
-                  Output('log_mean', 'children'),
-                  Output('log_min', 'children'),
-                  Output('log_std', 'children'),],
-                 Input('log_selection', 'value'),
+        table = presenter.component_id()
+        callback([Output(presenter._plot.component_id(PLOT), 'figure',
+                         allow_duplicate=True),
+                  Output(presenter.component_id('_max'), 'children'),
+                  Output(presenter.component_id('_mean'), 'children'),
+                  Output(presenter.component_id('_min'), 'children'),
+                  Output(presenter.component_id('_std'), 'children'),],
+                 Input(presenter.component_id('_selection'), 'value'),
                  prevent_initial_call=True)(presenter.show_log_data)
 
-        callback([Output('log_selector', 'is_open'),
-                  Output(presenter.ID, 'rowData', allow_duplicate=True)],
-                 [Input('log_ok', 'n_clicks'),
-                  Input('log_cancel', 'n_clicks')],
-                 [State('log_selection', 'value'),
-                  State(presenter.ID, 'virtualRowData')],
+        callback([Output(presenter.component_id('_selector'), 'is_open'),
+                  Output(table, 'rowData', allow_duplicate=True)],
+                 [Input(presenter.component_id('_ok'), 'n_clicks'),
+                  Input(presenter.component_id('_cancel'), 'n_clicks')],
+                 [State(presenter.component_id('_selection'), 'value'),
+                  State(table, 'virtualRowData'),
+                  State(ACTIVE, 'value')],
                  prevent_initial_call=True)(presenter.close_modal)
 
         callback([
-                  Output('log_selection', 'options'),
-                  Output('log_selection', 'value')],
-                 Input('log_selector', 'is_open'),
-                 State(presenter.ID, 'virtualRowData'),
+                  Output(presenter.component_id('_selection'), 'options'),
+                  Output(presenter.component_id('_selection'), 'value')],
+                 Input(presenter.component_id('_selector'), 'is_open'),
+                 State(table, 'virtualRowData'),
                  prevent_initial_call=True)(presenter.select_log)
 
     def set_add_callback(self, presenter):
@@ -106,9 +112,10 @@ class LogView(TableView):
         to have the pop up appear and not just add a row.
         :param presenter: the presenter object
         """
-        callback(Output('log_selector', 'is_open', allow_duplicate=True),
-                 Input(presenter.ID + '_add', 'n_clicks'),
-                 State(presenter.ID, 'virtualRowData'),
+        callback(Output(presenter.component_id('_selector'), 'is_open',
+                        allow_duplicate=True),
+                 Input(presenter.component_id(ADD), 'n_clicks'),
+                 State(presenter.component_id(), 'virtualRowData'),
                  prevent_initial_call=True)(presenter.add)
 
     def set_btn_callback(self, presenter):
@@ -118,8 +125,11 @@ class LogView(TableView):
         in the sample log table (delete and to create the pop up)
         :param presenter: the presenter object
         """
-        callback([Output(presenter.ID, "rowData", allow_duplicate=True),
-                  Output('log_selector', 'is_open', allow_duplicate=True)],
-                 Input(presenter.ID, "cellRendererData"),
-                 State(presenter.ID, 'virtualRowData'),
+        table = presenter.component_id()
+        callback([Output(table, "rowData", allow_duplicate=True),
+                  Output(presenter.component_id('_selector'), 'is_open',
+                         allow_duplicate=True)],
+                 Input(table, "cellRendererData"),
+                 [State(table, 'virtualRowData'),
+                  State(ACTIVE, 'value')],
                  prevent_initial_call=True)(presenter.btn_pressed)

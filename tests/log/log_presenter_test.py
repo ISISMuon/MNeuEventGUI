@@ -144,7 +144,7 @@ class LogPresenterTest(TestHelper):
         info = self.edit_info(table, 'log_default_1',
                               **{'y0_log-table': 35.5,
                                  'yN_log-table': 38.})
-        result = self.presenter.edit_row(info, table)
+        result = self.presenter.edit_row(info, table, 0)
 
         self.assertEqual(len(result), 2)
         self.assertData(result[row_index(result, 'mag_field')],
@@ -160,7 +160,7 @@ class LogPresenterTest(TestHelper):
                               **{'sample_log-table': 'I',
                                  'y0_log-table': 0.5,
                                  'yN_log-table': 0.8})
-        result = self.presenter.edit_row(info, table)
+        result = self.presenter.edit_row(info, table, 0)
 
         self.assertEqual(len(result), 2)
         self.assertData(result[row_index(result, 'mag_field')],
@@ -171,7 +171,7 @@ class LogPresenterTest(TestHelper):
         table = self.add_filters()
         info = self.edit_info(table, 'log_default_1',
                               **{'Name_log-table': 'temperature'})
-        result = self.presenter.edit_row(info, table)
+        result = self.presenter.edit_row(info, table, 0)
 
         self.assertEqual(len(result), 2)
         self.assertEqual(sorted(self.data._dict(0)['sample_log_filters']),
@@ -192,7 +192,7 @@ class LogPresenterTest(TestHelper):
                 'rowIndex': row_index(table, 'log_default_1'),
                 'rowId': '1',
                 'timestamp': 174}
-        data, state = self.presenter.btn_pressed(info, table)
+        data, state = self.presenter.btn_pressed(info, table, 0)
         self.assertFalse(state)
         self.assertEqual(len(data), 1)
         self.assertData(data[0], 'mag_field', 'B', 'between',
@@ -206,7 +206,7 @@ class LogPresenterTest(TestHelper):
                 'rowId': '1',
                 'timestamp': 174}
 
-        data, state = self.presenter.btn_pressed(info, make_log_table())
+        data, state = self.presenter.btn_pressed(info, make_log_table(), 0)
         self.assertTrue(state)
         self.assertEqual(len(data), 2)
         self.assertData(data[0], 'mag_field', 'B',
@@ -282,7 +282,7 @@ class LogPresenterTest(TestHelper):
         state, result = self.presenter.close_modal(0,
                                                    1,
                                                    'Temp',
-                                                   table)
+                                                   table, 0)
         self.assertFalse(state)
         self.assertEqual(result, table)
 
@@ -291,7 +291,7 @@ class LogPresenterTest(TestHelper):
         state, result = self.presenter.close_modal(1,
                                                    1,
                                                    'Temp',
-                                                   table)
+                                                   table, 0)
         self.assertFalse(state)
         self.assertEqual(len(result), 3)
         self.assertData(result[row_index(result, 'mag_field')],
@@ -311,7 +311,7 @@ class LogPresenterTest(TestHelper):
         state, result = self.presenter.close_modal(1,
                                                    1,
                                                    'I',
-                                                   table)
+                                                   table, 0)
         self.assertFalse(state)
         self.assertEqual(len(result), 2)
         self.assertData(result[row_index(result, 'mag_field')],
@@ -328,15 +328,15 @@ class LogPresenterTest(TestHelper):
         state, data = self.presenter.close_modal(1,
                                                  1,
                                                  'Temp',
-                                                 data)
+                                                 data, 0)
         state, data = self.presenter.close_modal(1,
                                                  2,
                                                  'I',
-                                                 data)
+                                                 data, 0)
         state, data = self.presenter.close_modal(2,
                                                  2,
                                                  'B',
-                                                 data)
+                                                 data, 0)
         self.assertFalse(state)
         self.assertEqual(len(data), 2)
         self.assertData(data[row_index(data, 'filter 1')],
@@ -423,12 +423,12 @@ class LogPresenterTest(TestHelper):
                     # an invalid edit is raised, the reverted
                     # table data is carried on the error
                     with self.assertRaises(GUIError) as context:
-                        self.presenter.validate_row(change, table)
+                        self.presenter.validate_row(change, table, 0)
                     err = context.exception
                     data = err.revert[LOG_TABLE]['rowData']
                 else:
                     data = self.presenter.validate_row(change,
-                                                       table)
+                                                       table, 0)
                 # check if the other limit is as expected
                 self.assertEqual(data[0][case[5]],
                                  case[4])
@@ -453,6 +453,65 @@ class LogPresenterTest(TestHelper):
                     # check keep new value
                     self.assertEqual(data[0][case[2]],
                                      case[1])
+
+
+class LogPresenterBatchTest(TestHelper):
+    """
+    Check that the presenter only changes the
+    filters for the active batch.
+    """
+
+    @mock.patch("MNeuEventGUI.log.presenter.LogView")
+    def setUp(self, view):
+        self.presenter = LogPresenter()
+        self.data = BatchData(FILE, 64, 2)
+        self.presenter.set_data(self.data)
+
+    def assert_batch_0_unchanged(self):
+        self.assertEqual(self.data._dict(0)['sample_log_filters'], {})
+
+    def add_filter(self):
+        self.data.add_log_filter(1, 'mag_field', 'B', 0.7, 0.9)
+        return self.presenter.load(self.data._dict(1)['sample_log_filters'])
+
+    def test_close_modal_ok_new_row(self):
+        self.presenter.close_modal(1, 0, 'Temp', [], 1)
+        self.assertEqual(list(self.data._dict(1)['sample_log_filters']),
+                         ['filter 1'])
+        self.assert_batch_0_unchanged()
+
+    def test_close_modal_ok_replace_row(self):
+        table = self.add_filter()
+        self.presenter._replace = 0
+        self.presenter.close_modal(1, 0, 'Temp', table, 1)
+        log_filter = self.data._dict(1)['sample_log_filters']['mag_field']
+        self.assertEqual(log_filter['log'], 'Temp')
+        self.assert_batch_0_unchanged()
+
+    def test_delete_row(self):
+        table = self.add_filter()
+        result = self.presenter.delete_row({'rowIndex': 0}, table, 1)
+        self.assertEqual(result, [])
+        self.assertEqual(self.data._dict(1)['sample_log_filters'], {})
+
+    def test_edit_row(self):
+        table = self.add_filter()
+        info = [{'rowIndex': 0,
+                 'data': {**table[0], 'yN_log-table': 0.8}}]
+        self.presenter.edit_row(info, table, 1)
+        log_filter = self.data._dict(1)['sample_log_filters']['mag_field']
+        self.assertAlmostEqual(log_filter['predicate']['Range']['upper'],
+                               0.8)
+        self.assert_batch_0_unchanged()
+
+    def test_edit_row_rename(self):
+        table = self.add_filter()
+        info = [{'rowIndex': 0,
+                 'data': {**table[0], 'Name_log-table': 'renamed'}}]
+        self.presenter.edit_row(info, table, 1)
+        self.assertEqual(list(self.data._dict(1)['sample_log_filters']),
+                         ['renamed'])
+        self.assert_batch_0_unchanged()
 
 
 if __name__ == '__main__':

@@ -18,12 +18,12 @@ class HistSettingsView(ViewTemplate):
         return html.Div([
             "Minimum and maximum time:",
             dbc.Row([
-                dbc.Col(dbc.Input(id='min-time',
+                dbc.Col(dbc.Input(id=presenter.component_id('min-time'),
                                   value=0.,
                                   type='number',
                                   debounce=True,
                                   placeholder=0.)),
-                dbc.Col(dbc.Input(id='max-time',
+                dbc.Col(dbc.Input(id=presenter.component_id('max-time'),
                                   value=32.768,
                                   type='number',
                                   debounce=True,
@@ -31,13 +31,13 @@ class HistSettingsView(ViewTemplate):
                 ]),
             dbc.Row(
                 dbc.Col(["Number of bins:",
-                     dbc.Input(id='num-bins',
+                     dbc.Input(id=presenter.component_id('num-bins'),
                                value=2048,
                                type='number',
                                step=1,
                                placeholder=2048),
                 ])),
-            dbc.Row([html.Div(id="display-width"),
+            dbc.Row([html.Div(id=presenter.component_id('display-width')),
                 ]),
             ])
 
@@ -45,24 +45,28 @@ class HistSettingsView(ViewTemplate):
         """
         Set callbacks required by the GUI.
         """
-        # callback to update resolution display
-        callback(Output('display-width', 'children'),
-                 Input('min-time', 'value'),
-                 Input('max-time', 'value'),
-                 Input('num-bins', 'value'))(presenter.display_width)
+        min_time = presenter.component_id('min-time')
+        max_time = presenter.component_id('max-time')
+        num_bins = presenter.component_id('num-bins')
+        display_width = presenter.component_id('display-width')
 
-        # callback to update data when values change
-        callback(Input('min-time', 'value'),
-                 Input('max-time', 'value'),
-                 Input('num-bins', 'value'),
-                 prevent_initial_call=True)(presenter.set_values)
+        # callback to update resolution display
+        callback(Output(display_width, 'children'),
+                 Input(min_time, 'value'),
+                 Input(max_time, 'value'),
+                 Input(num_bins, 'value'))(presenter.display_width)
+
+        # the callback to update the data when the values change is
+        # set by the filter view, as it also clears the number of events
 
         # callback to mark number of bins if invalid
-        callback(Output('num-bins', 'invalid'),
-                 Input('num-bins', 'value'))(presenter.check_num_bins_invalid)
+        callback(Output(num_bins, 'invalid'),
+                 Input(num_bins, 'value')
+                 )(presenter.check_num_bins_invalid)
 
         # callback to mark min or max time if invalid
-        callback([Output('min-time', 'invalid'),
-                  Output('max-time', 'invalid')],
-                 [Input('min-time', 'value'),
-                  Input('max-time', 'value')])(presenter.check_range_invalid)
+        callback([Output(min_time, 'invalid'),
+                  Output(max_time, 'invalid')],
+                 [Input(min_time, 'value'),
+                  Input(max_time, 'value')]
+                 )(presenter.check_range_invalid)

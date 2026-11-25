@@ -30,7 +30,7 @@ class LoadBarPresenterTest(TestHelper):
                          None)
 
     def test_load_nxs(self):
-        self.load.load_nxs(FILE)
+        self.load.load_nxs(FILE, 2)
 
         self.assertIsInstance(self.load._data, BatchData)
         # check it is the test file
@@ -42,8 +42,8 @@ class LoadBarPresenterTest(TestHelper):
     @mock.patch("MNeuEventGUI.load_bar.presenter.BatchData")
     def test_get_data(self, data_mock):
         data_mock.return_value = mock.Mock()
-        self.load.load_nxs(FILE)
-        data_mock.assert_called_once_with(FILE, 64, 1)
+        self.load.load_nxs(FILE, 2)
+        data_mock.assert_called_once_with(FILE, 64, 2)
         self.assertEqual(self.load._data, data_mock())
         self.assertEqual(self.load.get_data, data_mock())
 
