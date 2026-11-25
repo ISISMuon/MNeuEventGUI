@@ -19,7 +19,7 @@ for package in [
 
 # The window icon is loaded at runtime from the package's assets folder.
 datas += [('src/MNeuEventGUI/assets/icon.png', 'MNeuEventGUI/assets'),
-          ('src/MNeuEventGUI/main_app/assets/*.json',
+          ('src/MNeuEventGUI/main_app/assets/*.js',
          'MNeuEventGUI/main_app/assets'),
 	 ]
 
