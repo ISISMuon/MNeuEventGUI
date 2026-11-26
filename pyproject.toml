@@ -17,8 +17,8 @@ name = 'MNeuEventGUI'
 
 version = "0.1.1"
 
-requires-python = ">=3.8"
-dependencies = ['numpy', 'h5py', 'plotly', 'pyside6', 'dash[testing]', 'dash_daq', 'dash-ag-grid', 'dash_bootstrap_components', 'MNeuEventLib']
+requires-python = ">=3.12"
+dependencies = ['numpy==2.5.5', 'h5py==3.16.0', 'plotly==7.2.0', 'pyside6==6.12.0', 'dash[testing]==4.5.1', 'dash_daq==0.6.0', 'dash-ag-grid==35.3.0', 'dash_bootstrap_components==2.0.4', 'MNeuEventLib==0.6.0']
 authors = [{name='Anthony Lim', email='anthony.lim@stfc.ac.uk'}, {name='Alex H. Room', email='alex.room@stfc.ac.uk'}]
 description = 'GUI for reading, filtering, and writing ISIS event mode data.'
 readme = 'README.md'

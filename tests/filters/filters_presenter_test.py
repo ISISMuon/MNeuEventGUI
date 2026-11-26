@@ -151,7 +151,7 @@ class FilterPresenterTest(TestHelper):
 
     def test_calculate_amp_filter(self):
         data = load_data()
-        data.set_amps_baseline(0, 2500.)
+        data.set_ampl_baseline(0, 2500.)
         self.presenter._data = data
         N_str = self.presenter.calculate(1)
         self.assertEqual(N_str.children,
@@ -197,7 +197,7 @@ class FilterPresenterTest(TestHelper):
         data.add_time_filter(0, 'unit', 1., 2.)
         data.add_time_filter(0, 'test', 3., 4.)
         data.add_log_filter(0, 'log_default_1', 'Temp', 36., 37.)
-        data.set_amps_baseline(0, 1.2)
+        data.set_ampl_baseline(0, 1.2)
         data.set_histogram_settings(0, 0.5, 15.22, 1024)
         self.presenter.set_data(data)
 
@@ -234,7 +234,7 @@ class FilterPresenterTest(TestHelper):
         data.set_time_type(0, 'exclude')
         data.add_time_filter(0, 'more', 5., 6.)
         data.add_time_filter(0, 'tests', 7., 8.)
-        data.set_amps_baseline(0, 1.2)
+        data.set_ampl_baseline(0, 1.2)
         self.presenter.set_data(data)
 
         (times, logs, amps, state,

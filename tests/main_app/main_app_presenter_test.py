@@ -145,7 +145,7 @@ class MainAppPresenterTest(TestHelper):
         """
         data = app.load.get_data
         data.set_time_type(0, 'exclude')
-        data.set_amps_baseline(0, 2.7)
+        data.set_ampl_baseline(0, 2.7)
         data.set_histogram_settings(0, 0.5, 15.22, 1024)
 
     def assert_settings(self, result, expected):
