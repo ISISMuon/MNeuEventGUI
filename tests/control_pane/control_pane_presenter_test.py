@@ -388,7 +388,7 @@ class ControlPanePresenterTest(TestHelper):
     def test_refresh(self):
         self.data.set_time_type(0, 'exclude')
         self.data.add_time_filter(0, 'first', 0.01, 0.02)
-        self.data.set_amps_baseline(0, 2.7)
+        self.data.set_ampl_baseline(0, 2.7)
         self.data.set_histogram_settings(0, 0.5, 15.22, 1024)
 
         (data, log_data, amp, state,

@@ -45,7 +45,7 @@ class AmpPresenter(PresenterTemplate):
         if self.data is None or value is None:
             return
 
-        self.data.set_amps_baseline(0, float(value))
+        self.data.set_ampl_baseline(0, float(value))
 
     def plot(self, data):
         """
@@ -53,7 +53,7 @@ class AmpPresenter(PresenterTemplate):
         :param data: the Data object, with an amlitude filter
         :returns: the graph object for histogram
         """
-        hist, max_h = data.dataset.get_amp_histogram()
+        hist, max_h = data.dataset.get_ampl_histogram()
         bins = np.linspace(0, max_h, len(hist)+1)
         return self._plot.plot(['Counts'],
                                [(bins[:-1] + bins[1:])/2.],
